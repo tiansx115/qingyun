@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qingyun-v6-0-core';
+const CACHE_NAME = 'qingyun-v6-0-1';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',

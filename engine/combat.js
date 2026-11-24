@@ -15,7 +15,9 @@ window.COMBAT = {
     const { G, D } = ctx;
     const eq = ctx.getEquipStats();
     const eMaxPoise = enemy.maxPoise || Math.max(60, Math.round(enemy.maxHp * 0.45));
-    const treasures = (G.treasures || [null, null]).map(tid => {
+    const unlockedTr = ctx.getUnlockedTreasureSlots ? ctx.getUnlockedTreasureSlots() : 0;
+    const treasures = (G.treasures || [null, null]).map((tid, idx) => {
+      if (idx >= unlockedTr) return null;
       const it = tid && D.ITEMS[tid];
       return it ? { id: tid, def: it, cdLeft: it.mode === 'auto' ? it.cd * 0.6 : 0 } : null;
     });

@@ -55,7 +55,7 @@ function defaultState() {
       acc2: null,
       ring: 'eq_wood_ring'
     },
-    treasures: ['tr_flying_sword', 'tr_spirit_banner'],
+    treasures: [null, null],
     beasts: {},
     activeBeast: null,
     factions: { qingyun: 0, wanbao: 0, nether: 0 },
@@ -260,21 +260,39 @@ function addItem(id, cnt = 1) {
   G.bag[id] = (G.bag[id] || 0) + cnt;
 }
 
+function getUnlockedTreasureSlots() {
+  if (!G) return 0;
+  const eq = getEquipStats();
+  const totalSense = (G.sense || 10) + (eq.sense || 0);
+  if (totalSense >= 32 || (G.realmIdx || 0) >= 4) return 2;
+  if (totalSense >= 18 || (G.realmIdx || 0) >= 3) return 1;
+  return 0;
+}
+
 function equipItem(id) {
   const it = D.ITEMS[id];
   if (!it || (G.bag[id] || 0) <= 0) return;
 
-  // Pure external treasure (2 slots)
+  // Pure external treasure (unlocked by 神识: 0 -> 1 at 神识>=18/筑基, 2 at 神识>=32/金丹)
   if (it.type === 'treasure') {
+    const eq = getEquipStats();
+    const totalSense = (G.sense || 10) + (eq.sense || 0);
+    const unlocked = getUnlockedTreasureSlots();
+    if (unlocked <= 0) {
+      return showToast(`神识尚浅（当前 ${totalSense}，需神识 18 或筑基境），尚无法驾驭任何体外法宝！`);
+    }
     G.treasures = G.treasures || [null, null];
-    let targetIdx = G.treasures[0] === null ? 0 : (G.treasures[1] === null ? 1 : 0);
+    let targetIdx = 0;
+    if (unlocked === 2) {
+      targetIdx = G.treasures[0] === null ? 0 : (G.treasures[1] === null ? 1 : 0);
+    }
     const prev = G.treasures[targetIdx];
     G.bag[id] -= 1; if (G.bag[id] <= 0) delete G.bag[id];
     if (prev) addItem(prev, 1);
     G.treasures[targetIdx] = id;
     selectedBagItem = null;
     SFX.play('click');
-    showToast(`已装配外物法宝【${it.name}】至法宝槽 ${targetIdx + 1}。`);
+    showToast(`已以神识御物，装配体外法宝【${it.name}】至槽位 ${targetIdx + 1}。`);
     saveGame('auto', true); renderAll();
     return;
   }
@@ -850,7 +868,7 @@ function startBattle(enemy) {
   activeDialogue = null; activePanel = null;
   window.COMBAT.start(enemy, {
     G, D, ASSETS,
-    getEquipStats, getActiveSets, gainSkillProf, getCatMastery,
+    getEquipStats, getActiveSets, getUnlockedTreasureSlots, gainSkillProf, getCatMastery,
     getAllyDef, getAllyAsset, gainExp, tryRealmUp, saveGame,
     setAllyExpr: (id, ex) => { allyExprMap[id] = ex; },
     onBattleStart: () => renderAll(),
@@ -1036,17 +1054,21 @@ function renderSplitPanel() {
       `;
     }).join('');
 
+    const unlockedTr = getUnlockedTreasureSlots();
+    const totalSense = (G.sense || 10) + (eqStats.sense || 0);
+    const trReqs = ['需神识18/筑基', '需神识32/金丹'];
     const trHtml = [0, 1].map(idx => {
       const slotKey = `tr_${idx}`;
+      const locked = idx >= unlockedTr;
       const tid = G.treasures && G.treasures[idx];
       const it = tid && D.ITEMS[tid];
       const isSel = selectedEquipSlot === slotKey;
       return `
-        <div class="equip-slot compact ${it ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${slotKey}">
-          ${it ? `<img src="${getItemIcon(tid)}"/>` : `<div class="eq-empty">外物</div>`}
+        <div class="equip-slot compact ${it && !locked ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${slotKey}" style="${locked ? 'opacity:0.52;' : ''}">
+          ${locked ? `<div class="eq-empty">未开</div>` : (it ? `<img src="${getItemIcon(tid)}"/>` : `<div class="eq-empty">外物</div>`)}
           <div class="eq-meta">
-            <div class="eq-type">外物法宝 ${idx + 1}${it ? ` · ${it.mode === 'auto' ? '悬浮' : '主动'}` : ''}</div>
-            <div class="eq-name">${it ? it.name : '空置'}</div>
+            <div class="eq-type">体外法宝 ${idx + 1}${locked ? ` · ${trReqs[idx]}` : (it ? ` · ${it.mode === 'auto' ? '悬浮' : '主动'}` : '')}</div>
+            <div class="eq-name">${locked ? '神识不足无法驾驭' : (it ? it.name : '空置可装配')}</div>
           </div>
         </div>
       `;
@@ -1088,7 +1110,7 @@ function renderSplitPanel() {
       <div class="dual-left">
         <div class="sec-head"><span>身上穿戴 (9格)</span><span style="font-size:10px;color:var(--jade);">${activeSetStr}</span></div>
         <div class="equip-grid grid-3">${eqHtml}</div>
-        <div style="font-size:10px;color:var(--muted);margin:6px 0 4px;">随身外物法宝 (2格 · 纯外物不加个人属性)</div>
+        <div style="font-size:10px;color:var(--muted);margin:6px 0 4px;">体外法宝 (已开 ${unlockedTr}/2 格 · 当前神识 ${totalSense} · 纯外物不加属性)</div>
         <div class="equip-grid" style="flex:0 0 auto;">${trHtml}</div>
         ${leftActionHtml}
         <div class="eq-summary-bar">

@@ -1,8 +1,8 @@
-const CACHE_NAME = 'qingyun-v5-aaa';
+const CACHE_NAME = 'qingyun-v5-2-phaseb';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
-  './data/skills_items.js', './data/world.js',
+  './data/skills_items.js', './data/world.js', './data/events.js',
   './engine/icons.js', './engine/audio_fx.js', './engine/app.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];

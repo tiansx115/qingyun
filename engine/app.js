@@ -8,6 +8,7 @@ let activePanel = null; // null | 'status' | 'allies' | 'save'
 let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag'
 let selectedAllyId = 'sister';
 let selectedBagItem = null;
+let selectedEquipSlot = null;
 let allyExprMap = { sister: 'normal', elder: 'normal' };
 let activeDialogue = null;
 let battleState = null;
@@ -36,15 +37,15 @@ function defaultState() {
     artifactId: 'jade_ring',
     artifacts: { jade_ring: 1 },
     equipment: {
-      weapon: { name:'青钢长剑', icon:'item_frost_sword', bonus:'攻击 +8' },
-      robe: { name:'玄青道袍', icon:'item_spirit_stone', bonus:'气血 +30' },
-      artifact: { name:'裂纹古玉戒', icon:'item_jade_ring', bonus:'护主剑气' },
+      weapon: 'eq_iron_sword',
+      robe: 'eq_cloth_robe',
       pendant: null,
-      boots: null,
-      pouch: { name:'寻常布囊', icon:'item_elixir_pill', bonus:'丹药容量 +15' }
+      boots: 'eq_straw_boots',
+      pouch: 'eq_cloth_pouch'
     },
+    factions: { qingyun: 0, wanbao: 0, nether: 0 },
     activeAlly: null,
-    bag: { heal_pill: 3, qi_pill: 2, osmanthus_cake: 2, mystery_box: 1 },
+    bag: { heal_pill: 3, qi_pill: 2, osmanthus_cake: 2, mystery_box: 1, eq_clear_jade: 1 },
     allies: {
       sister: {
         id:'sister', name:'林清霜', seal:'青云首徒', title:'青云剑宗大师姐', bond: 30, power: 26,
@@ -78,13 +79,142 @@ function getAllyAsset(id, forceExpr) {
   return ASSETS[found.asset];
 }
 function getItemIcon(id) {
+  if (D.ITEMS[id]?.icon) return ASSETS[D.ITEMS[id].icon];
+  if (D.ARTIFACTS[id]?.icon) return ASSETS[D.ARTIFACTS[id].icon];
   const m = {
     heal_pill: 'item_elixir_pill', qi_pill: 'item_elixir_pill',
     osmanthus_cake: 'item_osmanthus_cake', mystery_box: 'item_spirit_stone',
     lightning_plate: 'item_lightning_disk',
-    jade_ring: 'item_jade_ring', frost_embryo: 'item_frost_sword'
+    jade_ring: 'item_jade_ring', frost_embryo: 'item_frost_sword',
+    nether_bell: 'item_lightning_disk'
   };
   return ASSETS[m[id] || 'item_spirit_stone'];
+}
+
+function normalizeState(st) {
+  const def = defaultState();
+  st.factions = Object.assign({ qingyun: 0, wanbao: 0, nether: 0 }, st.factions || {});
+  st.flags = st.flags || {};
+  st.bag = st.bag || {};
+  st.artifacts = st.artifacts || { jade_ring: 1 };
+  if (!st.equipment || typeof st.equipment.weapon === 'object') {
+    const oldEq = st.equipment || {};
+    st.equipment = {
+      weapon: oldEq.weapon ? (typeof oldEq.weapon === 'string' ? oldEq.weapon : 'eq_iron_sword') : null,
+      robe: oldEq.robe ? (typeof oldEq.robe === 'string' ? oldEq.robe : 'eq_cloth_robe') : null,
+      pendant: typeof oldEq.pendant === 'string' ? oldEq.pendant : null,
+      boots: typeof oldEq.boots === 'string' ? oldEq.boots : 'eq_straw_boots',
+      pouch: oldEq.pouch ? (typeof oldEq.pouch === 'string' ? oldEq.pouch : 'eq_cloth_pouch') : null
+    };
+  }
+  if (!st.allies) st.allies = def.allies;
+  return st;
+}
+
+function getEquipStats() {
+  const sum = { atk: 0, def: 0, hpMax: 0, qiMax: 0, crit: 0, dodge: 0, expRate: 0, healBonus: 0, luck: 0, talk: 0, bagCap: 15 };
+  if (!G || !G.equipment) return sum;
+  ['weapon', 'robe', 'pendant', 'boots', 'pouch'].forEach(slot => {
+    const id = G.equipment[slot];
+    const it = id && D.ITEMS[id];
+    if (!it || !it.stats) return;
+    for (const [k, v] of Object.entries(it.stats)) {
+      if (k === 'bagCap') sum.bagCap = Math.max(sum.bagCap, v);
+      else sum[k] = (sum[k] || 0) + v;
+    }
+  });
+  return sum;
+}
+
+function formatStatSummary(stats) {
+  if (!stats) return '无属性加成';
+  const labels = {
+    atk: v => `攻击 ${v >= 0 ? '+' : ''}${v}`,
+    def: v => `防御 ${v >= 0 ? '+' : ''}${v}`,
+    hpMax: v => `气血 ${v >= 0 ? '+' : ''}${v}`,
+    qiMax: v => `灵力 ${v >= 0 ? '+' : ''}${v}`,
+    crit: v => `会心 +${Math.round(v * 100)}%`,
+    dodge: v => `闪避 +${Math.round(v * 100)}%`,
+    expRate: v => `修炼 +${Math.round(v * 100)}%`,
+    healBonus: v => `丹效 +${Math.round(v * 100)}%`,
+    luck: v => `气运 +${v}`,
+    talk: v => `口才 +${v}`,
+    bagCap: v => `行囊 ${v} 格`
+  };
+  return Object.entries(stats)
+    .filter(([k, v]) => labels[k] && v !== 0)
+    .map(([k, v]) => labels[k](v))
+    .join(' · ') || '无属性加成';
+}
+
+function recalcDerivedStats(fullHeal = false) {
+  if (!G) return;
+  const realm = D.REALMS[G.realmIdx] || D.REALMS[0];
+  const ha = D.HEART_ARTS[G.heartArt] || {};
+  const eq = getEquipStats();
+  const prevMaxHp = G.maxHp || realm.maxHp;
+  const prevMaxQi = G.maxQi || realm.maxQi;
+  G.maxHp = Math.max(40, realm.maxHp + G.body * 4 + (ha.hpBonus || 0) + eq.hpMax);
+  G.maxQi = Math.max(30, realm.maxQi + G.wit * 3 + (ha.qiBonus || 0) + eq.qiMax);
+  if (fullHeal) {
+    G.hp = G.maxHp; G.qi = G.maxQi;
+  } else {
+    if (G.maxHp > prevMaxHp) G.hp += (G.maxHp - prevMaxHp);
+    if (G.maxQi > prevMaxQi) G.qi += (G.maxQi - prevMaxQi);
+    G.hp = Math.max(1, Math.min(G.maxHp, G.hp));
+    G.qi = Math.max(0, Math.min(G.maxQi, G.qi));
+  }
+}
+
+function addItem(id, cnt = 1) {
+  G.bag[id] = (G.bag[id] || 0) + cnt;
+}
+
+function equipItem(id) {
+  const it = D.ITEMS[id];
+  if (!it || it.type !== 'equip' || !it.slot) return;
+  if ((G.bag[id] || 0) <= 0) return;
+  const slot = it.slot;
+  const prevId = G.equipment[slot];
+  G.bag[id] -= 1;
+  if (G.bag[id] <= 0) delete G.bag[id];
+  if (prevId && D.ITEMS[prevId]) addItem(prevId, 1);
+  G.equipment[slot] = id;
+  recalcDerivedStats(false);
+  selectedEquipSlot = slot;
+  selectedBagItem = null;
+  SFX.play('click');
+  showToast(prevId ? `已替换穿戴【${it.name}】。` : `已穿戴【${it.name}】。`);
+  saveGame('auto', true);
+  renderAll();
+}
+
+function unequipSlot(slot) {
+  if (slot === 'artifact') {
+    const ownedArts = Object.keys(G.artifacts || {});
+    if (ownedArts.length > 1) {
+      const idx = ownedArts.indexOf(G.artifactId);
+      G.artifactId = ownedArts[(idx + 1) % ownedArts.length];
+      SFX.play('click');
+      showToast(`已切换本命法宝为【${D.ARTIFACTS[G.artifactId].name}】。`);
+      saveGame('auto', true); renderAll();
+    } else {
+      activePanel = 'status'; statusSubTab = 'skills'; renderAll();
+    }
+    return;
+  }
+  const curId = G.equipment[slot];
+  if (!curId) return;
+  const it = D.ITEMS[curId];
+  G.equipment[slot] = null;
+  addItem(curId, 1);
+  recalcDerivedStats(false);
+  selectedEquipSlot = null;
+  selectedBagItem = curId;
+  SFX.play('click');
+  showToast(`已卸下【${it ? it.name : curId}】，放回乾坤行囊。`);
+  saveGame('auto', true);
+  renderAll();
 }
 function getDateStr() {
   const y = Math.floor((G.month - 1) / 12) + 1;
@@ -92,7 +222,16 @@ function getDateStr() {
   return `第${y}年·${s}`;
 }
 function getNextTimelineText() {
-  const next = D.TIMELINE.find(t => t.month >= G.month);
+  const active = D.TIMELINE.find(t => {
+    if (G.month < t.month) return false;
+    if (t.loc === 'sect' && (G.factions?.qingyun || 0) < 2) return true;
+    if (t.loc === 'market' && (G.factions?.wanbao || 0) < 2) return true;
+    if (t.loc === 'forest' && (G.flags?.forestRuinStage || 0) < 2) return true;
+    if (t.loc === 'cliff' && !G.flags?.divorceResolved) return true;
+    return false;
+  });
+  if (active) return `正在发生：${active.title}`;
+  const next = D.TIMELINE.find(t => t.month > G.month);
   return next ? `${next.title}（余${next.month - G.month}月）` : '东洲风云变幻，大道可期';
 }
 function advanceTime(months = 1) {
@@ -108,7 +247,8 @@ function advanceTime(months = 1) {
 }
 function gainExp(amt) {
   const ha = D.HEART_ARTS[G.heartArt] || { expBonus: 0 };
-  const bonus = Math.floor(amt * (1 + G.wit * 0.03 + (ha.expBonus || 0)));
+  const eq = getEquipStats();
+  const bonus = Math.floor(amt * (1 + G.wit * 0.03 + (ha.expBonus || 0) + (eq.expRate || 0)));
   G.exp += bonus;
   const need = D.REALMS[G.realmIdx].exp;
   if (G.exp >= need && !D.REALMS[G.realmIdx + 1]?.tribulation) tryRealmUp(false);
@@ -121,10 +261,8 @@ function tryRealmUp(fromAltar) {
   if (next.tribulation && !fromAltar) return showToast('大境界突破需前往【九霄渡劫台】引雷破境。');
   G.exp -= D.REALMS[G.realmIdx].exp;
   G.realmIdx++;
-  const ha = D.HEART_ARTS[G.heartArt] || {};
-  G.maxHp = next.maxHp + G.body * 4 + (ha.hpBonus || 0);
-  G.maxQi = next.maxQi + G.wit * 3;
-  G.hp = G.maxHp; G.qi = G.maxQi; G.maxAge += next.ageBonus;
+  G.maxAge += next.ageBonus;
+  recalcDerivedStats(true);
   SFX.play('levelup'); FX.burst('235,210,155', 40, 0.5, 0.5);
   showToast(`突破成功！踏入【${next.name}】，寿元增至 ${G.maxAge} 岁。`);
 }
@@ -241,6 +379,7 @@ function startQuiz() {
       document.getElementById('btn-enter').onclick = () => {
         const val = document.getElementById('inp-name').value.trim();
         if (val) G.name = val;
+        recalcDerivedStats(true);
         SFX.play('levelup'); root.style.display = 'none';
         saveGame('auto', true); renderAll();
       };
@@ -262,14 +401,16 @@ function interactNpc(npcId) {
       choices.push({
         text: '行拜师礼，正式拜入青云剑宗', hint: '获心法与青霜剑胚',
         action: () => {
-          G.sect = '青云剑宗'; G.allies.sister.bond += 15; G.fame += 10;
+          G.sect = '青云剑宗'; G.factions.qingyun = Math.max(G.factions.qingyun || 0, 1);
+          G.allies.sister.bond += 15; G.fame += 10;
           if (!G.ownedHeartArts.includes('qingyun_breath')) G.ownedHeartArts.push('qingyun_breath');
           if (!G.skills.includes('sister_frost')) G.skills.push('sister_frost');
-          G.artifacts.frost_embryo = 1; G.artifactId = 'frost_embryo';
+          G.artifacts.frost_embryo = G.artifacts.frost_embryo || 1; G.artifactId = 'frost_embryo';
+          addItem('eq_qingyun_sword', 1);
           allyExprMap.sister = 'smile';
           activeDialogue = {
             speaker: '林清霜', asset: ASSETS.sister_smile,
-            text: '她微微颔首，唇角露出一丝难得的浅笑：“既入青云门下，日后便是我师弟了。这柄寒霜剑胚与吐纳心法，你且收好。”',
+            text: '她微微颔首，唇角露出一丝难得的浅笑：“既入青云门下，日后便是我师弟了。这柄青云制式剑、寒霜剑胚与吐纳心法，你且收好。”',
             choices: [{ text:'多谢师姐照拂', action:()=>{ activeDialogue=null; saveGame('auto',true); renderAll(); } }]
           };
           renderAll();
@@ -342,45 +483,66 @@ function interactNpc(npcId) {
   renderAll();
 }
 
+function getEventCtx() {
+  return {
+    G, D, ASSETS,
+    setDialogue: d => { activeDialogue = d; },
+    startBattle, addItem, gainExp, advanceTime, showToast, saveGame, renderAll, buyItem, openEquipShop,
+    setAllyExpr: (id, expr) => { allyExprMap[id] = expr; }
+  };
+}
+
+function openEquipShop() {
+  const unlockedHigh = (G.factions?.wanbao || 0) >= 1;
+  const stockIds = unlockedHigh
+    ? ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_wind_boots', 'eq_qiankun_pouch', 'eq_frost_blade', 'eq_xuan_armor']
+    : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_clear_jade', 'eq_wind_boots'];
+  const choices = stockIds.map(id => {
+    const it = D.ITEMS[id];
+    return {
+      text: `购入【${it.name}】(${it.tier})`,
+      hint: `${it.price}灵石 · ${formatStatSummary(it.stats)}`,
+      action: () => buyItem(id)
+    };
+  });
+  choices.push({ text: '离开装备坊', action: () => { activeDialogue = null; renderAll(); } });
+  activeDialogue = {
+    speaker: '鬼市装备坊', asset: ASSETS.elder,
+    text: unlockedHigh
+      ? '凭万宝楼验货令入内，玄黑木架上陈列着灵品与玄品飞剑、内甲、灵靴与储物袋：“看中哪件直接点货，银货两讫。”'
+      : '灯影摇曳的装备摊上摆着几件凡品与灵品行头：“初来乍到先看外摊货色，若想见玄品重宝，得先去万宝楼拿块验货令。”',
+    choices
+  };
+  renderAll();
+}
+
 function handleHotspot(hid) {
   SFX.play('click');
-  if (hid === 'sect_library') {
+  if (hid === 'sect_trial') {
+    D.EVENTS.runSectTrial(getEventCtx());
+    renderAll();
+  } else if (hid === 'sect_library') {
     advanceTime(1); const g = gainExp(48); G.wit += 1;
+    recalcDerivedStats(false);
     showToast(`在藏经阁静心研读一月，修为 +${g}，悟性 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'sect_forge') {
     activePanel = 'status'; statusSubTab = 'skills'; renderAll();
   } else if (hid === 'cliff_event') {
-    if (!G.flags.divorceEvent) {
-      activeDialogue = {
-        speaker: '柳若云', asset: ASSETS.sister,
-        text: '石桌旁站着一名锦衣女修，将一纸泛黄婚书置于青石之上：“陈公子，昔年祖辈之约已成过往。如今我已入玄天宗内门，仙凡殊途，今日特来解除婚约。”',
-        choices: [
-          { text:'当场撕毁婚书，立下三年之约', hint:'道心+5 声望+15 修为+60', action: () => {
-            G.flags.divorceEvent = true; G.mind += 5; G.fame += 15; const g = gainExp(60);
-            showToast(`立下三年之约，修为 +${g}，道心 +5。`); activeDialogue = null; saveGame('auto', true); renderAll();
-          }},
-          { text:'“按两家旧约折算一百灵石立据画押，从此两不相欠。”', hint:'灵石+100 口才+2', action: () => {
-            G.flags.divorceEvent = true; G.stone += 100; G.talk += 2;
-            showToast('双方立据画押，获补偿灵石 100 枚。'); activeDialogue = null; saveGame('auto', true); renderAll();
-          }},
-          { text:'“柳家既要毁约，先问过我手中之剑。”', hint:'触发战斗', action: () => {
-            G.flags.divorceEvent = true; G.fame += 10;
-            startBattle({ name:'柳家护卫统领', asset:ASSETS.elder, bg:'world_map', hp:140, maxHp:140, atk:16, talkDef:10, expReward:60, stoneReward:65 });
-          }}
-        ]
-      };
-    } else showToast('石桌上只余几片落叶，当年旧约已了结。');
+    D.EVENTS.runCliffEvent(getEventCtx());
     renderAll();
   } else if (hid === 'inn_tea') {
     if (G.stone < 10) return showToast('囊中灵石不足 10 枚。');
-    advanceTime(1); G.stone -= 10; G.hp = G.maxHp; G.qi = G.maxQi; G.wit += 1;
+    advanceTime(1); G.stone -= 10; G.wit += 1; recalcDerivedStats(true);
     showToast('在天机阁品茶歇息，气血灵力圆满，悟性 +1。');
     saveGame('auto', true); renderAll();
   } else if (hid === 'inn_rumor') {
+    const rumorExtra = G.flags.divorceBranch && !G.flags.divorceResolved && G.month >= 18
+      ? ' 另外，玄天宗那边传出风声，柳若云已快破入筑基，第 3 年·冬思过崖怕是有场好戏。'
+      : '';
     activeDialogue = {
       speaker: '天机掌柜', asset: ASSETS.elder,
-      text: '掌柜擦着青瓷茶壶低声道：“近来万妖古林洞府异动，反倒有精明散修在谷口卖回春丹赚得盆满钵满。对了，听说青云大师姐私下偏爱云州桂花糕。”',
+      text: `掌柜擦着青瓷茶壶低声道：“近来万妖古林洞府异动，鬼市深处也常有幽冥玄宗的人出没。对了，青云大师姐私下偏爱云州桂花糕。”${rumorExtra}`,
       choices: [
         { text:'购一盒【云州桂花糕】', hint:'20 灵石', action: () => buyItem('osmanthus_cake') },
         { text:'多谢掌柜指点', action: () => { activeDialogue = null; renderAll(); } }
@@ -400,16 +562,27 @@ function handleHotspot(hid) {
       ]
     };
     renderAll();
+  } else if (hid === 'market_equip') {
+    openEquipShop();
+  } else if (hid === 'market_faction') {
+    D.EVENTS.runMarketFaction(getEventCtx());
+    renderAll();
+  } else if (hid === 'nether_path') {
+    D.EVENTS.runNetherPath(getEventCtx());
+    renderAll();
   } else if (hid === 'market_trade') {
-    advanceTime(1); const earn = 35 + Math.floor(G.talk * 1.6); G.stone += earn; G.talk += 1;
+    const eq = getEquipStats();
+    advanceTime(1); const earn = 35 + Math.floor((G.talk + eq.talk) * 1.6); G.stone += earn; G.talk += 1;
     showToast(`凭借眼力做成一笔鉴宝买卖，净赚 ${earn} 灵石，口才 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'forest_stall') {
-    advanceTime(1); G.stone += 75; G.luck += 1;
-    showToast('在古林谷口设摊售药，半日售罄，净赚 75 灵石，气运 +1。');
+    const eq = getEquipStats();
+    advanceTime(1); const earn = 75 + eq.luck * 2; G.stone += earn; G.luck += 1;
+    showToast(`在古林谷口设摊售药，半日售罄，净赚 ${earn} 灵石，气运 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'forest_ruin') {
-    startBattle({ name:'护洞赤瞳妖狼', asset:ASSETS.wolf_boss, bg:'forest', hp:175, maxHp:175, atk:20, talkDef:12, expReward:90, stoneReward:60 });
+    D.EVENTS.runForestRuin(getEventCtx());
+    renderAll();
   } else if (hid === 'altar_break') {
     const next = D.REALMS[G.realmIdx + 1];
     if (!next) return showToast('你已至元婴之境。');
@@ -469,6 +642,7 @@ function useArtifactInBattle() {
   const dmg = Math.floor(art.baseDmg * (1 + (lv - 1) * 0.35));
   battleState.artifactUsed = true;
   if (art.shield) battleState.shield += art.shield * lv;
+  if (art.stunChance && Math.random() < art.stunChance) battleState.stunned = true;
   battleState.enemy.hp = Math.max(0, battleState.enemy.hp - dmg);
   SFX.play('thunder'); FX.slash('#82d2ff', 0.72, 0.45); FX.burst('130,210,255', 30, 0.72, 0.45); triggerShake();
   battleState.ticker = `祭出本命法宝【${art.name} +${lv}】，重创敌手 ${dmg} 点！`;
@@ -481,13 +655,20 @@ function useBattleSkill(skillId) {
   if (sk.stoneCost && G.stone < sk.stoneCost) return showToast(`灵石不足 ${sk.stoneCost}。`);
   G.qi -= sk.cost; if (sk.stoneCost) G.stone -= sk.stoneCost;
   const ha = D.HEART_ARTS[G.heartArt] || {};
-  let dmg = Math.floor((G.body * 2.2 + G.wit * 1.4 + (ha.atkBonus || 0)) * sk.power);
+  const eq = getEquipStats();
+  let dmg = Math.floor((G.body * 2.2 + G.wit * 1.4 + (ha.atkBonus || 0) + (eq.atk || 0)) * sk.power);
   if (sk.talkScale) {
-    dmg = Math.floor(G.talk * sk.talkScale + Math.random() * 12);
+    dmg = Math.floor((G.talk + (eq.talk || 0)) * sk.talkScale + Math.random() * 12);
     if (e.talkDef > 100) dmg = 5;
     else if (sk.stun && Math.random() < 0.6) battleState.stunned = true;
   }
+  let critTag = '';
+  if (eq.crit > 0 && Math.random() < eq.crit) {
+    dmg = Math.floor(dmg * 1.5);
+    critTag = '【会心一击】';
+  }
   if (sk.shield) battleState.shield += sk.shield;
+  if (sk.drainHp) G.hp = Math.min(G.maxHp, G.hp + sk.drainHp);
   let allyMsg = '';
   if (G.activeAlly && e.hp - dmg > 0) {
     const ally = G.allies[G.activeAlly];
@@ -499,27 +680,37 @@ function useBattleSkill(skillId) {
   FX.slash(sk.id === 'sister_frost' ? '#82d2ff' : '#ebd29b', 0.72, 0.45);
   FX.burst(sk.id === 'sister_frost' ? '130,210,255' : '235,210,155', 24, 0.72, 0.45);
   triggerShake();
-  battleState.ticker = `施展【${sk.name}】，对 ${e.name} 造成 ${dmg} 点伤害${allyMsg}。`;
+  battleState.ticker = `${critTag}施展【${sk.name}】，对 ${e.name} 造成 ${dmg} 点伤害${allyMsg}。`;
   finishBattleTurn(dmg);
 }
 function finishBattleTurn(heroDmg) {
   const e = battleState.enemy;
   if (e.hp <= 0) {
     const wonTrib = e.isTribulation;
+    const onWin = e.onWin;
     const expG = e.expReward ? gainExp(e.expReward) : 0;
     G.stone += e.stoneReward || 0; G.fame += 5; battleState = null;
     if (wonTrib) tryRealmUp(true);
-    else { SFX.play('levelup'); showToast(`得胜！修为 +${expG}，灵石 +${e.stoneReward}。`); }
+    else {
+      SFX.play('levelup');
+      if (onWin) onWin();
+      else showToast(`得胜！修为 +${expG}，灵石 +${e.stoneReward}。`);
+    }
     saveGame('auto', true); renderAll(); return;
   }
   let eDmg = 0;
   if (battleState.stunned) { battleState.stunned = false; battleState.ticker += ` ${e.name} 心神失守，错失反击！`; }
   else {
     const ha = D.HEART_ARTS[G.heartArt] || {};
-    eDmg = Math.max(4, e.atk - Math.floor(G.body * 0.35) - (ha.defBonus || 0) + Math.floor(Math.random()*6));
-    if (battleState.shield > 0) { const ab = Math.min(battleState.shield, eDmg); battleState.shield -= ab; eDmg -= ab; }
-    G.hp = Math.max(0, G.hp - eDmg);
-    battleState.ticker += ` ${e.name} 反击造成 ${eDmg} 点伤害。`;
+    const eq = getEquipStats();
+    if (eq.dodge > 0 && Math.random() < eq.dodge) {
+      battleState.ticker += ` 借灵靴身法轻巧闪避了 ${e.name} 的攻势！`;
+    } else {
+      eDmg = Math.max(4, e.atk - Math.floor(G.body * 0.35) - (ha.defBonus || 0) - (eq.def || 0) + Math.floor(Math.random()*6));
+      if (battleState.shield > 0) { const ab = Math.min(battleState.shield, eDmg); battleState.shield -= ab; eDmg -= ab; }
+      G.hp = Math.max(0, G.hp - eDmg);
+      battleState.ticker += ` ${e.name} 反击造成 ${eDmg} 点伤害。`;
+    }
   }
   if (G.hp <= 0) { G.hp = Math.floor(G.maxHp * 0.5); G.qi = Math.floor(G.maxQi * 0.5); battleState = null; showToast('力竭败退，幸得古玉残魂护持脱身。'); }
   renderAll();
@@ -540,7 +731,9 @@ function loadGame(slot = 'auto') {
   try {
     const raw = localStorage.getItem('qingyun_v5_save_' + slot);
     if (!raw) return false;
-    G = JSON.parse(raw).data; battleState = null; activeDialogue = null; activePanel = null;
+    G = normalizeState(JSON.parse(raw).data);
+    recalcDerivedStats(false);
+    battleState = null; activeDialogue = null; activePanel = null;
     showToast('读取旧档成功。'); return true;
   } catch { return false; }
 }
@@ -555,7 +748,8 @@ window.importSaveCode = () => {
   const box = document.getElementById('save-code-box');
   if (!box || !box.value.trim()) return showToast('请先粘贴存档码。');
   try {
-    G = JSON.parse(decodeURIComponent(escape(atob(box.value.trim()))));
+    G = normalizeState(JSON.parse(decodeURIComponent(escape(atob(box.value.trim())))));
+    recalcDerivedStats(false);
     battleState = null; activeDialogue = null; activePanel = null; saveGame('auto', true);
     showToast('存档码导入成功。'); renderAll();
   } catch { showToast('存档码格式无效。'); }
@@ -636,6 +830,11 @@ function renderSplitPanel() {
             <div class="glass-card" style="padding:6px 10px;"><span>道心</span><b style="color:#ebd29b;">${G.mind}</b></div>
             <div class="glass-card" style="padding:6px 10px;"><span>声望</span><b style="color:#ebd29b;">${G.fame}</b></div>
           </div>
+          <div class="faction-strip">
+            <div class="fac-pill"><span>青云剑宗</span><b>${G.factions?.qingyun || 0}/3</b></div>
+            <div class="fac-pill"><span>万宝楼</span><b>${G.factions?.wanbao || 0}/3</b></div>
+            <div class="fac-pill"><span>幽冥玄宗</span><b>${G.factions?.nether || 0}/3</b></div>
+          </div>
           <div class="glass-card">
             <div><h4>修为进度（${G.exp} / ${realm.exp}）</h4><p>气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi} · 本命法宝：${art.name}+${lv}</p></div>
             <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
@@ -644,68 +843,128 @@ function renderSplitPanel() {
       </div>
     `;
     main.querySelector('#btn-med').onclick = () => {
-      SFX.play('click'); advanceTime(1); G.hp = G.maxHp; G.qi = G.maxQi;
+      SFX.play('click'); advanceTime(1); recalcDerivedStats(true);
       const g = gainExp(38); showToast(`静修一月，状态圆满，修为 +${g}。`);
       saveGame('auto', true); renderAll();
     };
   }
-  // 2. 行囊装备页：无立绘！左侧身上穿戴装备格 + 右侧完整背包大格子
+  // 2. 行囊装备页：无立绘！左侧 6 格可自由穿戴/卸下装备 + 右侧完整背包大格子
   else if (curTab === 'bag') {
-    const eq = G.equipment || defaultState().equipment;
+    const eq = G.equipment || {};
+    const eqStats = getEquipStats();
+    const ha = D.HEART_ARTS[G.heartArt] || {};
     const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1;
-    eq.artifact = { name:`${art.name} +${lv}`, icon: G.artifactId==='frost_embryo'?'item_frost_sword':'item_jade_ring', bonus:`威力 ${Math.floor(art.baseDmg*(1+(lv-1)*0.35))}` };
+    const artDmg = Math.floor(art.baseDmg * (1 + (lv - 1) * 0.35));
+    const bagCap = eqStats.bagCap || 15;
 
-    const eqDefs = [
-      { k:'weapon', l:'佩剑 / 兵器' },
-      { k:'robe', l:'道袍 / 护甲' },
-      { k:'artifact', l:'本命法宝' },
-      { k:'pendant', l:'随身玉佩' },
-      { k:'boots', l:'身法灵靴' },
-      { k:'pouch', l:'丹药储物囊' }
-    ];
-    const eqHtml = eqDefs.map(d => {
-      const it = eq[d.k];
+    const eqHtml = D.EQUIP_SLOTS.map(d => {
+      const isSel = selectedEquipSlot === d.key;
+      if (d.key === 'artifact') {
+        return `
+          <div class="equip-slot filled ${isSel ? 'selected' : ''}" data-eq-slot="artifact">
+            <img src="${getItemIcon(G.artifactId)}"/>
+            <div class="eq-meta">
+              <div class="eq-type">${d.label}</div>
+              <div class="eq-name">${art.name} +${lv}</div>
+              <div class="eq-bonus">祭出威力 ${artDmg}</div>
+            </div>
+          </div>
+        `;
+      }
+      const itemId = eq[d.key];
+      const it = itemId && D.ITEMS[itemId];
       return `
-        <div class="equip-slot ${it?'filled':''}">
-          ${it ? `<img src="${ASSETS[it.icon]}"/>` : `<div class="eq-empty">空</div>`}
-          <div>
-            <div class="eq-type">${d.l}</div>
+        <div class="equip-slot ${it ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${d.key}">
+          ${it ? `<img src="${getItemIcon(itemId)}"/>` : `<div class="eq-empty">空</div>`}
+          <div class="eq-meta">
+            <div class="eq-type">${d.label}${it && it.tier ? ` · <em class="tier-tag t-${it.tier}">${it.tier}</em>` : ''}</div>
             <div class="eq-name">${it ? it.name : '未穿戴'}</div>
-            ${it ? `<div style="font-size:10px;color:#6fd3a8;">${it.bonus}</div>` : ''}
+            ${it ? `<div class="eq-bonus">${formatStatSummary(it.stats)}</div>` : ''}
           </div>
         </div>
       `;
     }).join('');
 
-    const owned = Object.entries(G.bag).filter(([,c]) => c > 0);
-    if (!selectedBagItem || !G.bag[selectedBagItem]) {
+    const owned = Object.entries(G.bag).filter(([id, c]) => c > 0 && D.ITEMS[id]);
+    if (!selectedEquipSlot && (!selectedBagItem || !G.bag[selectedBagItem])) {
       selectedBagItem = owned.length ? owned[0][0] : null;
+    }
+
+    // Left slot action strip
+    let leftActionHtml = '';
+    if (selectedEquipSlot === 'artifact') {
+      const ownedArts = Object.keys(G.artifacts || {});
+      leftActionHtml = `
+        <div class="eq-action-bar">
+          <div class="eq-act-info"><b>${art.name} +${lv}</b><span>${art.desc}</span></div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            ${ownedArts.length > 1 ? `<button class="sleek-btn" id="eq-unequip">切换法宝</button>` : ''}
+            <button class="sleek-btn ghost" id="eq-goto-forge">祭炼</button>
+          </div>
+        </div>
+      `;
+    } else if (selectedEquipSlot && eq[selectedEquipSlot] && D.ITEMS[eq[selectedEquipSlot]]) {
+      const sit = D.ITEMS[eq[selectedEquipSlot]];
+      leftActionHtml = `
+        <div class="eq-action-bar">
+          <div class="eq-act-info"><b>${sit.name}（${sit.tier || '装备'}）</b><span>${formatStatSummary(sit.stats)}</span></div>
+          <button class="sleek-btn ghost" id="eq-unequip">卸下</button>
+        </div>
+      `;
+    } else if (selectedEquipSlot) {
+      leftActionHtml = `
+        <div class="eq-action-bar">
+          <div class="eq-act-info"><span>该槽位当前空置，可在右侧行囊中点选对应装备穿戴。</span></div>
+        </div>
+      `;
     }
 
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>身上穿戴</span><span style="font-size:10.5px;color:var(--muted);">已装配槽位</span></div>
+        <div class="sec-head"><span>身上穿戴</span><span style="font-size:10.5px;color:var(--muted);">点击槽位查看或卸下</span></div>
         <div class="equip-grid">${eqHtml}</div>
-        <div style="margin-top:auto;padding-top:8px;border-top:1px solid var(--gold-hair);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;">
-          <span>当前攻击加成：+${8 + (lv-1)*6}</span><span>防御减伤：+${(D.HEART_ARTS[G.heartArt]?.defBonus||0)}</span>
+        ${leftActionHtml}
+        <div class="eq-summary-bar">
+          <span>攻 +${eqStats.atk + (ha.atkBonus || 0)}</span>
+          <span>防 +${eqStats.def + (ha.defBonus || 0)}</span>
+          <span>血 +${eqStats.hpMax}</span>
+          <span>会心 ${Math.round(eqStats.crit * 100)}%</span>
+          <span>闪避 ${Math.round(eqStats.dodge * 100)}%</span>
         </div>
       </div>
       <div class="dual-right">
-        <div class="sec-head"><span>乾坤行囊</span><span style="font-size:10.5px;color:var(--muted);">${owned.length} / 15 格</span></div>
+        <div class="sec-head"><span>乾坤行囊</span><span style="font-size:10.5px;color:var(--muted);">${owned.length} / ${bagCap} 格</span></div>
         <div class="bag-grid-5" id="bag-grid-5"></div>
         <div class="bag-detail" id="bag-detail"></div>
       </div>
     `;
 
+    main.querySelectorAll('[data-eq-slot]').forEach(el => {
+      el.onclick = () => {
+        SFX.play('click');
+        selectedEquipSlot = el.dataset.eqSlot;
+        selectedBagItem = null;
+        renderAll();
+      };
+    });
+    const unBtn = main.querySelector('#eq-unequip');
+    if (unBtn) unBtn.onclick = () => unequipSlot(selectedEquipSlot);
+    const fgBtn = main.querySelector('#eq-goto-forge');
+    if (fgBtn) fgBtn.onclick = () => { SFX.play('click'); statusSubTab = 'skills'; renderAll(); };
+
     const grid = main.querySelector('#bag-grid-5');
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < bagCap; i++) {
       const cell = document.createElement('div');
       if (i < owned.length) {
         const [id, cnt] = owned[i];
         const it = D.ITEMS[id];
-        cell.className = 'bag-cell has-item' + (selectedBagItem === id ? ' selected' : '');
-        cell.innerHTML = `<img src="${getItemIcon(id)}"/><span class="b-cnt">×${cnt}</span>`;
-        cell.onclick = () => { SFX.play('click'); selectedBagItem = id; renderAll(); };
+        cell.className = 'bag-cell has-item' + (selectedBagItem === id ? ' selected' : '') + (it.tier ? ` tier-b-${it.tier}` : '');
+        cell.innerHTML = `
+          ${it.tier ? `<span class="b-tier t-${it.tier}">${it.tier[0]}</span>` : ''}
+          <img src="${getItemIcon(id)}"/>
+          <span class="b-cnt">×${cnt}</span>
+        `;
+        cell.onclick = () => { SFX.play('click'); selectedBagItem = id; selectedEquipSlot = null; renderAll(); };
       } else {
         cell.className = 'bag-cell';
       }
@@ -715,30 +974,59 @@ function renderSplitPanel() {
     const det = main.querySelector('#bag-detail');
     if (selectedBagItem && D.ITEMS[selectedBagItem]) {
       const it = D.ITEMS[selectedBagItem];
-      det.innerHTML = `
-        <div>
-          <div style="font-size:13px;color:#ebd29b;font-weight:600;">${it.name} <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${it.desc}</div>
-        </div>
-        ${(it.type==='consumable'||it.type==='box') ? `<button class="sleek-btn" id="bag-use">使用</button>` : `<span style="font-size:11px;color:var(--muted);">特定场合使用</span>`}
-      `;
-      const ub = det.querySelector('#bag-use');
-      if (ub) ub.onclick = () => {
-        G.bag[selectedBagItem]--;
-        if (it.hp) G.hp = Math.min(G.maxHp, G.hp + it.hp);
-        if (it.qi) G.qi = Math.min(G.maxQi, G.qi + it.qi);
-        if (it.type === 'box') { G.stone += 55; showToast('启封遗匣，得 55 灵石。'); }
-        else showToast(`使用了【${it.name}】。`);
-        saveGame('auto', true); renderAll();
-      };
+      if (it.type === 'equip') {
+        const curSlotId = eq[it.slot];
+        const curSlotItem = curSlotId && D.ITEMS[curSlotId];
+        const slotMeta = D.EQUIP_SLOTS.find(s => s.key === it.slot);
+        det.innerHTML = `
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:12.5px;color:#ebd29b;font-weight:600;">
+              ${it.name} <span class="tier-tag t-${it.tier}">${it.tier}</span>
+              <span style="font-size:10.5px;color:var(--muted);font-weight:400;">· ${slotMeta ? slotMeta.label : ''}</span>
+            </div>
+            <div style="font-size:10.5px;color:#6fd3a8;margin-top:2px;">${formatStatSummary(it.stats)}</div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">
+              ${curSlotItem ? `当前已穿戴：${curSlotItem.name}（${formatStatSummary(curSlotItem.stats)}）` : it.desc}
+            </div>
+          </div>
+          <button class="sleek-btn" id="bag-equip" style="flex-shrink:0;">${curSlotItem ? '替换' : '穿戴'}</button>
+        `;
+        det.querySelector('#bag-equip').onclick = () => equipItem(selectedBagItem);
+      } else {
+        det.innerHTML = `
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:13px;color:#ebd29b;font-weight:600;">${it.name} <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${it.desc}</div>
+          </div>
+          ${(it.type==='consumable'||it.type==='box') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">使用</button>` : `<span style="font-size:11px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
+        `;
+        const ub = det.querySelector('#bag-use');
+        if (ub) ub.onclick = () => {
+          G.bag[selectedBagItem]--;
+          if (G.bag[selectedBagItem] <= 0) delete G.bag[selectedBagItem];
+          const mul = 1 + (eqStats.healBonus || 0);
+          if (it.hp) G.hp = Math.min(G.maxHp, G.hp + Math.round(it.hp * mul));
+          if (it.qi) G.qi = Math.min(G.maxQi, G.qi + Math.round(it.qi * mul));
+          if (it.type === 'box') {
+            const r = Math.random();
+            if (r < 0.35) { addItem('eq_clear_jade', 1); showToast('启封遗匣，得一枚【清心玉佩】！'); }
+            else if (r < 0.75) { G.stone += 60; showToast('启封遗匣，得 60 灵石。'); }
+            else { const g = gainExp(55); showToast(`遗匣中藏有前人剑诀心得，修为 +${g}。`); }
+          } else {
+            showToast(`使用了【${it.name}】${eqStats.healBonus ? `（丹囊增幅 +${Math.round(eqStats.healBonus*100)}%）` : ''}。`);
+          }
+          saveGame('auto', true); renderAll();
+        };
+      }
     } else {
-      det.innerHTML = '<span style="font-size:11.5px;color:var(--muted);">行囊空空如也，可前往鬼市黑坊购置丹药奇物。</span>';
+      det.innerHTML = '<span style="font-size:11.5px;color:var(--muted);">点选上方行囊物品查看详情，或前往鬼市装备坊置办行头。</span>';
     }
   }
   // 3. 功法法宝页：无立绘！左侧当前装配与祭炼台 + 右侧功法典籍库
   else if (curTab === 'skills') {
     const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1; const cost = lv * 35;
     const curHa = D.HEART_ARTS[G.heartArt];
+    const ownedArts = Object.keys(G.artifacts || {});
     main.innerHTML = `
       <div class="dual-left">
         <div class="sec-head"><span>本命祭炼与当前装配</span><span style="font-size:10.5px;color:var(--muted);">战前整备</span></div>
@@ -749,7 +1037,10 @@ function renderSplitPanel() {
               <div><h4>${art.name} (+${lv}阶)</h4><p>${art.desc}</p></div>
             </div>
           </div>
-          <button class="sleek-btn" id="btn-ref" style="width:100%;">祭炼本命法宝（消耗 ${cost} 灵石）</button>
+          <div style="display:flex;gap:8px;">
+            <button class="sleek-btn" id="btn-ref" style="flex:1;">祭炼法宝（${cost} 灵石）</button>
+            ${ownedArts.length > 1 ? `<button class="sleek-btn ghost" id="btn-swap-art">切换本命</button>` : ''}
+          </div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">当前主修心法</div>
           <div class="glass-card active"><div><h4>${curHa.name}</h4><p>${curHa.desc}</p></div></div>
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">出战神通槽（最多 3 门）</div>
@@ -774,13 +1065,15 @@ function renderSplitPanel() {
       SFX.play('levelup'); showToast(`${art.name} 祭炼至 +${lv+1} 阶！`);
       saveGame('auto', true); renderAll();
     };
+    const swapArtBtn = main.querySelector('#btn-swap-art');
+    if (swapArtBtn) swapArtBtn.onclick = () => unequipSlot('artifact');
     const hw = main.querySelector('#ha-wrap');
     G.ownedHeartArts.forEach(hid => {
       const ha = D.HEART_ARTS[hid];
       const c = document.createElement('div'); c.className = 'glass-card' + (G.heartArt===hid?' active':'');
       c.style.cursor = 'pointer';
       c.innerHTML = `<div><h4>${ha.name} ${G.heartArt===hid?'[主修中]':''}</h4><p>${ha.desc}</p></div>`;
-      c.onclick = () => { G.heartArt = hid; SFX.play('click'); showToast(`切换主修心法：${ha.name}`); renderAll(); };
+      c.onclick = () => { G.heartArt = hid; recalcDerivedStats(false); SFX.play('click'); showToast(`切换主修心法：${ha.name}`); saveGame('auto', true); renderAll(); };
       hw.appendChild(c);
     });
     const sw = main.querySelector('#sk-wrap');

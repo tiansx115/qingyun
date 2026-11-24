@@ -1,10 +1,10 @@
 window.GAME_DATA = window.GAME_DATA || {};
 
 window.GAME_DATA.TIMELINE = [
-  { month: 4, title: '第1年·夏：青云剑宗外门试剑开启' },
-  { month: 10, title: '第1年·冬：鬼市岁末鉴宝会' },
-  { month: 16, title: '第2年·夏：万妖古林秘境潮汐' },
-  { month: 36, title: '第3年·冬：思过崖三年之约' }
+  { month: 4, loc: 'sect', title: '第1年·夏：青云剑宗外门试剑开启' },
+  { month: 10, loc: 'market', title: '第1年·冬：鬼市岁末鉴宝大拍' },
+  { month: 16, loc: 'forest', title: '第2年·夏：万妖古林秘境潮汐' },
+  { month: 36, loc: 'cliff', title: '第3年·冬：思过崖三年之约' }
 ];
 
 window.GAME_DATA.ASSETS_MAP = {
@@ -39,6 +39,7 @@ window.GAME_DATA.LOCATIONS = [
       { id: 'sister', name: '林清霜', title: '青云大师姐', char: 'sister', left: '66%' }
     ],
     hotspots: [
+      { id: 'sect_trial', label: '外门试剑 / 宗门事务' },
       { id: 'sect_library', label: '藏经阁研读' },
       { id: 'sect_forge', label: '祭炼本命法宝' }
     ]
@@ -74,7 +75,10 @@ window.GAME_DATA.LOCATIONS = [
       { id: 'merchant', name: '黑坊掌柜', title: '鬼市行商', char: 'elder', left: '67%' }
     ],
     hotspots: [
-      { id: 'market_shop', label: '逛鬼市摊位' },
+      { id: 'market_shop', label: '丹药奇物摊' },
+      { id: 'market_equip', label: '鬼市装备坊' },
+      { id: 'market_faction', label: '万宝楼 · 鉴宝大拍' },
+      { id: 'nether_path', label: '暗巷幽影' },
       { id: 'market_trade', label: '鉴宝议价赚灵石' }
     ]
   },
@@ -86,8 +90,8 @@ window.GAME_DATA.LOCATIONS = [
       { id: 'wolf', name: '赤瞳妖狼', title: '护洞妖兽', char: 'wolf_boss', left: '66%' }
     ],
     hotspots: [
-      { id: 'forest_stall', label: '谷口设摊售药 (反套路稳赚)' },
-      { id: 'forest_ruin', label: '闯入古修洞府' }
+      { id: 'forest_stall', label: '谷口设摊售药' },
+      { id: 'forest_ruin', label: '探索古修洞府' }
     ]
   },
   {

@@ -23,17 +23,17 @@
   <div id="world-layer"></div>
   <canvas id="fx-canvas"></canvas>
 
-  <!-- Top-Left Dual-Arc Translucent Avatar -->
+  <!-- Top-Left Bronze Dragon Avatar Frame + Dual HP/Qi Bars + Vermilion Realm Seal -->
   <div class="hud-tl" id="hud-tl">
-    <div class="arc-avatar">
-      <svg viewBox="0 0 68 68">
-        <circle cx="34" cy="34" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2.5"/>
-        <circle id="arc-hp" cx="34" cy="34" r="30" fill="none" stroke="#d95252" stroke-width="2.8" stroke-dasharray="92 188" stroke-dashoffset="0" stroke-linecap="round"/>
-        <circle id="arc-qi" cx="34" cy="34" r="30" fill="none" stroke="#5eb8e8" stroke-width="2.8" stroke-dasharray="92 188" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(180 34 34)"/>
-      </svg>
-      <img src="assets/chars/hero.webp" alt="道友" />
+    <div class="dragon-avatar">
+      <img class="avatar-face" src="assets/chars/hero.webp" alt="道友" />
+      <img class="avatar-frame" src="assets/ui/frame_avatar_dragon.png" alt="" />
     </div>
-    <div class="hud-realm-txt" id="hud-realm-txt">境界 · 炼气一层</div>
+    <div class="hud-bars">
+      <div class="bar-track hp"><div class="bar-fill" id="bar-hp" style="width:100%"></div><span id="bar-hp-txt">120/120</span></div>
+      <div class="bar-track qi"><div class="bar-fill" id="bar-qi" style="width:100%"></div><span id="bar-qi-txt">80/80</span></div>
+      <div class="hud-realm-seal" id="hud-realm-txt">炼气一层</div>
+    </div>
   </div>
 
   <!-- Top-Right Frosted Pill -->

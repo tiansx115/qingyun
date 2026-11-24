@@ -313,6 +313,11 @@ function buildRadarSvg(el) {
   `;
 }
 
+function cornersHtml() {
+  const src = ASSETS.ui_corner_filigree;
+  return `<img class="ui-corner tl" src="${src}" alt=""/><img class="ui-corner tr" src="${src}" alt=""/><img class="ui-corner bl" src="${src}" alt=""/><img class="ui-corner br" src="${src}" alt=""/>`;
+}
+
 function startQuiz() {
   G = defaultState();
   const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
@@ -325,34 +330,51 @@ function startQuiz() {
   let step = 0;
   const root = document.getElementById('title-root');
   root.style.display = 'flex';
-  root.style.backgroundImage = `url("${ASSETS.world_map}")`;
+  root.style.backgroundImage = `url("${ASSETS.sect_plaza}")`;
 
   function renderStep() {
     if (step === 0 && !G._introDone) {
       const legNote = leg.points > 0
-        ? `<div class="legacy-banner">前世传承已生效（第 ${leg.runs + 1} 世 · 传承 ${leg.points} 点）：六维初始 +${Math.min(6, leg.points)}，初始灵石 +${leg.points * 25}</div>`
+        ? `<div class="legacy-banner">前世传承（第 ${leg.runs + 1} 世 · ${leg.points} 点）：六维 +${Math.min(6, leg.points)} · 灵石 +${leg.points * 25}</div>`
         : '';
       root.innerHTML = `
-        <div class="title-box">
-          <h1 class="title-main">青云问道录</h1>
-          <p class="title-sub">东洲修仙志 · 电影写实半透明独立版</p>
-          ${legNote}
-          <p style="font-size:13px;line-height:1.78;color:#dfd6c6;margin:0 0 18px;">
-            天地灵气潮汐将至，东洲各大宗门广收门徒，鬼市暗流涌动，古修洞府接连现世。<br>
-            你本是一介凡尘少年，机缘巧合得一枚微光古玉，自此踏入修真界。<br>
-            是拜入名门以剑问道，还是在坊市与秘境边缘左右逢源，皆由你自己抉择。
-          </p>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <button class="sleek-btn" id="btn-new">测灵根 · 踏入仙途</button>
-            <button class="sleek-btn ghost" id="btn-load-auto">续读旧档</button>
+        <div class="home-layout">
+          <div class="home-brand">
+            <div class="home-title-row">
+              <h1 class="home-title-vert">青云问道录</h1>
+              <img class="home-seal" src="${ASSETS.ui_seal_vermilion}" alt="印" />
+            </div>
+            <div class="home-tagline">东洲修仙志 · 高自由度横屏独立版</div>
+            ${legNote}
+          </div>
+          <div class="home-plaques">
+            <button class="plaque-btn primary" id="btn-new">踏入仙途</button>
+            <button class="plaque-btn" id="btn-load-auto">续读旧档</button>
+            <button class="plaque-btn" id="btn-codex">山河图鉴</button>
+            <button class="plaque-btn" id="btn-sys">系统设置</button>
           </div>
         </div>
       `;
-      document.getElementById('btn-new').onclick = () => { SFX.play('click'); G._introDone = true; renderStep(); };
+      document.getElementById('btn-new').onclick = () => { SFX.play('click'); G._introDone = true; root.style.backgroundImage = `url("${ASSETS.world_map}")`; renderStep(); };
       document.getElementById('btn-load-auto').onclick = () => {
         SFX.play('click');
         if (loadGame('auto')) { root.style.display = 'none'; renderAll(); }
-        else showToast('尚无旧档，请先开启新途。');
+        else showToast('尚无旧档，请点击「踏入仙途」开启新局。');
+      };
+      document.getElementById('btn-codex').onclick = () => {
+        SFX.play('click');
+        const body = window.MINIGAMES._mountShell('山河图鉴 · 东洲名录', `已收录结局 ${leg.endings.length} / ${(D.ENDINGS||[]).length}`);
+        body.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            ${D.LOCATIONS.map(l => `<div class="glass-card"><div><h4>${l.name}</h4><p>${l.desc}</p></div></div>`).join('')}
+          </div>
+        `;
+      };
+      document.getElementById('btn-sys').onclick = () => {
+        SFX.play('click');
+        root.style.display = 'none';
+        activePanel = 'status'; statusSubTab = 'save';
+        renderAll();
       };
       return;
     }
@@ -1321,6 +1343,10 @@ function renderSplitPanel() {
     }
   }
 
+  // Inject golden filigree corners onto all system frosted panels
+  sc.querySelectorAll('.glass-panel, .dual-left, .dual-right').forEach(p => {
+    p.insertAdjacentHTML('afterbegin', cornersHtml());
+  });
   host.appendChild(sc);
 }
 
@@ -1328,17 +1354,19 @@ function renderAll() {
   if (!G) return;
   syncUnlockedAllies();
   const realm = D.REALMS[G.realmIdx];
-  document.getElementById('hud-realm-txt').textContent = `境界 · ${realm.name}`;
+  document.getElementById('hud-realm-txt').textContent = realm.name;
   document.getElementById('hud-date').textContent = getDateStr();
   document.getElementById('hud-stone').textContent = G.stone;
   document.getElementById('hud-age').textContent = `${G.age}/${G.maxAge}岁`;
   document.getElementById('hud-timeline').textContent = getNextTimelineText();
 
-  // Update Dual-Arc SVG HP/Qi ring
-  const hpPct = Math.max(0, Math.min(1, G.hp / G.maxHp));
-  const qiPct = Math.max(0, Math.min(1, G.qi / G.maxQi));
-  document.getElementById('arc-hp').setAttribute('stroke-dashoffset', String(92 * (1 - hpPct)));
-  document.getElementById('arc-qi').setAttribute('stroke-dashoffset', String(92 * (1 - qiPct)));
+  // Update Top-Left Bronze HP / Qi Bars
+  const hpPct = Math.max(0, Math.min(100, Math.round((G.hp / G.maxHp) * 100)));
+  const qiPct = Math.max(0, Math.min(100, Math.round((G.qi / G.maxQi) * 100)));
+  const bhp = document.getElementById('bar-hp'); if (bhp) bhp.style.width = hpPct + '%';
+  const bqi = document.getElementById('bar-qi'); if (bqi) bqi.style.width = qiPct + '%';
+  const bhpt = document.getElementById('bar-hp-txt'); if (bhpt) bhpt.textContent = `${G.hp}/${G.maxHp}`;
+  const bqit = document.getElementById('bar-qi-txt'); if (bqit) bqit.textContent = `${G.qi}/${G.maxQi}`;
 
   const locObj = D.LOCATIONS.find(l => l.id === currentLocationId);
   const bgKey = battleState ? battleState.enemy.bg : (locObj ? locObj.sceneBg : 'world_map');
@@ -1368,7 +1396,7 @@ function renderAll() {
       D.LOCATIONS.forEach(loc => {
         const m = document.createElement('div'); m.className = 'map-pin';
         m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
-        m.innerHTML = `<div class="pin-vlabel">${loc.name}</div><div class="pin-dot"></div>`;
+        m.innerHTML = `<img class="pin-compass" src="${ASSETS.ui_pin_compass}" alt=""/><div class="pin-vlabel">${loc.name}</div>`;
         m.onclick = () => enterLocation(loc.id);
         wl.appendChild(m);
       });
@@ -1391,16 +1419,21 @@ function renderAll() {
     }
   }
 
-  // Render Dialogue
+  // Render Dialogue (Dual-Roller Dark-Gold Scroll Box + Lacquer Choice Bars)
   const dl = document.getElementById('dialogue-root'); dl.innerHTML = '';
   if (activeDialogue && !battleState) {
     const wrap = document.createElement('div'); wrap.className = 'dlg-layer';
     wrap.innerHTML = `
       <img class="dlg-portrait" src="${activeDialogue.asset || ASSETS.hero}" />
       <div class="dlg-choices-float" id="dlg-ch"></div>
-      <div class="dlg-bar">
-        <div class="dlg-speaker-name">${activeDialogue.speaker}</div>
-        <div class="dlg-text">${activeDialogue.text}</div>
+      <div class="dlg-scroll-wrap">
+        <div class="dlg-roller"></div>
+        <div class="dlg-bar">
+          ${cornersHtml()}
+          <div class="dlg-nameplate">${activeDialogue.speaker}</div>
+          <div class="dlg-text">${activeDialogue.text}</div>
+        </div>
+        <div class="dlg-roller"></div>
       </div>
     `;
     const ch = wrap.querySelector('#dlg-ch');
@@ -1413,7 +1446,7 @@ function renderAll() {
     dl.appendChild(wrap);
   }
 
-  // Render Combat
+  // Render Combat (Bronze Dual-Bar + Vermilion DOU FA Medallion + 5 Illustrated Talisman Cards)
   const cl = document.getElementById('combat-root'); cl.innerHTML = '';
   if (battleState) {
     const e = battleState.enemy;
@@ -1421,13 +1454,13 @@ function renderAll() {
     const cb = document.createElement('div'); cb.className = 'combat-layer';
     cb.innerHTML = `
       <div class="combat-top">
-        <div class="c-side">
+        <div class="c-side left">
           <div class="c-head"><span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span><span style="color:#6fd3a8;">灵盾 ${battleState.shield}</span></div>
-          <div class="c-track"><div class="c-fill-hp" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
+          <div class="c-track"><div class="c-fill-hp hero" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;">气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi}</div>
         </div>
-        <div class="c-vs">斗法</div>
-        <div class="c-side">
+        <div class="c-vs">斗法<small>DOU FA</small></div>
+        <div class="c-side right">
           <div class="c-head"><span style="color:#ff9494;">${e.name}</span><span>${e.hp}/${e.maxHp}</span></div>
           <div class="c-track"><div class="c-fill-hp" style="width:${(e.hp/e.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">攻势 ~${e.atk}</div>
@@ -1446,21 +1479,29 @@ function renderAll() {
       </div>
     `;
     const tb = cb.querySelector('#talisman-bar');
+    const skillIconMap = {
+      basic_sword: ASSETS.item_frost_sword,
+      evade_step: ASSETS.item_lightning_disk,
+      mind_strike: ASSETS.item_jade_ring,
+      grandpa_finger: ASSETS.item_jade_ring,
+      sister_frost: ASSETS.item_frost_sword,
+      nether_claw: ASSETS.item_lightning_disk
+    };
     G.skills.slice(0, 3).forEach(sid => {
       const sk = D.SKILLS[sid];
       const b = document.createElement('button'); b.className = 'talisman-btn';
-      b.innerHTML = `<span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}</span>`;
+      b.innerHTML = `<img src="${skillIconMap[sid] || ASSETS.item_frost_sword}" alt=""/><span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}</span>`;
       b.onclick = () => useBattleSkill(sid);
       tb.appendChild(b);
     });
     const art = D.ARTIFACTS[G.artifactId];
     const ab = document.createElement('button'); ab.className = 'talisman-btn artifact';
-    ab.innerHTML = `<span class="t-name">祭 · ${art.name}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
+    ab.innerHTML = `<img src="${getItemIcon(G.artifactId)}" alt=""/><span class="t-name">祭·${art.name.slice(0,4)}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
     ab.onclick = () => useArtifactInBattle();
     tb.appendChild(ab);
     const fb = document.createElement('button'); fb.className = 'talisman-btn';
     fb.style.color = 'var(--muted)';
-    fb.innerHTML = `<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
+    fb.innerHTML = `<img src="${ASSETS.ui_menu_map}" alt=""/><span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
     fb.onclick = () => { battleState = null; showToast('借地形遁走脱身。'); renderAll(); };
     tb.appendChild(fb);
     cl.appendChild(cb);
@@ -1473,16 +1514,16 @@ function initHud() {
   document.getElementById('hud-tl').onclick = () => { SFX.play('click'); activePanel = 'status'; statusSubTab = 'mingge'; renderAll(); };
   const dock = document.getElementById('hud-br');
   const btns = [
-    { label:'舆图', icon:'map', fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
-    { label:'命格', icon:'char', fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
-    { label:'功法', icon:'sword', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
-    { label:'行囊', icon:'bag', fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
-    { label:'伙伴', icon:'ally', fn:()=>{ activePanel='allies'; renderAll(); } },
-    { label:'卷宗', icon:'scroll', fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
+    { label:'舆图', img:'ui_menu_map',   fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
+    { label:'命格', img:'ui_menu_char',  fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
+    { label:'功法', img:'ui_menu_skill', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
+    { label:'行囊', img:'ui_menu_bag',   fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
+    { label:'伙伴', img:'ui_menu_ally',  fn:()=>{ activePanel='allies'; renderAll(); } },
+    { label:'卷宗', img:'ui_menu_save',  fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
   ];
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'dock-btn';
-    el.innerHTML = `${IC[b.icon]}<span>${b.label}</span>`;
+    el.innerHTML = `<img src="${ASSETS[b.img]}" alt="${b.label}"/><span>${b.label}</span>`;
     el.onclick = () => { SFX.play('click'); b.fn(); };
     dock.appendChild(el);
   });

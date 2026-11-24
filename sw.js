@@ -1,10 +1,14 @@
-const CACHE_NAME = 'qingyun-v5-3-phasec';
+const CACHE_NAME = 'qingyun-v5-4-ui';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
   './data/skills_items.js', './data/world.js', './data/allies.js', './data/events.js',
   './engine/icons.js', './engine/audio_fx.js', './engine/minigames.js', './engine/app.js',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png'
+  './assets/icons/icon-192.png', './assets/icons/icon-512.png',
+  './assets/ui/menu_map.png', './assets/ui/menu_char.png', './assets/ui/menu_skill.png',
+  './assets/ui/menu_bag.png', './assets/ui/menu_ally.png', './assets/ui/menu_save.png',
+  './assets/ui/frame_avatar_dragon.png', './assets/ui/pin_jade_compass.png',
+  './assets/ui/seal_vermilion.png', './assets/ui/corner_filigree.png'
 ];
 
 self.addEventListener('install', e => {

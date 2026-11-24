@@ -726,3 +726,10 @@ html, body {
   background: rgba(168,46,43,0.22); border: 1px solid rgba(235,210,155,0.35); border-left: 2px solid var(--vermilion);
   padding: 6px 12px; font-size: 11.5px; color: var(--gold-bright); margin-bottom: 12px;
 }
+.ver-badge {
+  position: fixed; z-index: 95; pointer-events: none;
+  bottom: max(6px, env(safe-area-inset-bottom)); left: max(10px, env(safe-area-inset-left));
+  font-family: -apple-system, BlinkMacSystemFont, monospace; font-size: 10px; letter-spacing: 0.6px;
+  color: rgba(235, 210, 155, 0.72); background: rgba(8, 10, 12, 0.62);
+  border: 1px solid rgba(212, 184, 122, 0.25); padding: 2px 7px; border-radius: 3px;
+}

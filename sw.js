@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qingyun-v5-4-ui';
+const CACHE_NAME = 'qingyun-v5-4-1';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
@@ -23,9 +23,24 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Dynamic runtime caching: seamlessly caches 100MB+ of scenes/chars/audio on demand
+// Network-first for HTML/JS/CSS (instant updates when online, full offline fallback);
+// Cache-first for heavy media assets/ (instant load & 100MB+ offline support).
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  const isCode = url.pathname.endsWith('/') || /\.(html|js|css|json)$/i.test(url.pathname);
+  if (isCode) {
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

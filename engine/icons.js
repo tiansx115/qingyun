@@ -7,5 +7,8 @@ window.ICONS = {
   scroll: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 4h11a3 3 0 0 1 0 6H7a3 3 0 0 0 0 6h11"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12"/></svg>`,
   stone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 20 9 12 22 4 9 12 2"/><path d="M12 2v20M4 9h16"/></svg>`,
   bolt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2"/></svg>`,
+  shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>`,
+  retreat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 14l-4-4 4-4"/><path d="M5 10h10a4 4 0 0 1 0 8h-3"/></svg>`,
+  spark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2z"/></svg>`,
   corner: `<svg class="filigree" viewBox="0 0 28 28" fill="none"><path d="M2 26V6C2 3.8 3.8 2 6 2h20M6 22V8h14M10 16v-4h4" stroke="#d4af37" stroke-width="1.3" opacity="0.72"/></svg>`
 };

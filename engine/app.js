@@ -9,6 +9,7 @@ let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag'
 let selectedAllyId = 'sister';
 let selectedBagItem = null;
 let selectedEquipSlot = null;
+let bagFilter = 'all'; // 'all' | 'equip' | 'other'
 let allyExprMap = { sister: 'normal', elder: 'normal', shen: 'normal', liu: 'normal', moli: 'normal' };
 let activeDialogue = null;
 let battleState = null;
@@ -358,12 +359,29 @@ function startQuiz() {
       };
       document.getElementById('btn-codex').onclick = () => {
         SFX.play('click');
-        const body = window.MINIGAMES._mountShell('山河图鉴 · 东洲名录', `已收录结局 ${leg.endings.length} / ${(D.ENDINGS||[]).length}`);
-        body.innerHTML = `
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
-            ${D.LOCATIONS.map(l => `<div class="glass-card"><div><h4>${l.name}</h4><p>${l.desc}</p></div></div>`).join('')}
-          </div>
-        `;
+        let cTab = 'locs';
+        const renderCodex = () => {
+          const body = window.MINIGAMES._mountShell('山河图鉴 · 东洲名录', `已收录结局 ${leg.endings.length} / ${(D.ENDINGS||[]).length}`);
+          body.innerHTML = `
+            <div class="gp-tabs" style="margin-bottom:4px;">
+              <button class="gp-tab ${cTab==='locs'?'active':''}" data-ct="locs">东洲地标</button>
+              <button class="gp-tab ${cTab==='ends'?'active':''}" data-ct="ends">天命结局录</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+              ${cTab === 'locs'
+                ? D.LOCATIONS.map(l => `<div class="glass-card"><div><h4>${l.name}</h4><p>${l.desc}</p></div></div>`).join('')
+                : (D.ENDINGS || []).map(e => {
+                    const got = leg.endings.includes(e.id);
+                    return `<div class="glass-card ${got?'active':''}"><div><h4>${got ? e.title : '？？？（未解锁）'}</h4><p>${got ? e.desc : '尚待有缘人于东洲历练中证得此局。'}</p></div><span style="font-size:10.5px;color:${got?'var(--jade)':'var(--muted)'};flex-shrink:0;">${got?'已收录':'未解锁'}</span></div>`;
+                  }).join('')
+              }
+            </div>
+          `;
+          body.querySelectorAll('[data-ct]').forEach(b => {
+            b.onclick = () => { SFX.play('click'); cTab = b.dataset.ct; renderCodex(); };
+          });
+        };
+        renderCodex();
       };
       document.getElementById('btn-sys').onclick = () => {
         SFX.play('click');
@@ -376,16 +394,20 @@ function startQuiz() {
 
     if (step < D.QUIZ.length) {
       const q = D.QUIZ[step];
+      const cnNum = ['壹', '贰', '叁'];
+      const stepsHtml = D.QUIZ.map((_, idx) => `<span class="quiz-step-pill ${idx===step?'active':(idx<step?'done':'')}">第${cnNum[idx]||idx+1}问</span>`).join('');
       root.innerHTML = `
         <div class="title-box">
-          <h2 class="title-main" style="font-size:18px;letter-spacing:3px;">问道初测 · 第 ${step+1} 问</h2>
-          <p style="font-size:13.5px;line-height:1.72;color:#f0ebe1;margin:10px 0 14px;">${q.q}</p>
+          <div class="quiz-steps">${stepsHtml}</div>
+          <h2 class="title-main" style="font-size:18px;letter-spacing:3px;">问道初测</h2>
+          <p style="font-size:13.5px;line-height:1.76;color:#f0ebe1;margin:8px 0 14px;">${q.q}</p>
           <div id="q-opts"></div>
         </div>
       `;
       const box = document.getElementById('q-opts');
-      q.opts.forEach(o => {
-        const b = document.createElement('button'); b.className = 'quiz-btn'; b.textContent = o.t;
+      q.opts.forEach((o, idx) => {
+        const b = document.createElement('button'); b.className = 'quiz-btn';
+        b.innerHTML = `<span class="quiz-idx">0${idx + 1}</span><span>${o.t}</span>`;
         b.onclick = () => {
           SFX.play('click');
           for (const [k,v] of Object.entries(o.eff)) {
@@ -400,13 +422,18 @@ function startQuiz() {
     } else {
       root.innerHTML = `
         <div class="title-box">
-          <h2 class="title-main" style="font-size:19px;letter-spacing:3px;">命格已定 · 启程东洲</h2>
-          <p style="font-size:13px;line-height:1.8;color:#dfd6c6;margin:10px 0 14px;">
-            <b style="color:#ebd29b;">灵根资质：</b>${G.root} &nbsp;&nbsp;|&nbsp;&nbsp; <b style="color:#ebd29b;">初始命格：</b>${G.talent}<br>
-            <b style="color:#ebd29b;">六维初始：</b>根骨 ${G.body} · 悟性 ${G.wit} · 气运 ${G.luck} · 口才 ${G.talk} · 道心 ${G.mind}
-          </p>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:12.5px;color:var(--muted);">道号：</span>
+          <h2 class="title-main" style="font-size:19px;letter-spacing:4px;">命格已定 · 启程东洲</h2>
+          <div style="display:flex;align-items:center;gap:18px;margin:10px 0 14px;">
+            ${buildRadarSvg(G.elements)}
+            <div style="flex:1;font-size:12.5px;line-height:1.85;color:#dfd6c6;">
+              <div><b style="color:#ebd29b;">灵根资质：</b>${G.root}</div>
+              <div><b style="color:#ebd29b;">先天气运：</b>${G.talent}</div>
+              <div><b style="color:#ebd29b;">初始六维：</b>根骨 ${G.body} · 悟性 ${G.wit} · 气运 ${G.luck} · 口才 ${G.talk} · 道心 ${G.mind}</div>
+              <div><b style="color:#ebd29b;">初始盘缠：</b>${G.stone} 灵石</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--gold-hair);">
+            <span style="font-size:12.5px;color:var(--muted);">赐立道号：</span>
             <input id="inp-name" value="${G.name}" maxlength="8" style="background:rgba(8,10,12,0.85);border:1px solid var(--gold);color:#ebd29b;padding:7px 12px;font-family:inherit;font-size:13px;" />
             <button class="sleek-btn" id="btn-enter">踏入青云界</button>
           </div>
@@ -857,6 +884,12 @@ function renderSplitPanel() {
   // 1. 命格页：左侧完整全身像 + 右侧属性面板
   if (curTab === 'mingge') {
     const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1;
+    const expPct = Math.min(100, Math.round((G.exp / Math.max(1, realm.exp)) * 100));
+    const canBreak = G.exp >= realm.exp && D.REALMS[G.realmIdx + 1];
+    const statItems = [
+      ['根骨', G.body], ['悟性', G.wit], ['气运', G.luck],
+      ['口才', G.talk], ['道心', G.mind], ['声望', G.fame]
+    ];
     main.innerHTML = `
       <div class="fullbody-col">
         <div class="fullbody-wrap">
@@ -865,7 +898,7 @@ function renderSplitPanel() {
           <div class="lifespan-ring">寿元 ${G.age} / ${G.maxAge} 岁</div>
         </div>
       </div>
-      <div class="glass-panel" style="width:55%;max-width:560px;">
+      <div class="glass-panel">
         <div class="sec-head"><span>${G.name} · ${realm.name}</span><span style="font-size:11px;color:var(--muted);">${G.root}</span></div>
         <div class="gp-body">
           <div class="radar-wrap">
@@ -877,12 +910,12 @@ function renderSplitPanel() {
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;font-size:11.5px;">
-            <div class="glass-card" style="padding:6px 10px;"><span>根骨</span><b style="color:#ebd29b;">${G.body}</b></div>
-            <div class="glass-card" style="padding:6px 10px;"><span>悟性</span><b style="color:#ebd29b;">${G.wit}</b></div>
-            <div class="glass-card" style="padding:6px 10px;"><span>气运</span><b style="color:#ebd29b;">${G.luck}</b></div>
-            <div class="glass-card" style="padding:6px 10px;"><span>口才</span><b style="color:#ebd29b;">${G.talk}</b></div>
-            <div class="glass-card" style="padding:6px 10px;"><span>道心</span><b style="color:#ebd29b;">${G.mind}</b></div>
-            <div class="glass-card" style="padding:6px 10px;"><span>声望</span><b style="color:#ebd29b;">${G.fame}</b></div>
+            ${statItems.map(([lbl, val]) => `
+              <div class="glass-card" style="padding:6px 10px;flex-direction:column;align-items:stretch;gap:0;">
+                <div style="display:flex;justify-content:space-between;"><span>${lbl}</span><b style="color:#ebd29b;">${val}</b></div>
+                <div class="stat-mini-bar"><i style="width:${Math.min(100, val * 2.5)}%"></i></div>
+              </div>
+            `).join('')}
           </div>
           <div class="faction-strip">
             <div class="fac-pill"><span>青云剑宗</span><b>${G.factions?.qingyun || 0}/3</b></div>
@@ -890,8 +923,15 @@ function renderSplitPanel() {
             <div class="fac-pill"><span>幽冥玄宗</span><b>${G.factions?.nether || 0}/3</b></div>
           </div>
           <div class="glass-card">
-            <div><h4>修为进度（${G.exp} / ${realm.exp}）</h4><p>气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi} · 本命法宝：${art.name}+${lv}</p></div>
-            <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
+            <div style="flex:1;min-width:0;">
+              <h4>修为进度（${G.exp} / ${realm.exp}）</h4>
+              <div class="exp-track"><div class="exp-fill" style="width:${expPct}%"></div></div>
+              <p>气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi} · 法宝：${art.name}+${lv}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+              <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
+              ${canBreak ? `<button class="sleek-btn" id="btn-break" style="border-color:var(--jade);color:var(--jade);">破境突破</button>` : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -901,6 +941,8 @@ function renderSplitPanel() {
       const g = gainExp(38); showToast(`静修一月，状态圆满，修为 +${g}。`);
       saveGame('auto', true); renderAll();
     };
+    const brk = main.querySelector('#btn-break');
+    if (brk) brk.onclick = () => { tryRealmUp(false); renderAll(); };
   }
   // 2. 行囊装备页：无立绘！左侧 6 格可自由穿戴/卸下装备 + 右侧完整背包大格子
   else if (curTab === 'bag') {
@@ -939,8 +981,13 @@ function renderSplitPanel() {
       `;
     }).join('');
 
-    const owned = Object.entries(G.bag).filter(([id, c]) => c > 0 && D.ITEMS[id]);
-    if (!selectedEquipSlot && (!selectedBagItem || !G.bag[selectedBagItem])) {
+    const allOwned = Object.entries(G.bag).filter(([id, c]) => c > 0 && D.ITEMS[id]);
+    const owned = allOwned.filter(([id]) => {
+      if (bagFilter === 'equip') return D.ITEMS[id].type === 'equip';
+      if (bagFilter === 'other') return D.ITEMS[id].type !== 'equip';
+      return true;
+    });
+    if (!selectedEquipSlot && (!selectedBagItem || !owned.some(([id]) => id === selectedBagItem))) {
       selectedBagItem = owned.length ? owned[0][0] : null;
     }
 
@@ -987,11 +1034,22 @@ function renderSplitPanel() {
         </div>
       </div>
       <div class="dual-right">
-        <div class="sec-head"><span>乾坤行囊</span><span style="font-size:10.5px;color:var(--muted);">${owned.length} / ${bagCap} 格</span></div>
+        <div class="sec-head">
+          <span>乾坤行囊 <em style="font-style:normal;font-size:10px;color:var(--muted);">(${allOwned.length}/${bagCap})</em></span>
+          <div class="filter-pills">
+            <button class="filter-pill ${bagFilter==='all'?'active':''}" data-bf="all">全部</button>
+            <button class="filter-pill ${bagFilter==='equip'?'active':''}" data-bf="equip">装备</button>
+            <button class="filter-pill ${bagFilter==='other'?'active':''}" data-bf="other">丹药奇物</button>
+          </div>
+        </div>
         <div class="bag-grid-5" id="bag-grid-5"></div>
         <div class="bag-detail" id="bag-detail"></div>
       </div>
     `;
+
+    main.querySelectorAll('[data-bf]').forEach(b => {
+      b.onclick = () => { SFX.play('click'); bagFilter = b.dataset.bf; selectedBagItem = null; renderAll(); };
+    });
 
     main.querySelectorAll('[data-eq-slot]').forEach(el => {
       el.onclick = () => {
@@ -1142,10 +1200,20 @@ function renderSplitPanel() {
       hw.appendChild(c);
     });
     const sw = main.querySelector('#sk-wrap');
-    G.skills.forEach(sid => {
+    G.skills.forEach((sid, idx) => {
       const s = D.SKILLS[sid];
-      const c = document.createElement('div'); c.className = 'glass-card';
-      c.innerHTML = `<div><h4>${s.name}</h4><p>${s.desc}</p></div><span style="font-size:11px;color:#ebd29b;flex-shrink:0;">灵力${s.cost}</span>`;
+      const inBattle = idx < 3;
+      const c = document.createElement('div'); c.className = 'glass-card' + (inBattle ? ' active' : '');
+      c.style.cursor = 'pointer';
+      c.innerHTML = `<div><h4>${s.name} ${inBattle ? `<span style="font-size:10px;color:var(--jade);">[出战槽${idx+1}]</span>` : ''}</h4><p>${s.desc}</p></div><span style="font-size:11px;color:#ebd29b;flex-shrink:0;">灵力${s.cost}</span>`;
+      c.onclick = () => {
+        if (idx === 0) return;
+        G.skills.splice(idx, 1);
+        G.skills.unshift(sid);
+        SFX.play('click');
+        showToast(`已将【${s.name}】装配至出战神通槽首位。`);
+        saveGame('auto', true); renderAll();
+      };
       sw.appendChild(c);
     });
   }
@@ -1374,6 +1442,13 @@ function renderAll() {
   document.getElementById('hud-tr').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-br').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-bl').style.display = (hideHud || !locObj) ? 'none' : 'flex';
+  const tc = document.getElementById('hud-tc');
+  if (tc) {
+    tc.style.display = hideHud ? 'none' : 'flex';
+    tc.innerHTML = locObj
+      ? `<div class="region-title">${locObj.name}</div><div class="region-sub">${locObj.desc}</div>`
+      : `<div class="region-title">东洲 · 山河舆图</div><div class="region-sub">择一地标御剑前往</div>`;
+  }
 
   // Render World Map or Full-Screen Scene
   const wl = document.getElementById('world-layer'); wl.innerHTML = '';
@@ -1386,8 +1461,17 @@ function renderAll() {
       const byId = Object.fromEntries(D.LOCATIONS.map(l => [l.id, l]));
       const lines = pairs.map(([a,b]) => `<line x1="${byId[a].x}%" y1="${byId[a].y}%" x2="${byId[b].x}%" y2="${byId[b].y}%" stroke="rgba(235,210,155,0.32)" stroke-width="1" stroke-dasharray="3 4"/>`).join('');
       wl.innerHTML = `<svg id="map-lines-svg">${lines}</svg>`;
+      const activeLocs = new Set(D.TIMELINE.filter(t => {
+        if (G.month < t.month) return false;
+        if (t.loc === 'sect' && (G.factions?.qingyun || 0) < 2) return true;
+        if (t.loc === 'market' && (G.factions?.wanbao || 0) < 2) return true;
+        if (t.loc === 'forest' && (G.flags?.forestRuinStage || 0) < 2) return true;
+        if (t.loc === 'cliff' && !G.flags?.divorceResolved) return true;
+        return false;
+      }).map(t => t.loc));
       D.LOCATIONS.forEach(loc => {
-        const m = document.createElement('div'); m.className = 'map-pin';
+        const m = document.createElement('div');
+        m.className = 'map-pin' + (activeLocs.has(loc.id) ? ' has-event' : '');
         m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
         m.innerHTML = `<div class="pin-vlabel">${loc.name}</div><div class="pin-dot"></div>`;
         m.onclick = () => enterLocation(loc.id);
@@ -1443,13 +1527,19 @@ function renderAll() {
     cb.innerHTML = `
       <div class="combat-top">
         <div class="c-side">
-          <div class="c-head"><span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span><span style="color:#6fd3a8;">灵盾 ${battleState.shield}</span></div>
+          <div class="c-head">
+            <span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span>
+            <span style="display:flex;gap:5px;align-items:center;">${battleState.shield > 0 ? `<em class="c-pill" style="font-style:normal;">灵盾 ${battleState.shield}</em>` : ''}<span style="font-size:11px;color:var(--muted);">${G.hp}/${G.maxHp}</span></span>
+          </div>
           <div class="c-track"><div class="c-fill-hp hero" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;">气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi}</div>
+          <div class="c-track qi"><div class="c-fill-qi" style="width:${(G.qi/G.maxQi)*100}%"></div></div>
         </div>
         <div class="c-vs">斗法</div>
         <div class="c-side">
-          <div class="c-head"><span style="color:#ff9494;">${e.name}</span><span>${e.hp}/${e.maxHp}</span></div>
+          <div class="c-head">
+            <span style="color:#ff9494;">${e.name}</span>
+            <span style="display:flex;gap:5px;align-items:center;">${battleState.stunned ? `<em class="c-pill stun" style="font-style:normal;">失守</em>` : ''}<span>${e.hp}/${e.maxHp}</span></span>
+          </div>
           <div class="c-track"><div class="c-fill-hp" style="width:${(e.hp/e.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">攻势 ~${e.atk}</div>
         </div>
@@ -1467,21 +1557,30 @@ function renderAll() {
       </div>
     `;
     const tb = cb.querySelector('#talisman-bar');
+    const skSvg = sid => {
+      if (sid === 'evade_step') return IC.shield;
+      if (sid === 'mind_strike') return IC.scroll;
+      if (sid === 'grandpa_finger' || sid === 'nether_claw') return IC.bolt;
+      return IC.sword;
+    };
     G.skills.slice(0, 3).forEach(sid => {
       const sk = D.SKILLS[sid];
-      const b = document.createElement('button'); b.className = 'talisman-btn';
-      b.innerHTML = `<span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}</span>`;
+      const noQi = G.qi < sk.cost || (sk.stoneCost && G.stone < sk.stoneCost);
+      const b = document.createElement('button');
+      b.className = 'talisman-btn' + (noQi ? ' disabled' : '');
+      b.innerHTML = `${skSvg(sid)}<span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}${sk.stoneCost ? ` · 灵石${sk.stoneCost}` : ''}</span>`;
       b.onclick = () => useBattleSkill(sid);
       tb.appendChild(b);
     });
     const art = D.ARTIFACTS[G.artifactId];
-    const ab = document.createElement('button'); ab.className = 'talisman-btn artifact';
-    ab.innerHTML = `<span class="t-name">祭 · ${art.name}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
+    const ab = document.createElement('button');
+    ab.className = 'talisman-btn artifact' + (battleState.artifactUsed ? ' disabled' : '');
+    ab.innerHTML = `${IC.spark}<span class="t-name">祭 · ${art.name}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
     ab.onclick = () => useArtifactInBattle();
     tb.appendChild(ab);
     const fb = document.createElement('button'); fb.className = 'talisman-btn';
     fb.style.color = 'var(--muted)';
-    fb.innerHTML = `<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
+    fb.innerHTML = `${IC.retreat}<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
     fb.onclick = () => { battleState = null; showToast('借地形遁走脱身。'); renderAll(); };
     tb.appendChild(fb);
     cl.appendChild(cb);

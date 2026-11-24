@@ -1,9 +1,9 @@
-const CACHE_NAME = 'qingyun-v5-2-phaseb';
+const CACHE_NAME = 'qingyun-v5-3-phasec';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
-  './data/skills_items.js', './data/world.js', './data/events.js',
-  './engine/icons.js', './engine/audio_fx.js', './engine/app.js',
+  './data/skills_items.js', './data/world.js', './data/allies.js', './data/events.js',
+  './engine/icons.js', './engine/audio_fx.js', './engine/minigames.js', './engine/app.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 

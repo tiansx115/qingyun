@@ -30,6 +30,17 @@ window.GAME_DATA.ASSETS_MAP = {
   item_osmanthus_cake: 'assets/items/osmanthus_cake.webp'
 };
 
+// 离线古风 BGM 槽位映射：后续放入 assets/audio/*.mp3 即可自动淡入淡出播放，缺文件时静默降级
+window.GAME_DATA.AUDIO_MAP = {
+  world_map: 'assets/audio/bgm_world.mp3',
+  sect:      'assets/audio/bgm_sect.mp3',
+  inn:       'assets/audio/bgm_inn.mp3',
+  market:    'assets/audio/bgm_market.mp3',
+  forest:    'assets/audio/bgm_forest.mp3',
+  bamboo:    'assets/audio/bgm_bamboo.mp3',
+  combat:    'assets/audio/bgm_combat.mp3'
+};
+
 window.GAME_DATA.LOCATIONS = [
   {
     id: 'sect', name: '青云剑宗', icon: 'sword', x: 25, y: 36,
@@ -41,6 +52,7 @@ window.GAME_DATA.LOCATIONS = [
     hotspots: [
       { id: 'sect_trial', label: '外门试剑 / 宗门事务' },
       { id: 'sect_library', label: '藏经阁研读' },
+      { id: 'sect_alchemy', label: '丹房炼丹' },
       { id: 'sect_forge', label: '祭炼本命法宝' }
     ]
   },
@@ -77,6 +89,7 @@ window.GAME_DATA.LOCATIONS = [
     hotspots: [
       { id: 'market_shop', label: '丹药奇物摊' },
       { id: 'market_equip', label: '鬼市装备坊' },
+      { id: 'market_auction', label: '鬼市拍卖会' },
       { id: 'market_faction', label: '万宝楼 · 鉴宝大拍' },
       { id: 'nether_path', label: '暗巷幽影' },
       { id: 'market_trade', label: '鉴宝议价赚灵石' }
@@ -100,7 +113,8 @@ window.GAME_DATA.LOCATIONS = [
     desc: '接引九霄神雷的古石高台，大境界破境必经之地。',
     npcs: [],
     hotspots: [
-      { id: 'altar_break', label: '引雷破境渡劫' }
+      { id: 'altar_break', label: '引雷破境渡劫' },
+      { id: 'altar_ascend', label: '问道圆满 · 结局结算' }
     ]
   }
 ];

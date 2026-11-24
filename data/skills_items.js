@@ -45,6 +45,8 @@ window.GAME_DATA.ITEMS = {
   // ===== 丹药、礼赠与奇物 =====
   heal_pill: { id:'heal_pill', name:'桂花回春丹', icon:'item_elixir_pill', desc:'恢复 95 点气血，丹香微甜。', price:15, type:'consumable', hp:95 },
   qi_pill: { id:'qi_pill', name:'冰泉聚气散', icon:'item_elixir_pill', desc:'恢复 75 点灵力，入口清冽。', price:15, type:'consumable', qi:75 },
+  condense_pill: { id:'condense_pill', name:'破境凝元丹', icon:'item_elixir_pill', desc:'丹房精炼灵丹，服用后修为 +85 且气血灵力全满。', price:55, type:'consumable', exp:85, fullRestore:true },
+  marrow_pill: { id:'marrow_pill', name:'筑基洗髓丹', icon:'item_elixir_pill', desc:'上乘伐毛洗髓灵丹，服用后修为 +130，根骨/悟性/道心随机精进 +2。', price:95, type:'consumable', exp:130, marrow:true },
   osmanthus_cake: { id:'osmanthus_cake', name:'云州桂花糕', icon:'item_osmanthus_cake', desc:'寻常市井点心，赠予喜甜之人可大幅增进交情。', price:20, type:'gift' },
   mystery_box: { id:'mystery_box', name:'古修遗匣', icon:'item_spirit_stone', desc:'鬼市未启封旧木匣，内中或藏灵石、心法残页或古修器物。', price:30, type:'box' },
   lightning_plate: { id:'lightning_plate', name:'避雷引灵阵盘', icon:'item_lightning_disk', desc:'渡劫时祭出可引走九霄天雷，稳妥破境。', price:80, type:'relic' },

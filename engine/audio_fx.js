@@ -99,3 +99,59 @@ window.FX = {
     }
   }
 };
+
+// 离线古风 BGM 与场景环境音无缝淡入淡出管理器（无 MP3 资产时静默降级，零报错）
+window.BGM = {
+  enabled: true,
+  volume: 0.45,
+  currentKey: null,
+  audio: null,
+  missing: {},
+  _fadeTimer: null,
+  playScene(key) {
+    if (!this.enabled || !key || this.currentKey === key) return;
+    const map = window.GAME_DATA && window.GAME_DATA.AUDIO_MAP;
+    const src = map && (map[key] || map.world_map);
+    if (!src || this.missing[src]) { this.currentKey = key; return; }
+    this.currentKey = key;
+    if (typeof Audio === 'undefined') return;
+    try {
+      const next = new Audio(src);
+      next.loop = true;
+      next.volume = 0;
+      next.onerror = () => { this.missing[src] = true; };
+      const prev = this.audio;
+      this.audio = next;
+      const p = next.play();
+      if (p && p.catch) p.catch(() => {});
+      clearInterval(this._fadeTimer);
+      this._fadeTimer = setInterval(() => {
+        let done = true;
+        if (prev && prev.volume > 0.03) {
+          prev.volume = Math.max(0, prev.volume - 0.05);
+          done = false;
+        } else if (prev) {
+          prev.pause();
+        }
+        if (next && next.volume < this.volume) {
+          next.volume = Math.min(this.volume, next.volume + 0.05);
+          done = false;
+        }
+        if (done) clearInterval(this._fadeTimer);
+      }, 60);
+    } catch {}
+  },
+  setVolume(v) {
+    this.volume = Math.max(0, Math.min(1, v));
+    if (this.audio && this.enabled) this.audio.volume = this.volume;
+  },
+  toggle() {
+    this.enabled = !this.enabled;
+    if (!this.enabled && this.audio) this.audio.pause();
+    else if (this.enabled && this.audio) {
+      this.audio.volume = this.volume;
+      const p = this.audio.play();
+      if (p && p.catch) p.catch(() => {});
+    }
+  }
+};

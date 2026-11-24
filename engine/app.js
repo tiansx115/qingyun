@@ -9,7 +9,7 @@ let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag'
 let selectedAllyId = 'sister';
 let selectedBagItem = null;
 let selectedEquipSlot = null;
-let allyExprMap = { sister: 'normal', elder: 'normal' };
+let allyExprMap = { sister: 'normal', elder: 'normal', shen: 'normal', liu: 'normal', moli: 'normal' };
 let activeDialogue = null;
 let battleState = null;
 
@@ -46,37 +46,40 @@ function defaultState() {
     factions: { qingyun: 0, wanbao: 0, nether: 0 },
     activeAlly: null,
     bag: { heal_pill: 3, qi_pill: 2, osmanthus_cake: 2, mystery_box: 1, eq_clear_jade: 1 },
-    allies: {
-      sister: {
-        id:'sister', name:'林清霜', seal:'青云首徒', title:'青云剑宗大师姐', bond: 30, power: 26,
-        weaponName:'寒霜剑', weaponIcon:'item_frost_sword',
-        elements: { gold: 85, wood: 40, water: 92, fire: 25, earth: 48 },
-        exprs: [
-          { key:'normal', label:'全身', asset:'sister_full' },
-          { key:'smile', label:'浅笑', asset:'sister_smile' },
-          { key:'fierce', label:'凌厉', asset:'sister_fierce' }
-        ],
-        desc:'青云剑宗首徒，外冷内热，剑法极稳。交情达 45 可邀其同行护道。'
-      },
-      elder: {
-        id:'elder', name:'玄虚子', seal:'古玉残魂', title:'上古剑修残魂', bond: 35, power: 32,
-        weaponName:'玄虚古玉', weaponIcon:'item_jade_ring',
-        elements: { gold: 95, wood: 55, water: 62, fire: 78, earth: 70 },
-        exprs: [
-          { key:'normal', label:'淡然', asset:'elder' }
-        ],
-        desc:'蛰伏古玉的上古剑修残魂。交情达 45 可在战中助阵。'
-      }
-    },
+    allies: buildInitialAllies(),
     flags: {}
   };
 }
 
+function buildInitialAllies() {
+  const res = {};
+  Object.values(D.ALLY_DEFS || {}).forEach(def => {
+    res[def.id] = {
+      id: def.id,
+      unlocked: Boolean(def.unlockedByDefault),
+      bond: def.baseBond,
+      power: def.power
+    };
+  });
+  return res;
+}
+
+function getAllyDef(id) {
+  return (D.ALLY_DEFS && D.ALLY_DEFS[id]) || D.ALLY_DEFS.sister;
+}
+
+function syncUnlockedAllies() {
+  if (!G || !G.allies) return;
+  if ((G.factions?.wanbao || 0) >= 1 && G.allies.shen) G.allies.shen.unlocked = true;
+  if (G.flags?.divorceBranch && G.allies.liu) G.allies.liu.unlocked = true;
+  if ((G.factions?.nether || 0) >= 1 && G.allies.moli) G.allies.moli.unlocked = true;
+}
+
 function getAllyAsset(id, forceExpr) {
-  const a = G.allies[id];
+  const def = getAllyDef(id);
   const exKey = forceExpr || allyExprMap[id] || 'normal';
-  const found = a.exprs.find(e => e.key === exKey) || a.exprs[0];
-  return ASSETS[found.asset];
+  const found = def.exprs.find(e => e.key === exKey) || def.exprs[0];
+  return ASSETS[found.asset] || ASSETS[found.fallback] || ASSETS.elder;
 }
 function getItemIcon(id) {
   if (D.ITEMS[id]?.icon) return ASSETS[D.ITEMS[id].icon];
@@ -107,7 +110,17 @@ function normalizeState(st) {
       pouch: oldEq.pouch ? (typeof oldEq.pouch === 'string' ? oldEq.pouch : 'eq_cloth_pouch') : null
     };
   }
-  if (!st.allies) st.allies = def.allies;
+  const mergedAllies = buildInitialAllies();
+  Object.keys(mergedAllies).forEach(k => {
+    if (st.allies && st.allies[k]) {
+      mergedAllies[k].bond = typeof st.allies[k].bond === 'number' ? st.allies[k].bond : mergedAllies[k].bond;
+      if (st.allies[k].unlocked) mergedAllies[k].unlocked = true;
+    }
+  });
+  st.allies = mergedAllies;
+  if ((st.factions.wanbao || 0) >= 1 && st.allies.shen) st.allies.shen.unlocked = true;
+  if (st.flags.divorceBranch && st.allies.liu) st.allies.liu.unlocked = true;
+  if ((st.factions.nether || 0) >= 1 && st.allies.moli) st.allies.moli.unlocked = true;
   return st;
 }
 
@@ -237,12 +250,8 @@ function getNextTimelineText() {
 function advanceTime(months = 1) {
   G.month += months;
   if (G.month % 12 === 1) G.age += 1;
-  if (G.age >= G.maxAge) {
-    activeDialogue = {
-      speaker: '岁月无情', asset: ASSETS.hero,
-      text: `光阴荏苒，你的寿元已届 ${G.maxAge} 岁大限。一生游历东洲、广结道友，亦算无憾此生。`,
-      choices: [{ text:'重入轮回，再续仙途', action: () => startQuiz() }]
-    };
+  if (G.age >= G.maxAge && window.MINIGAMES) {
+    window.MINIGAMES.openEnding(getEventCtx());
   }
 }
 function gainExp(amt) {
@@ -306,6 +315,12 @@ function buildRadarSvg(el) {
 
 function startQuiz() {
   G = defaultState();
+  const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
+  if (leg.points > 0) {
+    const statBonus = Math.min(6, leg.points);
+    G.body += statBonus; G.wit += statBonus; G.luck += statBonus; G.talk += statBonus; G.mind += statBonus;
+    G.stone += leg.points * 25;
+  }
   currentLocationId = null; activePanel = null; activeDialogue = null; battleState = null;
   let step = 0;
   const root = document.getElementById('title-root');
@@ -314,10 +329,14 @@ function startQuiz() {
 
   function renderStep() {
     if (step === 0 && !G._introDone) {
+      const legNote = leg.points > 0
+        ? `<div class="legacy-banner">前世传承已生效（第 ${leg.runs + 1} 世 · 传承 ${leg.points} 点）：六维初始 +${Math.min(6, leg.points)}，初始灵石 +${leg.points * 25}</div>`
+        : '';
       root.innerHTML = `
         <div class="title-box">
           <h1 class="title-main">青云问道录</h1>
           <p class="title-sub">东洲修仙志 · 电影写实半透明独立版</p>
+          ${legNote}
           <p style="font-size:13px;line-height:1.78;color:#dfd6c6;margin:0 0 18px;">
             天地灵气潮汐将至，东洲各大宗门广收门徒，鬼市暗流涌动，古修洞府接连现世。<br>
             你本是一介凡尘少年，机缘巧合得一枚微光古玉，自此踏入修真界。<br>
@@ -480,6 +499,9 @@ function interactNpc(npcId) {
     };
   } else if (npcId === 'merchant') { handleHotspot('market_shop'); return; }
   else if (npcId === 'innkeeper') { handleHotspot('inn_rumor'); return; }
+  else if (npcId === 'shen') { handleHotspot('market_faction'); return; }
+  else if (npcId === 'liu') { handleHotspot('cliff_event'); return; }
+  else if (npcId === 'moli') { handleHotspot('nether_path'); return; }
   renderAll();
 }
 
@@ -488,6 +510,7 @@ function getEventCtx() {
     G, D, ASSETS,
     setDialogue: d => { activeDialogue = d; },
     startBattle, addItem, gainExp, advanceTime, showToast, saveGame, renderAll, buyItem, openEquipShop,
+    getItemIcon, formatStatSummary, startQuiz,
     setAllyExpr: (id, expr) => { allyExprMap[id] = expr; }
   };
 }
@@ -526,6 +549,8 @@ function handleHotspot(hid) {
     recalcDerivedStats(false);
     showToast(`在藏经阁静心研读一月，修为 +${g}，悟性 +1。`);
     saveGame('auto', true); renderAll();
+  } else if (hid === 'sect_alchemy') {
+    window.MINIGAMES.openAlchemy(getEventCtx());
   } else if (hid === 'sect_forge') {
     activePanel = 'status'; statusSubTab = 'skills'; renderAll();
   } else if (hid === 'cliff_event') {
@@ -564,6 +589,8 @@ function handleHotspot(hid) {
     renderAll();
   } else if (hid === 'market_equip') {
     openEquipShop();
+  } else if (hid === 'market_auction') {
+    window.MINIGAMES.openAuction(getEventCtx());
   } else if (hid === 'market_faction') {
     D.EVENTS.runMarketFaction(getEventCtx());
     renderAll();
@@ -603,6 +630,10 @@ function handleHotspot(hid) {
       };
       renderAll();
     } else { tryRealmUp(true); renderAll(); }
+  } else if (hid === 'altar_ascend') {
+    const canEnd = G.realmIdx >= 3 || (G.factions?.qingyun || 0) >= 3 || (G.factions?.wanbao || 0) >= 3 || (G.factions?.nether || 0) >= 3 || Object.values(G.allies || {}).some(a => (a.bond || 0) >= 85);
+    if (!canEnd) return showToast('需踏入筑基、任一势力圆满(3/3)或道友羁绊达 85 方可结算结局。');
+    window.MINIGAMES.openEnding(getEventCtx());
   }
 }
 
@@ -621,9 +652,10 @@ function buyItem(id) {
 
 // Combat
 function startBattle(enemy) {
+  const allyDef = G.activeAlly ? getAllyDef(G.activeAlly) : null;
   battleState = {
     enemy: { ...enemy }, shield: 0, stunned: false, artifactUsed: false,
-    ticker: `迎战【${enemy.name}】！${G.activeAlly ? `道友【${G.allies[G.activeAlly].name}】随行助阵！` : ''}`
+    ticker: `迎战【${enemy.name}】！${allyDef ? `道友【${allyDef.name}】随行助阵！` : ''}`
   };
   activeDialogue = null; activePanel = null; renderAll();
 }
@@ -672,8 +704,9 @@ function useBattleSkill(skillId) {
   let allyMsg = '';
   if (G.activeAlly && e.hp - dmg > 0) {
     const ally = G.allies[G.activeAlly];
-    const ad = Math.floor(ally.power * (0.85 + Math.random() * 0.3));
-    dmg += ad; allyMsg = `（${ally.name}合击 +${ad}）`;
+    const allyDef = getAllyDef(G.activeAlly);
+    const ad = Math.floor((ally?.power || allyDef.power) * (0.85 + Math.random() * 0.3));
+    dmg += ad; allyMsg = `（${allyDef.name}合击 +${ad}）`;
   }
   e.hp = Math.max(0, e.hp - dmg);
   SFX.play(sk.id === 'grandpa_finger' ? 'thunder' : 'sword');
@@ -712,7 +745,11 @@ function finishBattleTurn(heroDmg) {
       battleState.ticker += ` ${e.name} 反击造成 ${eDmg} 点伤害。`;
     }
   }
-  if (G.hp <= 0) { G.hp = Math.floor(G.maxHp * 0.5); G.qi = Math.floor(G.maxQi * 0.5); battleState = null; showToast('力竭败退，幸得古玉残魂护持脱身。'); }
+  if (G.hp <= 0) {
+    if (G.activeAlly) allyExprMap[G.activeAlly] = 'injured';
+    G.hp = Math.floor(G.maxHp * 0.5); G.qi = Math.floor(G.maxQi * 0.5); battleState = null;
+    showToast('力竭败退，幸得古玉残魂护持脱身。');
+  }
   renderAll();
   if (battleState) {
     spawnDmg('.c-actor.enemy', `-${heroDmg}`);
@@ -1007,7 +1044,18 @@ function renderSplitPanel() {
           const mul = 1 + (eqStats.healBonus || 0);
           if (it.hp) G.hp = Math.min(G.maxHp, G.hp + Math.round(it.hp * mul));
           if (it.qi) G.qi = Math.min(G.maxQi, G.qi + Math.round(it.qi * mul));
-          if (it.type === 'box') {
+          if (it.fullRestore) { G.hp = G.maxHp; G.qi = G.maxQi; }
+          if (it.marrow) {
+            const ks = [['body','根骨'], ['wit','悟性'], ['mind','道心']];
+            const pick = ks[Math.floor(Math.random() * ks.length)];
+            G[pick[0]] += 2;
+            recalcDerivedStats(false);
+            const g = gainExp(it.exp || 130);
+            showToast(`服下【${it.name}】，${pick[1]} +2，修为 +${g}！`);
+          } else if (it.exp) {
+            const g = gainExp(it.exp);
+            showToast(`服下【${it.name}】，修为 +${g}，状态圆满！`);
+          } else if (it.type === 'box') {
             const r = Math.random();
             if (r < 0.35) { addItem('eq_clear_jade', 1); showToast('启封遗匣，得一枚【清心玉佩】！'); }
             else if (r < 0.75) { G.stone += 60; showToast('启封遗匣，得 60 灵石。'); }
@@ -1084,34 +1132,40 @@ function renderSplitPanel() {
       sw.appendChild(c);
     });
   }
-  // 4. 伙伴页：左侧完整全身像/表情差分 + 右侧伙伴交互面板
+  // 4. 伙伴页：左侧完整全身像/5态情绪差分 + 右侧多伙伴交互与专属支线面板
   else if (curTab === 'allies') {
+    syncUnlockedAllies();
+    const unlockedIds = Object.keys(D.ALLY_DEFS).filter(id => G.allies[id]?.unlocked);
+    if (!unlockedIds.includes(selectedAllyId)) selectedAllyId = unlockedIds[0] || 'sister';
     const a = G.allies[selectedAllyId];
-    const isAct = G.activeAlly === a.id;
-    const exprHtml = a.exprs.map(ex => `
-      <div class="expr-thumb ${(allyExprMap[a.id]||'normal')===ex.key?'active':''}" data-ex="${ex.key}">
-        <img src="${ASSETS[ex.asset]}" /><span>${ex.label}</span>
+    const def = getAllyDef(selectedAllyId);
+    const isAct = G.activeAlly === def.id;
+    const exprHtml = def.exprs.map(ex => `
+      <div class="expr-thumb ${(allyExprMap[def.id]||'normal')===ex.key?'active':''}" data-ex="${ex.key}">
+        <img src="${ASSETS[ex.asset] || ASSETS[ex.fallback] || ASSETS.elder}" /><span>${ex.label}</span>
       </div>
     `).join('');
+    const tabsHtml = unlockedIds.map(id => {
+      const d = getAllyDef(id);
+      return `<button class="gp-tab ${selectedAllyId===id?'active':''}" data-ally="${id}">${d.name}</button>`;
+    }).join('');
+    const canQuest = def.quest && a.bond >= def.quest.reqBond && !G.flags[def.quest.flag];
 
     main.innerHTML = `
       <div class="fullbody-col">
         <div class="fullbody-wrap">
-          <img class="full-char" src="${getAllyAsset(a.id)}" />
+          <img class="full-char" src="${getAllyAsset(def.id)}" />
           <div class="expr-strip">${exprHtml}</div>
         </div>
       </div>
       <div class="glass-panel" style="width:55%;max-width:560px;">
-        <div class="gp-tabs">
-          <button class="gp-tab ${selectedAllyId==='sister'?'active':''}" data-ally="sister">林清霜</button>
-          <button class="gp-tab ${selectedAllyId==='elder'?'active':''}" data-ally="elder">玄虚子</button>
-        </div>
+        <div class="gp-tabs" style="overflow-x:auto;gap:4px;">${tabsHtml}</div>
         <div class="gp-body">
           <div style="display:flex;align-items:center;gap:12px;">
-            <span class="vermilion-seal">${a.seal}</span>
+            <span class="vermilion-seal">${def.seal}</span>
             <div style="flex:1;">
-              <div style="font-size:21px;font-weight:700;color:#ebd29b;letter-spacing:3px;">${a.name}</div>
-              <div style="font-size:11.5px;color:var(--muted);">${a.title}${isAct ? ' · 当前同行中' : ''}</div>
+              <div style="font-size:21px;font-weight:700;color:#ebd29b;letter-spacing:3px;">${def.name}</div>
+              <div style="font-size:11.5px;color:var(--muted);">${def.title}${isAct ? ' · 当前同行中' : ''}</div>
               <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:6px;">
                 <span>道友羁绊</span><b style="color:#ebd29b;">${a.bond} / 100</b>
               </div>
@@ -1119,15 +1173,16 @@ function renderSplitPanel() {
             </div>
           </div>
           <div class="radar-wrap">
-            ${buildRadarSvg(a.elements)}
+            ${buildRadarSvg(def.elements)}
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
               <span style="font-size:11px;color:var(--muted);">随身佩剑 / 法器</span>
               <div class="item-slot featured" style="width:74px;height:74px;">
-                <img src="${ASSETS[a.weaponIcon]}" /><span class="s-lbl">${a.weaponName}</span>
+                <img src="${ASSETS[def.weaponIcon]}" /><span class="s-lbl">${def.weaponName}</span>
               </div>
             </div>
           </div>
-          <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0;">${a.desc}</p>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0;">${def.desc}</p>
+          ${canQuest ? `<button class="sleek-btn" id="al-quest" style="width:100%;">开启专属支线：${def.quest.title}</button>` : ''}
           <div class="ally-actions">
             <button class="sleek-btn ghost" id="al-talk">交谈</button>
             <button class="sleek-btn ghost" id="al-gift">赠礼</button>
@@ -1138,51 +1193,132 @@ function renderSplitPanel() {
       </div>
     `;
     main.querySelectorAll('[data-ally]').forEach(b => { b.onclick = () => { SFX.play('click'); selectedAllyId = b.dataset.ally; renderAll(); }; });
-    main.querySelectorAll('[data-ex]').forEach(t => { t.onclick = () => { SFX.play('click'); allyExprMap[a.id] = t.dataset.ex; renderAll(); }; });
-    main.querySelector('#al-talk').onclick = () => { activePanel = null; interactNpc(a.id); };
+    main.querySelectorAll('[data-ex]').forEach(t => { t.onclick = () => { SFX.play('click'); allyExprMap[def.id] = t.dataset.ex; renderAll(); }; });
+    main.querySelector('#al-talk').onclick = () => { activePanel = null; interactNpc(def.id); };
     main.querySelector('#al-gift').onclick = () => {
-      if ((G.bag.osmanthus_cake || 0) <= 0) return showToast('行囊中暂无【云州桂花糕】，可去天机阁购置。');
-      G.bag.osmanthus_cake--; a.bond += 20;
-      if (a.id === 'sister') allyExprMap.sister = 'smile';
-      SFX.play('levelup'); showToast(`赠予【云州桂花糕】，${a.name}展颜浅笑，羁绊 +20！`);
+      const giftId = def.favGift || 'osmanthus_cake';
+      const giftItem = D.ITEMS[giftId];
+      if ((G.bag[giftId] || 0) <= 0) return showToast(`行囊中暂无【${giftItem.name}】，可前往坊市购置。`);
+      G.bag[giftId]--; if (G.bag[giftId] <= 0) delete G.bag[giftId];
+      a.bond = Math.min(100, a.bond + 20);
+      allyExprMap[def.id] = a.bond >= 70 ? 'shy' : 'smile';
+      SFX.play('levelup'); showToast(`赠予【${giftItem.name}】，${def.name}神色微动，羁绊 +20！`);
       saveGame('auto', true); renderAll();
     };
     main.querySelector('#al-spar').onclick = () => {
-      if (a.id === 'sister') allyExprMap.sister = 'fierce';
-      startBattle({ name:`${a.name}（切磋）`, asset:getAllyAsset(a.id, a.id==='sister'?'fierce':'normal'), bg:'bamboo', hp:165, maxHp:165, atk:19, talkDef:20, expReward:70, stoneReward:30 });
+      allyExprMap[def.id] = 'fierce';
+      startBattle({ name:`${def.name}（切磋）`, asset:getAllyAsset(def.id, 'fierce'), bg:'bamboo', hp:165 + def.power * 2, maxHp:165 + def.power * 2, atk:18 + Math.floor(def.power * 0.2), talkDef:20, expReward:75, stoneReward:35 });
     };
     main.querySelector('#al-join').onclick = () => {
-      if (a.bond < 45 && !isAct) return showToast(`需羁绊达到 45 方可邀${a.name}同行（当前 ${a.bond}）。`);
-      G.activeAlly = isAct ? null : a.id; SFX.play('click');
-      showToast(G.activeAlly ? `${a.name}已加入同行队伍。` : `${a.name}已暂离队伍。`);
+      if (a.bond < 45 && !isAct) return showToast(`需羁绊达到 45 方可邀${def.name}同行（当前 ${a.bond}）。`);
+      G.activeAlly = isAct ? null : def.id; SFX.play('click');
+      showToast(G.activeAlly ? `${def.name}已加入同行队伍。` : `${def.name}已暂离队伍。`);
+      renderAll();
+    };
+    const qBtn = main.querySelector('#al-quest');
+    if (qBtn) qBtn.onclick = () => {
+      const q = def.quest;
+      activePanel = null;
+      activeDialogue = {
+        speaker: def.name, asset: getAllyAsset(def.id, 'smile'),
+        text: q.text,
+        choices: q.choices.map(ch => ({
+          text: ch.text, hint: ch.hint,
+          action: () => {
+            G.flags[q.flag] = true;
+            const ef = ch.eff || {};
+            if (ef.bond) a.bond = Math.min(100, a.bond + ef.bond);
+            if (ef.exp) gainExp(ef.exp);
+            if (ef.stone) G.stone += ef.stone;
+            if (ef.wit) G.wit += ef.wit;
+            if (ef.body) G.body += ef.body;
+            if (ef.mind) G.mind += ef.mind;
+            if (ef.talk) G.talk += ef.talk;
+            if (ef.luck) G.luck += ef.luck;
+            if (ef.fame) G.fame += ef.fame;
+            if (ef.expr) allyExprMap[def.id] = ef.expr;
+            recalcDerivedStats(false);
+            SFX.play('levelup');
+            showToast(ef.toast || '完成专属支线！');
+            activeDialogue = null; saveGame('auto', true); renderAll();
+          }
+        }))
+      };
       renderAll();
     };
   }
-  // 5. 卷宗存档页：无立绘！左右双联存档与设置面板
+  // 5. 卷宗存档页：无立绘！左右双联（本地存档/音频设置/离线预缓存 + 存档码与传承）
   else if (curTab === 'save') {
+    const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>本地离线卷宗</span></div>
-        <div style="display:flex;flex-direction:column;gap:9px;">
+        <div class="sec-head"><span>本地离线卷宗与音画</span></div>
+        <div class="gp-body">
           <div class="glass-card"><div><h4>卷宗一</h4><p>手动独立存档位</p></div><div style="display:flex;gap:6px;"><button class="sleek-btn" onclick="saveGame('1')">存入</button><button class="sleek-btn ghost" onclick="if(loadGame('1')) renderAll(); else showToast('卷宗一为空。');">读取</button></div></div>
           <div class="glass-card"><div><h4>卷宗二</h4><p>手动独立存档位</p></div><div style="display:flex;gap:6px;"><button class="sleek-btn" onclick="saveGame('2')">存入</button><button class="sleek-btn ghost" onclick="if(loadGame('2')) renderAll(); else showToast('卷宗二为空。');">读取</button></div></div>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button class="sleek-btn ghost" id="sv-sfx">${SFX.enabled?'音效：开启':'音效：静音'}</button>
-            <button class="sleek-btn ghost" onclick="startQuiz()">重入轮回（新局）</button>
+          <div class="glass-card" style="flex-direction:column;align-items:stretch;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11.5px;color:#ebd29b;">古风配乐 BGM 与音效</span>
+              <div style="display:flex;gap:6px;">
+                <button class="sleek-btn ghost" id="sv-bgm" style="padding:4px 10px;font-size:11px;">${BGM.enabled?'配乐：开':'配乐：关'}</button>
+                <button class="sleek-btn ghost" id="sv-sfx" style="padding:4px 10px;font-size:11px;">${SFX.enabled?'音效：开':'音效：关'}</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--muted);">
+              <span>配乐音量</span>
+              <input id="sv-vol" type="range" min="0" max="100" value="${Math.round(BGM.volume*100)}" style="flex:1;accent-color:#ebd29b;" />
+              <span id="sv-vol-txt">${Math.round(BGM.volume*100)}%</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="sleek-btn ghost" onclick="startQuiz()" style="flex:1;">重入轮回（新局）</button>
           </div>
         </div>
       </div>
       <div class="dual-right">
-        <div class="sec-head"><span>防丢档存档码</span><span style="font-size:10.5px;color:var(--muted);">跨版本通用</span></div>
-        <p style="font-size:11.5px;color:var(--muted);margin:0 0 8px;">更新游戏版本或更换设备前，可导出下方存档码备份，随时粘贴恢复进度。</p>
-        <textarea id="save-code-box" rows="4" style="width:100%;background:rgba(5,7,9,0.75);border:1px solid var(--gold-hair);color:var(--text);padding:8px;font-size:11px;margin-bottom:10px;"></textarea>
-        <div style="display:flex;gap:10px;">
-          <button class="sleek-btn" onclick="exportSaveCode()">导出当前存档码</button>
-          <button class="sleek-btn ghost" onclick="importSaveCode()">导入存档码</button>
+        <div class="sec-head"><span>防丢档存档码 · 离线资源包</span><span style="font-size:10.5px;color:var(--muted);">传承 ${leg.points} 点 · 已收录 ${leg.endings.length}/${(D.ENDINGS||[]).length} 结局</span></div>
+        <div class="gp-body">
+          <p style="font-size:11px;color:var(--muted);margin:0;">更新版本或换机前可导出存档码备份，随时粘贴恢复进度。</p>
+          <textarea id="save-code-box" rows="3" style="width:100%;background:rgba(5,7,9,0.75);border:1px solid var(--gold-hair);color:var(--text);padding:7px;font-size:11px;"></textarea>
+          <div style="display:flex;gap:8px;">
+            <button class="sleek-btn" onclick="exportSaveCode()">导出存档码</button>
+            <button class="sleek-btn ghost" onclick="importSaveCode()">导入存档码</button>
+          </div>
+          <div class="glass-card" style="margin-top:4px;flex-direction:column;align-items:stretch;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><h4>iPhone 离线资源包管理</h4><p id="cache-status">检测本地缓存中…</p></div>
+              <button class="sleek-btn" id="btn-precache" style="flex-shrink:0;">一键预缓存</button>
+            </div>
+            <div class="bond-bar" style="margin:0;"><div class="bond-fill" id="cache-bar" style="width:0%"></div></div>
+          </div>
         </div>
       </div>
     `;
     main.querySelector('#sv-sfx').onclick = () => { SFX.enabled = !SFX.enabled; renderAll(); };
+    main.querySelector('#sv-bgm').onclick = () => { BGM.toggle(); renderAll(); };
+    const vol = main.querySelector('#sv-vol');
+    if (vol) vol.oninput = () => {
+      BGM.setVolume(Number(vol.value) / 100);
+      const t = main.querySelector('#sv-vol-txt');
+      if (t) t.textContent = vol.value + '%';
+    };
+    const stEl = main.querySelector('#cache-status');
+    const barEl = main.querySelector('#cache-bar');
+    if (window.OFFLINE_CACHE) {
+      window.OFFLINE_CACHE.getStats().then(s => {
+        if (stEl) stEl.textContent = s.supported ? `当前已缓存 ${s.count} 项离线资源（支持 100MB+ 断网畅玩）` : '当前浏览环境未启用离线缓存';
+      });
+      const pcBtn = main.querySelector('#btn-precache');
+      if (pcBtn) pcBtn.onclick = async () => {
+        pcBtn.disabled = true; pcBtn.textContent = '缓存中…';
+        const res = await window.OFFLINE_CACHE.precacheAll((cur, tot, okCnt) => {
+          if (barEl) barEl.style.width = Math.round((cur / tot) * 100) + '%';
+          if (stEl) stEl.textContent = `正在预缓存离线资产：${cur}/${tot}（成功 ${okCnt}）`;
+        });
+        pcBtn.disabled = false; pcBtn.textContent = '一键预缓存';
+        showToast(`离线资源同步完成，已缓存 ${res.cached} 项资产。`);
+      };
+    }
   }
 
   host.appendChild(sc);
@@ -1190,6 +1326,7 @@ function renderSplitPanel() {
 
 function renderAll() {
   if (!G) return;
+  syncUnlockedAllies();
   const realm = D.REALMS[G.realmIdx];
   document.getElementById('hud-realm-txt').textContent = `境界 · ${realm.name}`;
   document.getElementById('hud-date').textContent = getDateStr();
@@ -1206,6 +1343,10 @@ function renderAll() {
   const locObj = D.LOCATIONS.find(l => l.id === currentLocationId);
   const bgKey = battleState ? battleState.enemy.bg : (locObj ? locObj.sceneBg : 'world_map');
   document.getElementById('world-viewport').style.backgroundImage = `url("${ASSETS[bgKey] || ASSETS.world_map}")`;
+  if (window.BGM) {
+    const bgmKey = battleState ? 'combat' : (activePanel === 'allies' ? 'bamboo' : (locObj ? locObj.id : 'world_map'));
+    BGM.playScene(bgmKey);
+  }
 
   const hideHud = Boolean(battleState || activeDialogue || activePanel);
   document.getElementById('hud-tl').style.display = hideHud ? 'none' : 'flex';
@@ -1276,12 +1417,12 @@ function renderAll() {
   const cl = document.getElementById('combat-root'); cl.innerHTML = '';
   if (battleState) {
     const e = battleState.enemy;
-    const allyHtml = G.activeAlly ? `<div class="c-actor ally"><img src="${getAllyAsset(G.activeAlly, G.activeAlly==='sister'?'fierce':'normal')}" /></div>` : '';
+    const allyHtml = G.activeAlly ? `<div class="c-actor ally"><img src="${getAllyAsset(G.activeAlly, 'fierce')}" /></div>` : '';
     const cb = document.createElement('div'); cb.className = 'combat-layer';
     cb.innerHTML = `
       <div class="combat-top">
         <div class="c-side">
-          <div class="c-head"><span>${G.name}${G.activeAlly ? ' · ' + G.allies[G.activeAlly].name : ''}</span><span style="color:#6fd3a8;">灵盾 ${battleState.shield}</span></div>
+          <div class="c-head"><span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span><span style="color:#6fd3a8;">灵盾 ${battleState.shield}</span></div>
           <div class="c-track"><div class="c-fill-hp" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;">气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi}</div>
         </div>

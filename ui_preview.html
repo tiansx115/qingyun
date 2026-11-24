@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>《青云问道录》v6 融合版 3A UI 全屏视觉定稿模拟板</title>
+<style>
+:root {
+  --ink: #060709;
+  --glass: rgba(12, 15, 19, 0.56);
+  --glass-deep: rgba(10, 12, 16, 0.78);
+  --gold: rgba(212, 184, 122, 0.48);
+  --gold-bright: #ecd5a2;
+  --gold-hair: rgba(212, 184, 122, 0.24);
+  --vermilion: #a82e2b;
+  --jade: #70d6ab;
+  --text: #f2ede4;
+  --muted: rgba(232, 224, 210, 0.62);
+  --serif: "Songti SC", "STSong", "Noto Serif SC", "PingFang SC", Georgia, serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 24px 20px 60px; background: #040507; color: var(--text);
+  font-family: var(--serif); display: flex; flex-direction: column; align-items: center; gap: 36px;
+}
+.board-header {
+  width: min(1180px, 96vw); display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 1px solid var(--gold-hair); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;
+}
+.board-header h1 { margin: 0; font-size: 22px; color: var(--gold-bright); letter-spacing: 4px; }
+.board-header p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.quick-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.quick-nav a {
+  text-decoration: none; font-size: 11.5px; color: var(--text); padding: 5px 12px;
+  background: rgba(16,19,24,0.8); border: 1px solid var(--gold-hair); transition: 0.15s;
+}
+.quick-nav a:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+
+.mock-section { width: min(1180px, 96vw); display: flex; flex-direction: column; gap: 10px; }
+.mock-caption {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 14px; color: var(--gold-bright); letter-spacing: 2px;
+}
+.mock-caption span { font-size: 11.5px; color: var(--muted); letter-spacing: 0.5px; }
+
+/* 16:9 Cinema Frame */
+.stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  background-size: cover; background-position: center;
+  border: 1px solid rgba(212,184,122,0.22);
+  box-shadow: 0 28px 80px rgba(0,0,0,0.85);
+}
+.stage::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 48%, rgba(4,6,8,0.62) 100%);
+}
+.z2 { position: relative; z-index: 2; }
+
+/* Shared 3A Frosted Glass Panel (Ref #3 & #4 aesthetic) */
+.frosted {
+  background: linear-gradient(160deg, rgba(16,20,25,0.62), rgba(9,11,15,0.78));
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(212,184,122,0.28);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.v-seal {
+  display: inline-block; writing-mode: vertical-rl; text-orientation: upright;
+  background: var(--vermilion); color: #f9eee4; font-size: 10px; font-weight: 700;
+  padding: 5px 3px; letter-spacing: 1.5px; border: 1px solid rgba(255,215,190,0.35);
+}
+.thin-btn {
+  padding: 7px 18px; font-size: 12px; letter-spacing: 2px; color: var(--text);
+  background: rgba(14,17,22,0.58); border: 1px solid var(--gold-hair);
+  backdrop-filter: blur(10px); text-align: center;
+}
+.thin-btn.gold { border-color: var(--gold); color: var(--gold-bright); background: rgba(212,184,122,0.1); }
+
+/* ===== MOCK 1: TITLE HOME ===== */
+.m1-wrap {
+  position: relative; z-index: 2; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: space-between; padding: 5% 6.5%;
+}
+.m1-logo { height: 76%; object-fit: contain; filter: drop-shadow(0 12px 30px rgba(0,0,0,0.92)); }
+.m1-plaques { display: flex; gap: 14px; }
+.m1-plaque {
+  width: 68px; height: 265px; writing-mode: vertical-rl; text-orientation: upright;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600; letter-spacing: 9px; color: #f6ead4;
+  background: url("assets/ui3a/plaque_vert.png") center/100% 100% no-repeat;
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,0.88));
+}
+.m1-plaque.hl { color: #fff5df; filter: brightness(1.16) drop-shadow(0 0 18px rgba(235,210,155,0.35)); }
+
+/* ===== MOCK 2: CINEMA DIALOGUE (REF #5 ULTRA-CLEAN SUBTITLE + GLOW CHOICES) ===== */
+.m2-char {
+  position: absolute; bottom: 0; left: 18%; height: 92%; z-index: 2;
+  filter: drop-shadow(0 18px 36px rgba(0,0,0,0.88));
+}
+.m2-choices {
+  position: absolute; right: 5%; bottom: 22%; z-index: 4; width: 32%;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.m2-opt {
+  padding: 12px 18px; font-size: 14px; letter-spacing: 1px; color: #f3ede2;
+  background: linear-gradient(90deg, rgba(12,14,18,0.84), rgba(12,14,18,0.48) 72%, rgba(12,14,18,0.08));
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(212,184,122,0.22); border-bottom: 1px solid rgba(212,184,122,0.18);
+  border-left: 2px solid rgba(212,184,122,0.55);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.m2-opt.active {
+  background: linear-gradient(90deg, rgba(46,38,24,0.88), rgba(18,16,14,0.52) 75%, rgba(12,14,18,0.08));
+  border-left: 2.5px solid #fff0c8; border-top-color: rgba(235,210,155,0.65);
+  box-shadow: -6px 0 18px rgba(235,210,155,0.28);
+  color: #fff5df;
+}
+.m2-opt em { font-style: normal; font-size: 11px; color: var(--gold-bright); }
+.m2-subbar {
+  position: absolute; left: 8%; right: 8%; bottom: 4.5%; z-index: 4;
+  padding: 20px 36px; display: flex; align-items: center; gap: 36px;
+  background: linear-gradient(90deg, rgba(10,12,15,0.88), rgba(10,12,15,0.74) 70%, rgba(10,12,15,0.12));
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(212,184,122,0.48);
+}
+.m2-subbar::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 12px; height: 12px; background: var(--vermilion);
+}
+.m2-name { font-size: 16px; color: var(--gold-bright); letter-spacing: 3px; white-space: nowrap; }
+.m2-line { font-size: 16px; color: #f6f1e8; letter-spacing: 1px; line-height: 1.6; }
+
+/* ===== MOCK 3: STATUS / MINGGE (REF #3 MERIDIAN + FROSTED GLASS + 5-ELEMENT + GLOW SLOTS) ===== */
+.m3-top {
+  position: absolute; top: 0; left: 0; right: 0; height: 52px; z-index: 4;
+  background: linear-gradient(180deg, rgba(6,8,10,0.82), transparent);
+  display: flex; align-items: center; justify-content: center; gap: 28px;
+  border-bottom: 1px solid rgba(212,184,122,0.12);
+}
+.m3-top .back { position: absolute; left: 26px; font-size: 13px; color: var(--muted); letter-spacing: 2px; }
+.m3-tab { font-size: 14px; letter-spacing: 3px; color: var(--muted); padding: 14px 12px; position: relative; }
+.m3-tab.active { color: var(--gold-bright); font-weight: 700; }
+.m3-tab.active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+}
+.m3-body {
+  position: relative; z-index: 2; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: space-between; padding: 62px 5% 24px;
+}
+.m3-left { width: 42%; height: 100%; position: relative; display: flex; align-items: flex-end; justify-content: center; }
+.m3-left img.char { height: 98%; object-fit: contain; filter: drop-shadow(0 18px 36px rgba(0,0,0,0.9)); }
+.m3-meridian { position: absolute; inset: 8% 18% 12% 18%; pointer-events: none; opacity: 0.72; }
+.m3-life {
+  position: absolute; left: 0; bottom: 6px; width: 180px;
+  font-size: 11px; color: var(--muted); display: flex; flex-direction: column; gap: 5px;
+}
+.m3-lbar { height: 3px; background: rgba(255,255,255,0.14); }
+.m3-lbar i { display: block; height: 100%; background: var(--gold-bright); }
+.m3-panel { width: 54%; height: 92%; display: flex; flex-direction: column; padding: 18px 22px; position: relative; }
+.m3-split { flex: 1; display: flex; gap: 18px; min-height: 0; }
+.m3-sidenav { width: 110px; border-right: 1px solid rgba(212,184,122,0.14); padding-right: 12px; display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.m3-snav-item { font-size: 13px; color: var(--muted); padding-left: 10px; border-left: 2px solid transparent; letter-spacing: 2px; }
+.m3-snav-item.active { color: var(--text); border-left-color: var(--vermilion); font-weight: 600; }
+.m3-content { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.m3-grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.m3-slot {
+  aspect-ratio: 1 / 1; background: rgba(6,8,10,0.52); border: 1px solid rgba(212,184,122,0.22);
+  display: flex; align-items: center; justify-content: center; padding: 8px;
+}
+.m3-slot.sel { border-color: var(--gold-bright); box-shadow: inset 0 0 16px rgba(235,210,155,0.18); }
+.m3-slot img { width: 80%; height: 80%; object-fit: contain; }
+
+/* ===== MOCK 4: COMPANION (REF #4 BAMBOO + FULL BODY + 3 THUMBS + CLEAN FROSTED CARD) ===== */
+.m4-thumbs {
+  position: absolute; left: 0; bottom: 8px; display: flex; gap: 8px;
+}
+.m4-thumb {
+  width: 54px; height: 58px; border: 1px solid rgba(212,184,122,0.32); overflow: hidden;
+  background: rgba(8,10,12,0.75);
+}
+.m4-thumb.active { border-color: var(--gold-bright); box-shadow: 0 0 12px rgba(235,210,155,0.45); }
+.m4-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.m4-card {
+  width: 39%; height: 88%; padding: 24px 26px; display: flex; flex-direction: column; align-items: center;
+  justify-content: space-between;
+}
+.m4-bond-track {
+  width: 100%; height: 3px; background: rgba(255,255,255,0.16); position: relative; margin: 10px 0;
+}
+.m4-bond-fill { width: 78%; height: 100%; background: linear-gradient(90deg, var(--gold), #fff0c8); position: relative; }
+.m4-bond-fill::after {
+  content: ""; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px;
+  background: #fff0c8; transform: rotate(45deg); box-shadow: 0 0 10px #fff0c8;
+}
+.m4-actions { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+/* ===== MOCK 5: DUAL BAG & EQUIPMENT (NO PORTRAIT, ULTRA-TRANSLUCENT GLASS) ===== */
+.m5-dual {
+  position: relative; z-index: 2; width: 100%; height: 100%;
+  display: flex; gap: 18px; padding: 66px 4.5% 24px;
+}
+.m5-left { width: 42%; height: 100%; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.m5-right { flex: 1; height: 100%; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.m5-eqgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.m5-eq {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: rgba(8,10,13,0.52); border: 1px solid rgba(212,184,122,0.26);
+}
+.m5-eq img { width: 38px; height: 38px; object-fit: contain; }
+
+/* ===== MOCK 6: QUIZ & COMBAT ===== */
+.m6-quiz {
+  position: relative; z-index: 2; width: 64%; margin: auto; padding: 28px 34px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="board-header">
+  <div>
+    <h1>《青云问道录》v6 融合版 3A UI 全屏视觉定稿模拟板</h1>
+    <p>融合参考图 1（主标题竖牌构图）+ 参考图 3/4（超通透烟墨磨砂玻璃、经脉微光、五行星图、极简顶栏）+ 参考图 5（《燕云十六声》电影字幕条与发光左线选项）</p>
+  </div>
+  <div class="quick-nav">
+    <a href="#m1">1. 主标题页</a>
+    <a href="#m2">2. 剧情对话</a>
+    <a href="#m3">3. 命格与经脉</a>
+    <a href="#m4">4. 伙伴鉴赏</a>
+    <a href="#m5">5. 双联行囊装备</a>
+    <a href="#m6">6. 问道初测</a>
+  </div>
+</div>
+
+<!-- 1. 主标题页 -->
+<section class="mock-section" id="m1">
+  <div class="mock-caption">
+    <b>模拟图 1 · 主标题与开局主页</b>
+    <span>融合参考图 1：UE5 云海剑宗 + 左上飞白书法大字与朱砂印 + 右侧 4 枚 3A 烟墨雕云竖牌</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/ui3a/title_bg.jpg');">
+    <div class="m1-wrap">
+      <img class="m1-logo" src="assets/ui3a/logo_calligraphy.png" alt="青云问道录" />
+      <div class="m1-plaques">
+        <div class="m1-plaque hl">踏入仙途</div>
+        <div class="m1-plaque">续读旧档</div>
+        <div class="m1-plaque">山河图鉴</div>
+        <div class="m1-plaque">系统设置</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. 剧情对话页（参考图 5） -->
+<section class="mock-section" id="m2">
+  <div class="mock-caption">
+    <b>模拟图 2 · 场景探索与电影级剧情对话</b>
+    <span>融合参考图 5：零厚重边框！底部极通透渐变烟墨字幕条 + 左上朱砂微印 + 右侧左金线渐变悬浮选项</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/scenes/sect_plaza.webp');">
+    <img class="m2-char" src="assets/chars/sister_full.webp" alt="林清霜" />
+    <div class="m2-choices">
+      <div class="m2-opt active"><span>（递上佩剑）弟子即刻启程。</span><em>青云声望 +15</em></div>
+      <div class="m2-opt"><span>此去凶险，师尊多加保重。</span><em>羁绊 +10</em></div>
+      <div class="m2-opt"><span>弟子还有一事相求……</span><em>触发支线</em></div>
+    </div>
+    <div class="m2-subbar">
+      <div class="m2-name">林清霜</div>
+      <div class="m2-line">掌门师尊将此重任托付于我，此行下山，生死难料。师弟，你可愿与我同往？</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 命格与经脉页（参考图 3） -->
+<section class="mock-section" id="m3">
+  <div class="mock-caption">
+    <b>模拟图 3 · 命格属性与经脉总览</b>
+    <span>融合参考图 3：左侧全身像叠加极细金色经脉微光 + 左下寿元双条；右侧通透烟墨磨砂玻璃 + 朱砂小印 + 五行星图 + 精绘格子</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/scenes/bamboo.webp');">
+    <div class="m3-top">
+      <span class="back">← 返回东洲</span>
+      <span class="m3-tab active">命格</span>
+      <span class="m3-tab">功法法宝</span>
+      <span class="m3-tab">行囊装备</span>
+      <span class="m3-tab">伙伴</span>
+      <span class="m3-tab">卷宗</span>
+    </div>
+    <div class="m3-body">
+      <div class="m3-left">
+        <img class="char" src="assets/chars/hero_full.webp" alt="主角" />
+        <svg class="m3-meridian" viewBox="0 0 200 320" fill="none">
+          <path d="M100 40 L100 180 M100 72 C74 88 64 118 58 158 M100 72 C126 88 136 118 142 158 M100 132 C84 148 80 170 84 210 M100 132 C116 148 120 170 116 210" stroke="rgba(236,213,162,0.58)" stroke-width="1"/>
+          <circle cx="100" cy="72" r="3" fill="#ecd5a2"/><circle cx="100" cy="132" r="4.5" fill="#70d6ab"/><circle cx="58" cy="158" r="2.2" fill="#ecd5a2"/><circle cx="142" cy="158" r="2.2" fill="#ecd5a2"/>
+        </svg>
+        <div class="m3-life">
+          <span>寿元 18 / 100 岁 · 炼气一层</span>
+          <div class="m3-lbar"><i style="width:86%"></i></div>
+          <div class="m3-lbar"><i style="width:68%;background:#6cc4f0;"></i></div>
+        </div>
+      </div>
+      <div class="frosted m3-panel">
+        <span class="v-seal" style="position:absolute;top:14px;right:14px;">残魂相伴</span>
+        <div style="display:flex;gap:22px;border-bottom:1px solid var(--gold-hair);padding-bottom:10px;margin-bottom:12px;font-size:13px;letter-spacing:2px;">
+          <span style="color:var(--gold-bright);">命格总览</span>
+          <span style="color:var(--muted);">灵根五行</span>
+          <span style="color:var(--muted);">三大势力</span>
+          <span style="color:var(--muted);">先天气运</span>
+        </div>
+        <div class="m3-split">
+          <div class="m3-sidenav">
+            <div class="m3-snav-item active">根骨 · 14</div>
+            <div class="m3-snav-item">悟性 · 16</div>
+            <div class="m3-snav-item">气运 · 12</div>
+            <div class="m3-snav-item">口才 · 15</div>
+            <div class="m3-snav-item">道心 · 13</div>
+            <div class="m3-snav-item">声望 · 35</div>
+          </div>
+          <div class="m3-content">
+            <div style="display:flex;justify-content:center;align-items:center;padding:6px 0;">
+              <svg width="165" height="150" viewBox="0 0 150 150">
+                <polygon points="75,20 127,58 107,118 43,118 23,58" fill="none" stroke="rgba(212,184,122,0.34)" stroke-width="0.9"/>
+                <polygon points="75,46 104,67 93,100 57,100 46,67" fill="none" stroke="rgba(212,184,122,0.18)" stroke-width="0.7"/>
+                <line x1="75" y1="20" x2="107" y2="118" stroke="rgba(212,184,122,0.16)" stroke-width="0.7"/>
+                <line x1="75" y1="20" x2="43" y2="118" stroke="rgba(212,184,122,0.16)" stroke-width="0.7"/>
+                <line x1="23" y1="58" x2="127" y2="58" stroke="rgba(212,184,122,0.16)" stroke-width="0.7"/>
+                <polygon points="75,28 116,62 96,108 52,104 38,64" fill="rgba(236,213,162,0.16)" stroke="#ecd5a2" stroke-width="1.2"/>
+                <text x="75" y="13" text-anchor="middle" fill="#ecd5a2" font-size="11">金</text>
+                <text x="139" y="61" text-anchor="middle" fill="#d6a874" font-size="11">土</text>
+                <text x="115" y="132" text-anchor="middle" fill="#e07060" font-size="11">火</text>
+                <text x="35" y="132" text-anchor="middle" fill="#6cc4f0" font-size="11">水</text>
+                <text x="11" y="61" text-anchor="middle" fill="#70d6ab" font-size="11">木</text>
+              </svg>
+            </div>
+            <div class="m3-grid5">
+              <div class="m3-slot sel"><img src="assets/items/frost_sword.webp"/></div>
+              <div class="m3-slot"><img src="assets/items/jade_ring.webp"/></div>
+              <div class="m3-slot"><img src="assets/items/elixir_pill.webp"/></div>
+              <div class="m3-slot"><img src="assets/items/lightning_disk.webp"/></div>
+              <div class="m3-slot"><img src="assets/items/osmanthus_cake.webp"/></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 伙伴鉴赏页（参考图 4） -->
+<section class="mock-section" id="m4">
+  <div class="mock-caption">
+    <b>模拟图 4 · 伙伴全身像与多表情鉴赏</b>
+    <span>融合参考图 4：暮色竹林实景 + 顶部极简居中导航 + 左全身像与 3~5 态缩略图 + 右侧极净通透烟墨玻璃卡片</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/scenes/bamboo.webp');">
+    <div class="m3-top">
+      <span class="back">←</span>
+      <span class="m3-tab active">伙伴</span>
+    </div>
+    <div class="m3-body" style="padding:62px 6% 24px;">
+      <div class="m3-left" style="width:48%;">
+        <img class="char" src="assets/chars/sister_full.webp" alt="林清霜" />
+        <div class="m4-thumbs">
+          <div class="m4-thumb active"><img src="assets/chars/sister_full.webp"/></div>
+          <div class="m4-thumb"><img src="assets/chars/sister_smile.webp"/></div>
+          <div class="m4-thumb"><img src="assets/chars/sister_fierce.webp"/></div>
+        </div>
+      </div>
+      <div class="frosted m4-card">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="v-seal">青云首徒</span>
+          <div style="font-size:28px;letter-spacing:5px;color:#f7efe2;">林清霜</div>
+        </div>
+        <div style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);"><span>道友羁绊</span><span style="color:var(--gold-bright);">78 / 100</span></div>
+          <div class="m4-bond-track"><div class="m4-bond-fill"></div></div>
+        </div>
+        <svg width="136" height="126" viewBox="0 0 150 150">
+          <polygon points="75,20 127,58 107,118 43,118 23,58" fill="none" stroke="rgba(212,184,122,0.34)" stroke-width="0.9"/>
+          <polygon points="75,46 104,67 93,100 57,100 46,67" fill="none" stroke="rgba(212,184,122,0.18)" stroke-width="0.7"/>
+          <polygon points="75,24 112,64 84,104 42,114 54,66" fill="rgba(112,214,171,0.14)" stroke="#ecd5a2" stroke-width="1.2"/>
+          <text x="75" y="13" text-anchor="middle" fill="#ecd5a2" font-size="11">金</text>
+          <text x="139" y="61" text-anchor="middle" fill="#d6a874" font-size="11">土</text>
+          <text x="115" y="132" text-anchor="middle" fill="#e07060" font-size="11">火</text>
+          <text x="35" y="132" text-anchor="middle" fill="#6cc4f0" font-size="11">水</text>
+          <text x="11" y="61" text-anchor="middle" fill="#70d6ab" font-size="11">木</text>
+        </svg>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--muted);letter-spacing:2px;">随身佩剑</span>
+          <div class="m3-slot sel" style="width:68px;height:68px;"><img src="assets/items/frost_sword.webp"/></div>
+        </div>
+        <div class="m4-actions">
+          <div class="thin-btn">交谈</div>
+          <div class="thin-btn">赠礼</div>
+          <div class="thin-btn">切磋</div>
+          <div class="thin-btn gold">同行</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. 双联行囊装备（无立绘，沿用图 3/4 超通透烟墨玻璃语言） -->
+<section class="mock-section" id="m5">
+  <div class="mock-caption">
+    <b>模拟图 5 · 行囊装备（无立绘双联通透磨砂面板）</b>
+    <span>严格延续图 3/4 的超通透烟墨磨砂玻璃 + 极细 1px 金线 + 朱砂小印，彻底告别僵硬厚重外框</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/scenes/world_map.webp');">
+    <div class="m3-top">
+      <span class="back">← 返回东洲</span>
+      <span class="m3-tab">命格</span>
+      <span class="m3-tab">功法法宝</span>
+      <span class="m3-tab active">行囊装备</span>
+      <span class="m3-tab">伙伴</span>
+      <span class="m3-tab">卷宗</span>
+    </div>
+    <div class="m5-dual">
+      <div class="frosted m5-left">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--gold-hair);padding-bottom:8px;font-size:13px;letter-spacing:2px;color:var(--gold-bright);">
+          <span>身上穿戴</span><span style="font-size:11px;color:var(--muted);">6 格自由替换</span>
+        </div>
+        <div class="m5-eqgrid">
+          <div class="m5-eq"><img src="assets/items/frost_sword.webp"/><div><div style="font-size:10px;color:var(--muted);">佩剑 · 玄品</div><div style="font-size:13px;color:var(--gold-bright);">寒霜灵剑</div><div style="font-size:10px;color:var(--jade);">攻击 +26 · 会心 +12%</div></div></div>
+          <div class="m5-eq"><img src="assets/items/spirit_stone.webp"/><div><div style="font-size:10px;color:var(--muted);">道袍 · 灵品</div><div style="font-size:13px;color:var(--gold-bright);">流云青衫</div><div style="font-size:10px;color:var(--jade);">气血 +65 · 防御 +8</div></div></div>
+          <div class="m5-eq"><img src="assets/items/jade_ring.webp"/><div><div style="font-size:10px;color:var(--muted);">本命法宝</div><div style="font-size:13px;color:var(--gold-bright);">裂纹古玉戒 +2</div><div style="font-size:10px;color:var(--jade);">祭出威力 30</div></div></div>
+          <div class="m5-eq"><img src="assets/items/jade_ring.webp"/><div><div style="font-size:10px;color:var(--muted);">玉佩 · 灵品</div><div style="font-size:13px;color:var(--gold-bright);">聚宝灵佩</div><div style="font-size:10px;color:var(--jade);">气运 +4 · 口才 +4</div></div></div>
+          <div class="m5-eq"><img src="assets/items/lightning_disk.webp"/><div><div style="font-size:10px;color:var(--muted);">灵靴 · 灵品</div><div style="font-size:13px;color:var(--gold-bright);">疾风灵靴</div><div style="font-size:10px;color:var(--jade);">闪避 +14% · 防御 +6</div></div></div>
+          <div class="m5-eq"><img src="assets/items/elixir_pill.webp"/><div><div style="font-size:10px;color:var(--muted);">储物囊 · 灵品</div><div style="font-size:13px;color:var(--gold-bright);">乾坤储物袋</div><div style="font-size:10px;color:var(--jade);">行囊 20 格 · 丹效 +20%</div></div></div>
+        </div>
+        <div style="margin-top:auto;padding-top:10px;border-top:1px solid var(--gold-hair);display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);">
+          <span>攻 +30</span><span>防 +18</span><span>血 +65</span><span>会心 12%</span><span>闪避 14%</span>
+        </div>
+      </div>
+      <div class="frosted m5-right">
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--gold-hair);padding-bottom:8px;font-size:13px;letter-spacing:2px;color:var(--gold-bright);">
+          <span>乾坤行囊 (8 / 20)</span><span style="font-size:11px;color:var(--muted);">全部 · 装备 · 丹药奇物</span>
+        </div>
+        <div class="m3-grid5" style="gap:9px;">
+          <div class="m3-slot sel"><img src="assets/items/frost_sword.webp"/></div>
+          <div class="m3-slot"><img src="assets/items/elixir_pill.webp"/></div>
+          <div class="m3-slot"><img src="assets/items/osmanthus_cake.webp"/></div>
+          <div class="m3-slot"><img src="assets/items/lightning_disk.webp"/></div>
+          <div class="m3-slot"><img src="assets/items/jade_ring.webp"/></div>
+          <div class="m3-slot"><img src="assets/items/spirit_stone.webp"/></div>
+          <div class="m3-slot"></div><div class="m3-slot"></div><div class="m3-slot"></div><div class="m3-slot"></div>
+        </div>
+        <div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--gold-hair);display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:14px;color:var(--gold-bright);">青云制式剑 · 灵品</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:3px;">攻击 +16 · 灵力上限 +20 ｜ 当前已穿戴：寒霜灵剑</div>
+          </div>
+          <div class="thin-btn gold">替换穿戴</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. 问道初测（融合图 3/5 通透磨砂 + 发光左线选项） -->
+<section class="mock-section" id="m6">
+  <div class="mock-caption">
+    <b>模拟图 6 · 问道初测（开局问答）</b>
+    <span>融合参考图 3/5：超通透烟墨玻璃背景 + 顶部极简进度文字 + 发光金左线渐隐选项条（彻底抛弃死板黑框）</span>
+  </div>
+  <div class="stage" style="background-image:url('assets/scenes/world_map.webp');display:flex;align-items:center;justify-content:center;">
+    <div class="frosted m6-quiz">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gold-hair);padding-bottom:10px;">
+        <div style="display:flex;gap:18px;font-size:12px;letter-spacing:3px;">
+          <span style="color:var(--gold-bright);border-bottom:1.5px solid var(--gold-bright);padding-bottom:3px;">第壹问</span>
+          <span style="color:var(--muted);">第贰问</span>
+          <span style="color:var(--muted);">第叁问</span>
+        </div>
+        <span class="v-seal" style="writing-mode:horizontal-tb;padding:2px 8px;">问道初测</span>
+      </div>
+      <div style="font-size:16px;line-height:1.8;color:#f5f0e6;margin:4px 0 6px;">
+        初入青云界，你在破庙醒来，怀中揣着一枚裂开微光的古玉戒指。你首先会如何处置？
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="m2-opt active"><span>01 · 以一缕微弱灵识探入戒指，看看其中是否藏有前人传承。</span></div>
+        <div class="m2-opt"><span>02 · 先用布帛包好贴身藏起，财不露白，先摸清周围环境再说。</span></div>
+        <div class="m2-opt"><span>03 · 拿到村口杂货铺估个价，看看能换多少盘缠与干粮。</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

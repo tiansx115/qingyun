@@ -1,10 +1,15 @@
-const CACHE_NAME = 'qingyun-v5-6-aaa';
+const CACHE_NAME = 'qingyun-v5-7-ui3a';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
   './data/skills_items.js', './data/world.js', './data/allies.js', './data/events.js',
   './engine/icons.js', './engine/audio_fx.js', './engine/minigames.js', './engine/app.js',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png'
+  './assets/icons/icon-192.png', './assets/icons/icon-512.png',
+  './assets/ui3a/title_bg.jpg', './assets/ui3a/logo_calligraphy.png',
+  './assets/ui3a/plaque_vert.png', './assets/ui3a/avatar_ring.png',
+  './assets/ui3a/choice_bar.png', './assets/ui3a/dialogue_frame.png',
+  './assets/ui3a/ico_map.png', './assets/ui3a/ico_char.png', './assets/ui3a/ico_skill.png',
+  './assets/ui3a/ico_bag.png', './assets/ui3a/ico_ally.png', './assets/ui3a/ico_save.png'
 ];
 
 self.addEventListener('install', e => {

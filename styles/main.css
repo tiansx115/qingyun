@@ -184,84 +184,73 @@ html, body {
   border: 1px solid var(--gold-faint);
 }
 
-/* ===== 1. TITLE HOME SCREEN (3A MINIMALIST VERTICAL CALLIGRAPHY + TRANSLUCENT STRIPS) ===== */
+/* ===== 1. TITLE HOME SCREEN (3A UE5 CLOUD-SEA + CALLIGRAPHY ARTWORK + 4 3A INK-GOLD PLAQUES) ===== */
 .title-screen {
   position: absolute; inset: 0; z-index: 60; background-size: cover; background-position: center;
-  display: flex; align-items: center; justify-content: center; padding: 24px;
+  display: flex; align-items: center; justify-content: center; padding: 0;
 }
 .title-screen::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse at 34% 44%, rgba(235,200,130,0.10), rgba(6,8,10,0.62) 64%, rgba(4,5,7,0.88) 100%),
-    linear-gradient(90deg, rgba(6,8,10,0.52) 0%, transparent 45%, rgba(6,8,10,0.72) 100%);
+    radial-gradient(ellipse at 45% 44%, transparent 32%, rgba(4,5,7,0.68) 100%),
+    linear-gradient(90deg, rgba(4,5,7,0.52) 0%, transparent 34%, transparent 64%, rgba(4,5,7,0.62) 100%);
 }
 .home-layout {
   position: relative; z-index: 2; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: space-between;
-  padding: max(20px, env(safe-area-inset-top)) max(44px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(52px, env(safe-area-inset-left));
+  padding: 5% 6%;
 }
 .home-brand {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
 }
-.home-title-row { display: flex; align-items: flex-end; gap: 14px; }
-.home-title-vert {
-  writing-mode: vertical-rl; text-orientation: upright;
-  font-size: clamp(36px, 5.2vw, 52px); font-weight: 700; letter-spacing: 10px; line-height: 1.05;
-  color: #f6efe2; margin: 0;
-  text-shadow: 0 6px 26px rgba(0,0,0,0.92), 0 0 22px rgba(235,210,155,0.22);
-}
-.home-seal-stamp {
-  writing-mode: vertical-rl; text-orientation: upright;
-  background: var(--vermilion); color: #f8ece2;
-  font-size: 11px; font-weight: 700; letter-spacing: 2px; padding: 6px 4px;
-  border: 1px solid rgba(255,220,195,0.38);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.65);
+.home-logo-art {
+  height: 74%; max-height: 440px; width: auto; object-fit: contain;
+  filter: drop-shadow(0 10px 28px rgba(0,0,0,0.92)) drop-shadow(0 0 18px rgba(235,210,155,0.22));
 }
 .home-tagline {
-  font-size: 12px; letter-spacing: 3.5px; color: var(--muted);
-  padding: 4px 12px; background: rgba(9,11,14,0.58); backdrop-filter: blur(10px);
+  font-size: 11.5px; letter-spacing: 3.5px; color: #e2d5be;
+  padding: 4px 14px; background: rgba(8,10,13,0.68); backdrop-filter: blur(10px);
   border-left: 2px solid var(--vermilion); border-top: 1px solid var(--gold-faint); border-bottom: 1px solid var(--gold-faint);
 }
-.home-plaques { display: flex; gap: 12px; align-items: center; }
+.home-plaques { display: flex; gap: 10px; align-items: center; }
 .plaque-btn {
-  position: relative; width: 52px; height: clamp(178px, 42vh, 224px); cursor: pointer;
+  position: relative; width: 66px; height: clamp(205px, 48vh, 260px); cursor: pointer;
   writing-mode: vertical-rl; text-orientation: upright;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--serif); font-size: 16px; font-weight: 600; letter-spacing: 8px;
-  color: rgba(240,235,225,0.86);
-  background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--gold-hair);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.65);
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-}
-.plaque-btn::before {
-  content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-  width: 5px; height: 5px; border: 1px solid var(--gold); transform-origin: center;
-  transform: translateX(-50%) rotate(45deg); opacity: 0.65; transition: 0.18s;
+  font-family: var(--serif); font-size: 16.5px; font-weight: 600; letter-spacing: 8px;
+  color: rgba(242,234,218,0.9);
+  background: url("../assets/ui3a/plaque_vert.png") center/100% 100% no-repeat;
+  border: none; padding: 28px 0;
+  filter: drop-shadow(0 14px 24px rgba(0,0,0,0.85));
+  transition: transform 0.18s ease, filter 0.18s ease, color 0.18s ease;
 }
 .plaque-btn.primary {
-  border-color: var(--gold); color: var(--gold-bright);
-  background: rgba(15, 18, 22, 0.80);
+  color: #fff2d6;
+  filter: drop-shadow(0 14px 26px rgba(0,0,0,0.92)) drop-shadow(0 0 14px rgba(212,184,122,0.32));
 }
-.plaque-btn.primary::before { background: var(--vermilion); border-color: var(--gold-bright); opacity: 1; }
 .plaque-btn:hover, .plaque-btn:active {
-  transform: translateY(-5px); border-color: var(--gold-bright); color: var(--gold-bright);
-  background: rgba(212, 184, 122, 0.12);
+  transform: translateY(-6px); color: #fff6df;
+  filter: brightness(1.18) drop-shadow(0 18px 28px rgba(0,0,0,0.95)) drop-shadow(0 0 18px rgba(235,210,155,0.42));
 }
 .title-box {
-  position: relative; z-index: 2; width: min(620px, 88%);
-  background: var(--glass-deep); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--gold-hair); border-top: 2px solid var(--gold);
-  padding: 24px 28px; box-shadow: 0 24px 64px rgba(0,0,0,0.88);
+  position: relative; z-index: 2; width: min(680px, 88%);
+  background: rgba(9, 11, 14, 0.84); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--gold-hair); border-top: 1.5px solid var(--gold);
+  padding: 24px 30px; box-shadow: 0 28px 72px rgba(0,0,0,0.92);
 }
-.title-main { font-size: 24px; font-weight: 700; color: var(--gold-bright); letter-spacing: 5px; margin: 0 0 6px; }
+.title-main { font-size: 23px; font-weight: 700; color: var(--gold-bright); letter-spacing: 5px; margin: 0 0 6px; }
 .title-sub { font-size: 11.5px; color: var(--muted); letter-spacing: 2px; margin: 0 0 14px; }
 .quiz-btn {
-  display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 10px 14px;
-  background: rgba(14,17,21,0.72); border: 1px solid var(--gold-hair); border-left: 2px solid var(--gold-bright);
-  color: var(--text); font-family: var(--serif); font-size: 12.5px; cursor: pointer; transition: 0.15s;
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  margin-bottom: 10px; padding: 13px 28px;
+  background: url("../assets/ui3a/choice_bar.png") center/100% 100% no-repeat;
+  border: none; color: #f2eadc; font-family: var(--serif); font-size: 13px; cursor: pointer;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.65));
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
-.quiz-btn:hover, .quiz-btn:active { background: rgba(212,184,122,0.14); border-color: var(--gold-bright); }
+.quiz-btn:hover, .quiz-btn:active {
+  transform: translateX(4px); filter: brightness(1.22) drop-shadow(0 8px 18px rgba(0,0,0,0.85));
+}
 
 /* ===== 2. FLOATING 3A HUD (DUAL-ARC AVATAR + FROSTED PILL + THIN-LINE DOCK) ===== */
 .hud-tl {
@@ -269,11 +258,14 @@ html, body {
   top: max(14px, env(safe-area-inset-top)); left: max(16px, env(safe-area-inset-left));
   display: flex; align-items: center; gap: 10px; cursor: pointer;
 }
-.arc-avatar { position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.arc-avatar svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.arc-avatar img {
+.arc-avatar { position: relative; width: 76px; height: 70px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.arc-avatar .avatar-face {
   width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top;
-  border: 1px solid rgba(235,210,155,0.42); box-shadow: 0 4px 14px rgba(0,0,0,0.78);
+  box-shadow: inset 0 0 8px #000;
+}
+.arc-avatar .avatar-ring {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+  pointer-events: none; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.88));
 }
 .hud-tl-meta {
   display: flex; flex-direction: column; gap: 4px;
@@ -315,24 +307,31 @@ html, body {
   border-right: 2px solid var(--vermilion); border-top: 1px solid var(--gold-faint); border-bottom: 1px solid var(--gold-faint);
 }
 
-/* Bottom-Right 3A Thin-Line Frosted Glass Dock */
+/* Bottom-Right 3A Engraved Obsidian-Gold Dock Icons */
 .hud-br {
   position: absolute; z-index: 25;
-  bottom: max(14px, env(safe-area-inset-bottom)); right: max(16px, env(safe-area-inset-right));
-  display: flex; gap: 2px;
-  background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--gold-hair); padding: 4px 6px;
-  box-shadow: 0 8px 26px rgba(0,0,0,0.58);
+  bottom: max(12px, env(safe-area-inset-bottom)); right: max(16px, env(safe-area-inset-right));
+  display: flex; gap: 6px; padding: 5px 7px;
+  background: rgba(8,10,13,0.76); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--gold-hair);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.72);
 }
 .dock-btn {
-  width: 50px; height: 48px; background: transparent; border: 1px solid transparent; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  color: var(--muted); font-family: var(--serif); transition: all 0.16s ease; position: relative;
+  width: 50px; height: 52px; padding: 0; background: transparent; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  color: var(--muted); font-family: var(--serif); transition: transform 0.15s ease, filter 0.15s ease; position: relative;
 }
-.dock-btn svg { width: 17px; height: 17px; stroke-width: 1.35; }
-.dock-btn span { font-size: 10px; letter-spacing: 1px; }
+.dock-btn img {
+  width: 46px; height: 46px; object-fit: cover; border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.82);
+}
+.dock-btn span {
+  position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  padding: 0 5px; font-size: 9.5px; letter-spacing: 1px; white-space: nowrap;
+  color: var(--gold-bright); background: rgba(7,9,11,0.9); border: 1px solid var(--gold-hair);
+}
 .dock-btn:hover, .dock-btn:active, .dock-btn.active {
-  color: var(--gold-bright); border-color: var(--gold-hair); background: rgba(212,184,122,0.1);
+  transform: translateY(-2px); filter: brightness(1.18);
 }
 
 /* Bottom-Left Minimalist Scene Actions (lifted cleanly above version badge) */
@@ -409,31 +408,28 @@ html, body {
   max-height: 52%; overflow-y: auto;
 }
 .dlg-choice {
-  text-align: left; padding: 9px 15px; cursor: pointer;
-  background: linear-gradient(90deg, rgba(13,16,20,0.88), rgba(13,16,20,0.52));
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--gold-hair); border-left: 2px solid var(--gold-bright);
+  text-align: left; padding: 11px 24px; cursor: pointer;
+  background: url("../assets/ui3a/choice_bar.png") center/100% 100% no-repeat;
+  border: none;
   color: var(--text); font-family: var(--serif); font-size: 12.5px;
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  transition: transform 0.14s, background 0.14s, border-color 0.14s;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.72));
+  transition: transform 0.14s, filter 0.14s;
 }
 .dlg-choice:hover, .dlg-choice:active {
-  background: rgba(212,184,122,0.16); border-color: var(--gold-bright); transform: translateX(-3px);
+  filter: brightness(1.22) drop-shadow(0 8px 18px rgba(0,0,0,0.88)); transform: translateX(-4px);
 }
 .dlg-choice em { font-style: normal; font-size: 10.5px; color: var(--gold-bright); flex-shrink: 0; }
 .dlg-bar {
-  position: relative; z-index: 47; min-height: 102px;
-  margin: 0 max(22px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
-  background: linear-gradient(180deg, rgba(12,15,19,0.86), rgba(7,9,12,0.95));
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--gold-hair); border-top: 1.5px solid var(--gold);
-  padding: 18px 28px 16px 25%;
+  position: relative; z-index: 47; min-height: 112px;
+  margin: 0 max(22px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
+  background: url("../assets/ui3a/dialogue_frame.png") center/100% 100% no-repeat;
+  border: none;
+  padding: 22px 38px 18px 25%;
   display: flex; align-items: flex-start; gap: 18px;
+  filter: drop-shadow(0 14px 32px rgba(0,0,0,0.88));
 }
-.dlg-bar::before {
-  content: ""; position: absolute; top: -1px; left: 0; width: 32px; height: 2px;
-  background: var(--vermilion);
-}
+.dlg-bar::before { display: none; }
 .dlg-speaker-name {
   font-size: 14px; font-weight: 700; color: var(--gold-bright); letter-spacing: 2.5px;
   white-space: nowrap; padding-right: 12px; border-right: 1px solid var(--gold-hair);

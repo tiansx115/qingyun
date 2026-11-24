@@ -326,7 +326,7 @@ function startQuiz() {
   let step = 0;
   const root = document.getElementById('title-root');
   root.style.display = 'flex';
-  root.style.backgroundImage = `url("${ASSETS.sect_plaza}")`;
+  root.style.backgroundImage = `url("${ASSETS.ui3a_title_bg}")`;
 
   function renderStep() {
     if (step === 0 && !G._introDone) {
@@ -336,11 +336,8 @@ function startQuiz() {
       root.innerHTML = `
         <div class="home-layout">
           <div class="home-brand">
-            <div class="home-title-row">
-              <h1 class="home-title-vert">青云问道录</h1>
-              <span class="home-seal-stamp">问道</span>
-            </div>
-            <div class="home-tagline">东洲修仙志 · 3A 电影写实横屏独立版</div>
+            <img class="home-logo-art" src="${ASSETS.ui3a_logo}" alt="青云问道录" />
+            <div class="home-tagline">东洲修仙志 · 3A 写实横屏独立版</div>
             ${legNote}
           </div>
           <div class="home-plaques">
@@ -1593,16 +1590,16 @@ function initHud() {
   document.getElementById('hud-tl').onclick = () => { SFX.play('click'); activePanel = 'status'; statusSubTab = 'mingge'; renderAll(); };
   const dock = document.getElementById('hud-br');
   const btns = [
-    { label:'舆图', icon:'map',   fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
-    { label:'命格', icon:'char',  fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
-    { label:'功法', icon:'sword', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
-    { label:'行囊', icon:'bag',   fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
-    { label:'伙伴', icon:'ally',  fn:()=>{ activePanel='allies'; renderAll(); } },
-    { label:'卷宗', icon:'scroll',fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
+    { label:'舆图', img:'ui3a_ico_map',   fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
+    { label:'命格', img:'ui3a_ico_char',  fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
+    { label:'功法', img:'ui3a_ico_skill', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
+    { label:'行囊', img:'ui3a_ico_bag',   fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
+    { label:'伙伴', img:'ui3a_ico_ally',  fn:()=>{ activePanel='allies'; renderAll(); } },
+    { label:'卷宗', img:'ui3a_ico_save',  fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
   ];
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'dock-btn';
-    el.innerHTML = `${IC[b.icon]}<span>${b.label}</span>`;
+    el.innerHTML = `<img src="${ASSETS[b.img]}" alt="${b.label}"/><span>${b.label}</span>`;
     el.onclick = () => { SFX.play('click'); b.fn(); };
     dock.appendChild(el);
   });

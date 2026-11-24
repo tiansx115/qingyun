@@ -7,12 +7,13 @@ let currentLocationId = null;
 let activePanel = null; // null | 'status' | 'allies' | 'save'
 let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag'
 let selectedAllyId = 'sister';
+let allySubMode = 'ally'; // 'ally' | 'beast'
+let selectedBeastId = 'wolf';
 let selectedBagItem = null;
 let selectedEquipSlot = null;
-let bagFilter = 'all'; // 'all' | 'equip' | 'other'
+let bagFilter = 'all'; // 'all' | 'equip' | 'treasure' | 'other'
 let allyExprMap = { sister: 'normal', elder: 'normal', shen: 'normal', liu: 'normal', moli: 'normal' };
 let activeDialogue = null;
-let battleState = null;
 
 function showToast(msg) {
   const el = document.getElementById('toast');
@@ -27,26 +28,42 @@ function triggerShake() {
 function defaultState() {
   return {
     name: '陈清安', realmIdx: 0,
-    hp: 120, maxHp: 120, qi: 80, maxQi: 80, exp: 0,
-    body: 10, wit: 10, luck: 10, talk: 10, mind: 10, fame: 0,
-    elements: { gold: 72, wood: 48, water: 58, fire: 42, earth: 50 },
+    hp: 130, maxHp: 130, qi: 85, maxQi: 85, exp: 0,
+    body: 10, wit: 10, speed: 10, luck: 10, sense: 10, fame: 0,
+    elements: { gold: 72, wood: 52, water: 58, fire: 46, earth: 54 },
     root: '五行灵根', talent: '残魂相伴', sect: '散修',
-    age: 18, maxAge: 100, month: 1, stone: 70,
+    age: 18, maxAge: 100, month: 1, stone: 85,
     heartArt: 'turtle_breath',
-    ownedHeartArts: ['turtle_breath'],
-    skills: ['basic_sword', 'evade_step', 'mind_strike'],
-    artifactId: 'jade_ring',
-    artifacts: { jade_ring: 1 },
+    ownedHeartArts: ['turtle_breath', 'qingyun_breath'],
+    passives: ['p_crit_edge'],
+    ownedPassives: ['p_crit_edge', 'p_heavy_force', 'p_venom_mist', 'p_thorns_shell', 'p_beast_bond', 'p_blood_fury'],
+    skills: ['basic_sword', 'evade_step', 'venom_dart', 'sweep_staff'],
+    skillProf: {
+      basic_sword: { lv: 1, exp: 0 },
+      evade_step:  { lv: 1, exp: 0 },
+      venom_dart:  { lv: 1, exp: 0 },
+      sweep_staff: { lv: 1, exp: 0 }
+    },
     equipment: {
       weapon: 'eq_iron_sword',
-      robe: 'eq_cloth_robe',
-      pendant: null,
+      clothes: 'eq_cloth_robe',
+      head: 'eq_wood_pin',
       boots: 'eq_straw_boots',
-      pouch: 'eq_cloth_pouch'
+      wristL: 'eq_leather_wrist',
+      wristR: null,
+      acc1: 'eq_clear_jade',
+      acc2: null,
+      ring: 'eq_wood_ring'
     },
+    treasures: ['tr_flying_sword', 'tr_spirit_banner'],
+    beasts: {},
+    activeBeast: null,
     factions: { qingyun: 0, wanbao: 0, nether: 0 },
     activeAlly: null,
-    bag: { heal_pill: 3, qi_pill: 2, osmanthus_cake: 2, mystery_box: 1, eq_clear_jade: 1 },
+    bag: {
+      heal_pill: 3, qi_pill: 2, beast_fruit: 2, osmanthus_cake: 2,
+      mystery_box: 1, eq_qingyun_sword: 1, tr_poison_needle: 1
+    },
     allies: buildInitialAllies(),
     flags: {}
   };
@@ -84,33 +101,72 @@ function getAllyAsset(id, forceExpr) {
 }
 function getItemIcon(id) {
   if (D.ITEMS[id]?.icon) return ASSETS[D.ITEMS[id].icon];
-  if (D.ARTIFACTS[id]?.icon) return ASSETS[D.ARTIFACTS[id].icon];
-  const m = {
-    heal_pill: 'item_elixir_pill', qi_pill: 'item_elixir_pill',
-    osmanthus_cake: 'item_osmanthus_cake', mystery_box: 'item_spirit_stone',
-    lightning_plate: 'item_lightning_disk',
-    jade_ring: 'item_jade_ring', frost_embryo: 'item_frost_sword',
-    nether_bell: 'item_lightning_disk'
-  };
-  return ASSETS[m[id] || 'item_spirit_stone'];
+  return ASSETS.item_spirit_stone;
+}
+
+const PROF_NAMES = ['', '初窥', '小成', '大成', '圆满'];
+
+function gainSkillProf(skillId, pts = 15) {
+  G.skillProf = G.skillProf || {};
+  if (!G.skillProf[skillId]) G.skillProf[skillId] = { lv: 1, exp: 0 };
+  const p = G.skillProf[skillId];
+  if (p.lv < 4) {
+    const bonusPts = Math.round(pts * (1 + (G.wit || 10) * 0.03));
+    p.exp += bonusPts;
+    const need = p.lv * 45;
+    if (p.exp >= need) {
+      p.exp -= need;
+      p.lv = Math.min(4, p.lv + 1);
+      showToast(`【${D.SKILLS[skillId]?.name || skillId}】突破至「${PROF_NAMES[p.lv]}」！`);
+    }
+  }
+  return p;
+}
+
+function getCatMastery(catId) {
+  if (!G || !G.skills) return 0;
+  let total = 0;
+  G.skills.forEach(sid => {
+    const sk = D.SKILLS[sid];
+    if (!sk || sk.cat !== catId) return;
+    const p = (G.skillProf && G.skillProf[sid]) || { lv: 1, exp: 0 };
+    const contrib = Math.min(22, (p.lv - 1) * 7 + Math.min(6, Math.floor((p.exp || 0) / 10)) + 1);
+    total += contrib;
+  });
+  return Math.min(100, total);
 }
 
 function normalizeState(st) {
   const def = defaultState();
+  if (typeof st.speed !== 'number') st.speed = st.mind || 10;
+  if (typeof st.sense !== 'number') st.sense = st.talk || 10;
   st.factions = Object.assign({ qingyun: 0, wanbao: 0, nether: 0 }, st.factions || {});
   st.flags = st.flags || {};
   st.bag = st.bag || {};
-  st.artifacts = st.artifacts || { jade_ring: 1 };
-  if (!st.equipment || typeof st.equipment.weapon === 'object') {
-    const oldEq = st.equipment || {};
+  st.beasts = st.beasts || {};
+  st.treasures = Array.isArray(st.treasures) ? [st.treasures[0] || null, st.treasures[1] || null] : def.treasures.slice();
+  st.passives = Array.isArray(st.passives) ? st.passives.filter(p => D.PASSIVES[p]).slice(0, 3) : def.passives.slice();
+  st.ownedPassives = Array.isArray(st.ownedPassives) && st.ownedPassives.length ? st.ownedPassives : def.ownedPassives.slice();
+  st.skills = (st.skills || def.skills).filter(sid => D.SKILLS[sid]);
+  if (!st.skills.length) st.skills = def.skills.slice();
+  st.skillProf = st.skillProf || {};
+  st.skills.forEach(sid => { if (!st.skillProf[sid]) st.skillProf[sid] = { lv: 1, exp: 0 }; });
+
+  const oldEq = st.equipment || {};
+  if (!('clothes' in oldEq) || !('ring' in oldEq)) {
     st.equipment = {
-      weapon: oldEq.weapon ? (typeof oldEq.weapon === 'string' ? oldEq.weapon : 'eq_iron_sword') : null,
-      robe: oldEq.robe ? (typeof oldEq.robe === 'string' ? oldEq.robe : 'eq_cloth_robe') : null,
-      pendant: typeof oldEq.pendant === 'string' ? oldEq.pendant : null,
-      boots: typeof oldEq.boots === 'string' ? oldEq.boots : 'eq_straw_boots',
-      pouch: oldEq.pouch ? (typeof oldEq.pouch === 'string' ? oldEq.pouch : 'eq_cloth_pouch') : null
+      weapon: typeof oldEq.weapon === 'string' && D.ITEMS[oldEq.weapon] ? oldEq.weapon : 'eq_iron_sword',
+      clothes: typeof oldEq.robe === 'string' && D.ITEMS[oldEq.robe] ? oldEq.robe : 'eq_cloth_robe',
+      head: 'eq_wood_pin',
+      boots: typeof oldEq.boots === 'string' && D.ITEMS[oldEq.boots] ? oldEq.boots : 'eq_straw_boots',
+      wristL: 'eq_leather_wrist',
+      wristR: null,
+      acc1: typeof oldEq.pendant === 'string' && D.ITEMS[oldEq.pendant] ? oldEq.pendant : 'eq_clear_jade',
+      acc2: null,
+      ring: 'eq_wood_ring'
     };
   }
+
   const mergedAllies = buildInitialAllies();
   Object.keys(mergedAllies).forEach(k => {
     if (st.allies && st.allies[k]) {
@@ -125,13 +181,30 @@ function normalizeState(st) {
   return st;
 }
 
-function getEquipStats() {
-  const sum = { atk: 0, def: 0, hpMax: 0, qiMax: 0, crit: 0, dodge: 0, expRate: 0, healBonus: 0, luck: 0, talk: 0, bagCap: 15 };
-  if (!G || !G.equipment) return sum;
-  ['weapon', 'robe', 'pendant', 'boots', 'pouch'].forEach(slot => {
-    const id = G.equipment[slot];
+function getActiveSets() {
+  const cnt = {};
+  if (!G || !G.equipment) return cnt;
+  D.EQUIP_SLOTS.forEach(s => {
+    const id = G.equipment[s.key];
     const it = id && D.ITEMS[id];
-    if (!it || !it.stats) return;
+    if (it && it.set) cnt[it.set] = (cnt[it.set] || 0) + 1;
+  });
+  return cnt;
+}
+
+function getEquipStats() {
+  const sum = {
+    atk: 0, def: 0, hpMax: 0, qiMax: 0, crit: 0, dodge: 0,
+    expRate: 0, healBonus: 0, body: 0, speed: 0, luck: 0, sense: 0,
+    bagCap: 15, uniqueEffects: []
+  };
+  if (!G || !G.equipment) return sum;
+  D.EQUIP_SLOTS.forEach(s => {
+    const id = G.equipment[s.key];
+    const it = id && D.ITEMS[id];
+    if (!it) return;
+    if (it.uniqueEffect) sum.uniqueEffects.push(it.uniqueEffect);
+    if (!it.stats) return;
     for (const [k, v] of Object.entries(it.stats)) {
       if (k === 'bagCap') sum.bagCap = Math.max(sum.bagCap, v);
       else sum[k] = (sum[k] || 0) + v;
@@ -141,24 +214,26 @@ function getEquipStats() {
 }
 
 function formatStatSummary(stats) {
-  if (!stats) return '无属性加成';
+  if (!stats) return '纯外物（不加个人属性）';
   const labels = {
     atk: v => `攻击 ${v >= 0 ? '+' : ''}${v}`,
     def: v => `防御 ${v >= 0 ? '+' : ''}${v}`,
     hpMax: v => `气血 ${v >= 0 ? '+' : ''}${v}`,
     qiMax: v => `灵力 ${v >= 0 ? '+' : ''}${v}`,
-    crit: v => `会心 +${Math.round(v * 100)}%`,
+    crit: v => `暴击 +${Math.round(v * 100)}%`,
     dodge: v => `闪避 +${Math.round(v * 100)}%`,
     expRate: v => `修炼 +${Math.round(v * 100)}%`,
     healBonus: v => `丹效 +${Math.round(v * 100)}%`,
+    body: v => `根骨 +${v}`,
+    speed: v => `遁速 +${v}`,
     luck: v => `气运 +${v}`,
-    talk: v => `口才 +${v}`,
-    bagCap: v => `行囊 ${v} 格`
+    sense: v => `神识 +${v}`,
+    bagCap: v => `储物 ${v} 格`
   };
   return Object.entries(stats)
     .filter(([k, v]) => labels[k] && v !== 0)
     .map(([k, v]) => labels[k](v))
-    .join(' · ') || '无属性加成';
+    .join(' · ') || '无基础属性';
 }
 
 function recalcDerivedStats(fullHeal = false) {
@@ -166,10 +241,11 @@ function recalcDerivedStats(fullHeal = false) {
   const realm = D.REALMS[G.realmIdx] || D.REALMS[0];
   const ha = D.HEART_ARTS[G.heartArt] || {};
   const eq = getEquipStats();
+  const sets = getActiveSets();
   const prevMaxHp = G.maxHp || realm.maxHp;
   const prevMaxQi = G.maxQi || realm.maxQi;
-  G.maxHp = Math.max(40, realm.maxHp + G.body * 4 + (ha.hpBonus || 0) + eq.hpMax);
-  G.maxQi = Math.max(30, realm.maxQi + G.wit * 3 + (ha.qiBonus || 0) + eq.qiMax);
+  G.maxHp = Math.max(50, realm.maxHp + ((G.body || 10) + eq.body) * 5 + (ha.hpBonus || 0) + eq.hpMax + (sets.iron >= 2 ? 80 : 0));
+  G.maxQi = Math.max(40, realm.maxQi + ((G.sense || 10) + eq.sense) * 3 + (ha.qiBonus || 0) + eq.qiMax);
   if (fullHeal) {
     G.hp = G.maxHp; G.qi = G.maxQi;
   } else {
@@ -186,16 +262,35 @@ function addItem(id, cnt = 1) {
 
 function equipItem(id) {
   const it = D.ITEMS[id];
-  if (!it || it.type !== 'equip' || !it.slot) return;
-  if ((G.bag[id] || 0) <= 0) return;
-  const slot = it.slot;
-  const prevId = G.equipment[slot];
+  if (!it || (G.bag[id] || 0) <= 0) return;
+
+  // Pure external treasure (2 slots)
+  if (it.type === 'treasure') {
+    G.treasures = G.treasures || [null, null];
+    let targetIdx = G.treasures[0] === null ? 0 : (G.treasures[1] === null ? 1 : 0);
+    const prev = G.treasures[targetIdx];
+    G.bag[id] -= 1; if (G.bag[id] <= 0) delete G.bag[id];
+    if (prev) addItem(prev, 1);
+    G.treasures[targetIdx] = id;
+    selectedBagItem = null;
+    SFX.play('click');
+    showToast(`已装配外物法宝【${it.name}】至法宝槽 ${targetIdx + 1}。`);
+    saveGame('auto', true); renderAll();
+    return;
+  }
+
+  if (it.type !== 'equip' || !it.slot) return;
+  let targetSlot = it.slot;
+  if (it.slot === 'wrist') targetSlot = !G.equipment.wristL ? 'wristL' : (!G.equipment.wristR ? 'wristR' : 'wristL');
+  else if (it.slot === 'acc') targetSlot = !G.equipment.acc1 ? 'acc1' : (!G.equipment.acc2 ? 'acc2' : 'acc1');
+
+  const prevId = G.equipment[targetSlot];
   G.bag[id] -= 1;
   if (G.bag[id] <= 0) delete G.bag[id];
   if (prevId && D.ITEMS[prevId]) addItem(prevId, 1);
-  G.equipment[slot] = id;
+  G.equipment[targetSlot] = id;
   recalcDerivedStats(false);
-  selectedEquipSlot = slot;
+  selectedEquipSlot = targetSlot;
   selectedBagItem = null;
   SFX.play('click');
   showToast(prevId ? `已替换穿戴【${it.name}】。` : `已穿戴【${it.name}】。`);
@@ -204,17 +299,16 @@ function equipItem(id) {
 }
 
 function unequipSlot(slot) {
-  if (slot === 'artifact') {
-    const ownedArts = Object.keys(G.artifacts || {});
-    if (ownedArts.length > 1) {
-      const idx = ownedArts.indexOf(G.artifactId);
-      G.artifactId = ownedArts[(idx + 1) % ownedArts.length];
-      SFX.play('click');
-      showToast(`已切换本命法宝为【${D.ARTIFACTS[G.artifactId].name}】。`);
-      saveGame('auto', true); renderAll();
-    } else {
-      activePanel = 'status'; statusSubTab = 'skills'; renderAll();
-    }
+  if (slot.startsWith('tr_')) {
+    const idx = Number(slot.split('_')[1]);
+    const cur = G.treasures && G.treasures[idx];
+    if (!cur) return;
+    G.treasures[idx] = null;
+    addItem(cur, 1);
+    selectedEquipSlot = null; selectedBagItem = cur;
+    SFX.play('click');
+    showToast(`已收回外物法宝【${D.ITEMS[cur]?.name || cur}】。`);
+    saveGame('auto', true); renderAll();
     return;
   }
   const curId = G.equipment[slot];
@@ -315,14 +409,15 @@ function buildRadarSvg(el) {
 }
 
 function startQuiz() {
+  if (window.COMBAT) window.COMBAT.stop();
   G = defaultState();
   const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
   if (leg.points > 0) {
     const statBonus = Math.min(6, leg.points);
-    G.body += statBonus; G.wit += statBonus; G.luck += statBonus; G.talk += statBonus; G.mind += statBonus;
+    G.body += statBonus; G.wit += statBonus; G.speed += statBonus; G.luck += statBonus; G.sense += statBonus;
     G.stone += leg.points * 25;
   }
-  currentLocationId = null; activePanel = null; activeDialogue = null; battleState = null;
+  currentLocationId = null; activePanel = null; activeDialogue = null;
   let step = 0;
   const root = document.getElementById('title-root');
   root.style.display = 'flex';
@@ -425,7 +520,7 @@ function startQuiz() {
             <div style="flex:1;font-size:12.5px;line-height:1.85;color:#dfd6c6;">
               <div><b style="color:#ebd29b;">灵根资质：</b>${G.root}</div>
               <div><b style="color:#ebd29b;">先天气运：</b>${G.talent}</div>
-              <div><b style="color:#ebd29b;">初始六维：</b>根骨 ${G.body} · 悟性 ${G.wit} · 气运 ${G.luck} · 口才 ${G.talk} · 道心 ${G.mind}</div>
+              <div><b style="color:#ebd29b;">核心五维：</b>根骨 ${G.body} · 悟性 ${G.wit} · 遁速 ${G.speed} · 气运 ${G.luck} · 神识 ${G.sense}</div>
               <div><b style="color:#ebd29b;">初始盘缠：</b>${G.stone} 灵石</div>
             </div>
           </div>
@@ -559,13 +654,13 @@ function getEventCtx() {
 function openEquipShop() {
   const unlockedHigh = (G.factions?.wanbao || 0) >= 1;
   const stockIds = unlockedHigh
-    ? ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_wind_boots', 'eq_qiankun_pouch', 'eq_frost_blade', 'eq_xuan_armor']
-    : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_clear_jade', 'eq_wind_boots'];
+    ? ['eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_venom_circlet', 'eq_iron_wrist', 'eq_venom_sachet', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell']
+    : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_qingyun_crown', 'eq_wind_boots', 'eq_iron_wrist', 'eq_qiankun_ring', 'tr_poison_needle', 'tr_spirit_banner'];
   const choices = stockIds.map(id => {
     const it = D.ITEMS[id];
     return {
       text: `购入【${it.name}】(${it.tier})`,
-      hint: `${it.price}灵石 · ${formatStatSummary(it.stats)}`,
+      hint: `${it.price}灵石 · ${it.type === 'treasure' ? (it.mode === 'auto' ? '悬浮法宝' : '主动法宝') : formatStatSummary(it.stats)}`,
       action: () => buyItem(id)
     };
   });
@@ -573,8 +668,69 @@ function openEquipShop() {
   activeDialogue = {
     speaker: '鬼市装备坊', asset: ASSETS.elder,
     text: unlockedHigh
-      ? '凭万宝楼验货令入内，玄黑木架上陈列着灵品与玄品飞剑、内甲、灵靴与储物袋：“看中哪件直接点货，银货两讫。”'
-      : '灯影摇曳的装备摊上摆着几件凡品与灵品行头：“初来乍到先看外摊货色，若想见玄品重宝，得先去万宝楼拿块验货令。”',
+      ? '凭万宝楼验货令入内，玄黑木架上陈列着宗门套装、玄品护腕/头饰/储物戒与外物法宝：“看中哪件直接点货，银货两讫。”'
+      : '灯影摇曳的装备摊上摆着各部位灵品装备与外物法宝：“初来乍到先看外摊货色，若想见玄品重宝与孤品，可逛拍卖会或拿万宝楼验货令。”',
+    choices
+  };
+  renderAll();
+}
+
+function openLibraryModal() {
+  const unlearned = Object.values(D.SKILLS).filter(s => !G.skills.includes(s.id));
+  const choices = unlearned.slice(0, 5).map(s => ({
+    text: `研习【${s.name}】(${D.SKILL_CATS[s.cat].name} · 集气${s.atbCost})`,
+    hint: '25灵石 +1月',
+    action: () => {
+      if (G.stone < 25) return showToast('灵石不足 25 枚。');
+      G.stone -= 25; advanceTime(1);
+      G.skills.push(s.id);
+      G.skillProf[s.id] = { lv: 1, exp: 0 };
+      showToast(`习得招式【${s.name}】！多练同系招式可堆高【${D.SKILL_CATS[s.cat].name}】总造诣。`);
+      activeDialogue = null; saveGame('auto', true); renderAll();
+    }
+  }));
+  choices.push({
+    text: '静心演武，提升当前出战 4 招熟练度与修为', hint: '+1月 悟性+1',
+    action: () => {
+      advanceTime(1); G.wit += 1;
+      G.skills.slice(0, 4).forEach(sid => gainSkillProf(sid, 24));
+      const g = gainExp(48);
+      recalcDerivedStats(false);
+      showToast(`藏经阁演武一月，修为 +${g}，悟性 +1，出战招式熟练度精进！`);
+      activeDialogue = null; saveGame('auto', true); renderAll();
+    }
+  });
+  choices.push({ text: '离开藏经阁', action: () => { activeDialogue = null; renderAll(); } });
+  activeDialogue = {
+    speaker: '藏经阁长老', asset: ASSETS.elder,
+    text: '“武学之道贵在博采众长。单练一招至圆满难成宗师，唯有同系招式皆融会贯通，方能将门类总造诣推至百点化境。”',
+    choices
+  };
+  renderAll();
+}
+
+function openBeastTameModal() {
+  const choices = Object.values(D.BEAST_DEFS).map(b => {
+    const owned = Boolean(G.beasts && G.beasts[b.id]);
+    return {
+      text: owned ? `已收养【${b.name}】(${b.role})` : `驯化收养【${b.name}】(${b.role})`,
+      hint: owned ? '前往灵兽页培养' : `${b.adoptCost}灵石`,
+      action: () => {
+        if (owned) { activeDialogue = null; activePanel = 'allies'; allySubMode = 'beast'; selectedBeastId = b.id; renderAll(); return; }
+        if (G.stone < b.adoptCost) return showToast(`灵石不足 ${b.adoptCost} 枚。`);
+        G.stone -= b.adoptCost;
+        G.beasts[b.id] = { id: b.id, lv: 1, exp: 0, stage: 0, bond: 20 };
+        if (!G.activeBeast) G.activeBeast = b.id;
+        SFX.play('levelup');
+        showToast(`成功驯化【${b.name}】！已设为主战灵兽，可在「伙伴→灵兽」中喂养进化。`);
+        activeDialogue = null; saveGame('auto', true); renderAll();
+      }
+    };
+  });
+  choices.push({ text: '暂不驯兽', action: () => { activeDialogue = null; renderAll(); } });
+  activeDialogue = {
+    speaker: '万妖林御兽契', asset: ASSETS.wolf_boss,
+    text: '古林灵雾深处蛰伏着数头灵智初开的幼兽。以灵石与神识结下御兽契，便可收养培养并同屏参战。',
     choices
   };
   renderAll();
@@ -586,14 +742,9 @@ function handleHotspot(hid) {
     D.EVENTS.runSectTrial(getEventCtx());
     renderAll();
   } else if (hid === 'sect_library') {
-    advanceTime(1); const g = gainExp(48); G.wit += 1;
-    recalcDerivedStats(false);
-    showToast(`在藏经阁静心研读一月，修为 +${g}，悟性 +1。`);
-    saveGame('auto', true); renderAll();
+    openLibraryModal();
   } else if (hid === 'sect_alchemy') {
     window.MINIGAMES.openAlchemy(getEventCtx());
-  } else if (hid === 'sect_forge') {
-    activePanel = 'status'; statusSubTab = 'skills'; renderAll();
   } else if (hid === 'cliff_event') {
     D.EVENTS.runCliffEvent(getEventCtx());
     renderAll();
@@ -622,6 +773,7 @@ function handleHotspot(hid) {
       choices: [
         { text:'购入【桂花回春丹】', hint:'15 灵石', action: () => buyItem('heal_pill') },
         { text:'购入【冰泉聚气散】', hint:'15 灵石', action: () => buyItem('qi_pill') },
+        { text:'购入【赤灵妖果】(灵兽口粮)', hint:'25 灵石', action: () => buyItem('beast_fruit') },
         { text:'购入【古修遗匣】', hint:'30 灵石', action: () => buyItem('mystery_box') },
         { text:'购入【避雷引灵阵盘】', hint:'80 灵石', action: () => buyItem('lightning_plate') },
         { text:'离开摊位', action: () => { activeDialogue = null; renderAll(); } }
@@ -640,14 +792,16 @@ function handleHotspot(hid) {
     renderAll();
   } else if (hid === 'market_trade') {
     const eq = getEquipStats();
-    advanceTime(1); const earn = 35 + Math.floor((G.talk + eq.talk) * 1.6); G.stone += earn; G.talk += 1;
-    showToast(`凭借眼力做成一笔鉴宝买卖，净赚 ${earn} 灵石，口才 +1。`);
+    advanceTime(1); const earn = 35 + Math.floor(((G.sense || 10) + eq.sense) * 1.6); G.stone += earn; G.sense += 1;
+    showToast(`凭借神识眼力做成一笔鉴宝买卖，净赚 ${earn} 灵石，神识 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'forest_stall') {
     const eq = getEquipStats();
     advanceTime(1); const earn = 75 + eq.luck * 2; G.stone += earn; G.luck += 1;
     showToast(`在古林谷口设摊售药，半日售罄，净赚 ${earn} 灵石，气运 +1。`);
     saveGame('auto', true); renderAll();
+  } else if (hid === 'forest_tame') {
+    openBeastTameModal();
   } else if (hid === 'forest_ruin') {
     D.EVENTS.runForestRuin(getEventCtx());
     renderAll();
@@ -691,111 +845,21 @@ function buyItem(id) {
   saveGame('auto', true); renderAll();
 }
 
-// Combat
+// Combat (delegated to v6 Real-Time ATB engine/combat.js)
 function startBattle(enemy) {
-  const allyDef = G.activeAlly ? getAllyDef(G.activeAlly) : null;
-  battleState = {
-    enemy: { ...enemy }, shield: 0, stunned: false, artifactUsed: false,
-    ticker: `迎战【${enemy.name}】！${allyDef ? `道友【${allyDef.name}】随行助阵！` : ''}`
-  };
-  activeDialogue = null; activePanel = null; renderAll();
-}
-function spawnDmg(sel, text) {
-  const slot = document.querySelector(sel);
-  if (!slot) return;
-  const el = document.createElement('div'); el.className = 'dmg-float'; el.textContent = text;
-  slot.appendChild(el);
-  const img = slot.querySelector('img');
-  if (img) { img.classList.remove('hit-flash'); void img.offsetWidth; img.classList.add('hit-flash'); }
-  setTimeout(() => el.remove(), 900);
-}
-function useArtifactInBattle() {
-  if (!battleState || battleState.artifactUsed) return showToast('本场战斗已祭出过本命法宝。');
-  const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1;
-  const dmg = Math.floor(art.baseDmg * (1 + (lv - 1) * 0.35));
-  battleState.artifactUsed = true;
-  if (art.shield) battleState.shield += art.shield * lv;
-  if (art.stunChance && Math.random() < art.stunChance) battleState.stunned = true;
-  battleState.enemy.hp = Math.max(0, battleState.enemy.hp - dmg);
-  SFX.play('thunder'); FX.slash('#82d2ff', 0.72, 0.45); FX.burst('130,210,255', 30, 0.72, 0.45); triggerShake();
-  battleState.ticker = `祭出本命法宝【${art.name} +${lv}】，重创敌手 ${dmg} 点！`;
-  finishBattleTurn(dmg);
-}
-function useBattleSkill(skillId) {
-  if (!battleState) return;
-  const sk = D.SKILLS[skillId]; const e = battleState.enemy;
-  if (G.qi < sk.cost) return showToast('灵力不足。');
-  if (sk.stoneCost && G.stone < sk.stoneCost) return showToast(`灵石不足 ${sk.stoneCost}。`);
-  G.qi -= sk.cost; if (sk.stoneCost) G.stone -= sk.stoneCost;
-  const ha = D.HEART_ARTS[G.heartArt] || {};
-  const eq = getEquipStats();
-  let dmg = Math.floor((G.body * 2.2 + G.wit * 1.4 + (ha.atkBonus || 0) + (eq.atk || 0)) * sk.power);
-  if (sk.talkScale) {
-    dmg = Math.floor((G.talk + (eq.talk || 0)) * sk.talkScale + Math.random() * 12);
-    if (e.talkDef > 100) dmg = 5;
-    else if (sk.stun && Math.random() < 0.6) battleState.stunned = true;
-  }
-  let critTag = '';
-  if (eq.crit > 0 && Math.random() < eq.crit) {
-    dmg = Math.floor(dmg * 1.5);
-    critTag = '【会心一击】';
-  }
-  if (sk.shield) battleState.shield += sk.shield;
-  if (sk.drainHp) G.hp = Math.min(G.maxHp, G.hp + sk.drainHp);
-  let allyMsg = '';
-  if (G.activeAlly && e.hp - dmg > 0) {
-    const ally = G.allies[G.activeAlly];
-    const allyDef = getAllyDef(G.activeAlly);
-    const ad = Math.floor((ally?.power || allyDef.power) * (0.85 + Math.random() * 0.3));
-    dmg += ad; allyMsg = `（${allyDef.name}合击 +${ad}）`;
-  }
-  e.hp = Math.max(0, e.hp - dmg);
-  SFX.play(sk.id === 'grandpa_finger' ? 'thunder' : 'sword');
-  FX.slash(sk.id === 'sister_frost' ? '#82d2ff' : '#ebd29b', 0.72, 0.45);
-  FX.burst(sk.id === 'sister_frost' ? '130,210,255' : '235,210,155', 24, 0.72, 0.45);
-  triggerShake();
-  battleState.ticker = `${critTag}施展【${sk.name}】，对 ${e.name} 造成 ${dmg} 点伤害${allyMsg}。`;
-  finishBattleTurn(dmg);
-}
-function finishBattleTurn(heroDmg) {
-  const e = battleState.enemy;
-  if (e.hp <= 0) {
-    const wonTrib = e.isTribulation;
-    const onWin = e.onWin;
-    const expG = e.expReward ? gainExp(e.expReward) : 0;
-    G.stone += e.stoneReward || 0; G.fame += 5; battleState = null;
-    if (wonTrib) tryRealmUp(true);
-    else {
-      SFX.play('levelup');
-      if (onWin) onWin();
-      else showToast(`得胜！修为 +${expG}，灵石 +${e.stoneReward}。`);
+  activeDialogue = null; activePanel = null;
+  window.COMBAT.start(enemy, {
+    G, D, ASSETS,
+    getEquipStats, getActiveSets, gainSkillProf, getCatMastery,
+    getAllyDef, getAllyAsset, gainExp, tryRealmUp, saveGame,
+    setAllyExpr: (id, ex) => { allyExprMap[id] = ex; },
+    onBattleStart: () => renderAll(),
+    onBattleEnd: () => {
+      const cl = document.getElementById('combat-root');
+      if (cl) cl.innerHTML = '';
+      renderAll();
     }
-    saveGame('auto', true); renderAll(); return;
-  }
-  let eDmg = 0;
-  if (battleState.stunned) { battleState.stunned = false; battleState.ticker += ` ${e.name} 心神失守，错失反击！`; }
-  else {
-    const ha = D.HEART_ARTS[G.heartArt] || {};
-    const eq = getEquipStats();
-    if (eq.dodge > 0 && Math.random() < eq.dodge) {
-      battleState.ticker += ` 借灵靴身法轻巧闪避了 ${e.name} 的攻势！`;
-    } else {
-      eDmg = Math.max(4, e.atk - Math.floor(G.body * 0.35) - (ha.defBonus || 0) - (eq.def || 0) + Math.floor(Math.random()*6));
-      if (battleState.shield > 0) { const ab = Math.min(battleState.shield, eDmg); battleState.shield -= ab; eDmg -= ab; }
-      G.hp = Math.max(0, G.hp - eDmg);
-      battleState.ticker += ` ${e.name} 反击造成 ${eDmg} 点伤害。`;
-    }
-  }
-  if (G.hp <= 0) {
-    if (G.activeAlly) allyExprMap[G.activeAlly] = 'injured';
-    G.hp = Math.floor(G.maxHp * 0.5); G.qi = Math.floor(G.maxQi * 0.5); battleState = null;
-    showToast('力竭败退，幸得古玉残魂护持脱身。');
-  }
-  renderAll();
-  if (battleState) {
-    spawnDmg('.c-actor.enemy', `-${heroDmg}`);
-    if (eDmg > 0) setTimeout(() => spawnDmg('.c-actor.hero', `-${eDmg}`), 220);
-  }
+  });
 }
 
 // Save/Load
@@ -809,9 +873,10 @@ function loadGame(slot = 'auto') {
   try {
     const raw = localStorage.getItem('qingyun_v5_save_' + slot);
     if (!raw) return false;
+    if (window.COMBAT) window.COMBAT.stop();
     G = normalizeState(JSON.parse(raw).data);
     recalcDerivedStats(false);
-    battleState = null; activeDialogue = null; activePanel = null;
+    activeDialogue = null; activePanel = null;
     showToast('读取旧档成功。'); return true;
   } catch { return false; }
 }
@@ -826,9 +891,10 @@ window.importSaveCode = () => {
   const box = document.getElementById('save-code-box');
   if (!box || !box.value.trim()) return showToast('请先粘贴存档码。');
   try {
+    if (window.COMBAT) window.COMBAT.stop();
     G = normalizeState(JSON.parse(decodeURIComponent(escape(atob(box.value.trim())))));
     recalcDerivedStats(false);
-    battleState = null; activeDialogue = null; activePanel = null; saveGame('auto', true);
+    activeDialogue = null; activePanel = null; saveGame('auto', true);
     showToast('存档码导入成功。'); renderAll();
   } catch { showToast('存档码格式无效。'); }
 };
@@ -878,15 +944,24 @@ function renderSplitPanel() {
 
   const main = sc.querySelector('#sys-main');
 
-  // 1. 命格页：左侧完整全身像 + 右侧属性面板
+  // 1. 命格页：左侧完整全身像 + 右侧五维、五行星图、门类总造诣(0~100)与修为
   if (curTab === 'mingge') {
-    const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1;
     const expPct = Math.min(100, Math.round((G.exp / Math.max(1, realm.exp)) * 100));
     const canBreak = G.exp >= realm.exp && D.REALMS[G.realmIdx + 1];
+    const eq = getEquipStats();
     const statItems = [
-      ['根骨', G.body], ['悟性', G.wit], ['气运', G.luck],
-      ['口才', G.talk], ['道心', G.mind], ['声望', G.fame]
+      ['根骨', (G.body || 10) + (eq.body || 0)],
+      ['悟性', G.wit || 10],
+      ['遁速', (G.speed || 10) + (eq.speed || 0)],
+      ['气运', (G.luck || 10) + (eq.luck || 0)],
+      ['神识', (G.sense || 10) + (eq.sense || 0)],
+      ['声望', G.fame || 0]
     ];
+    const catHtml = Object.values(D.SKILL_CATS).map(c => {
+      const m = getCatMastery(c.id);
+      return `<div class="cat-pill"><span>${c.name}</span><b>${m}/100</b><div class="stat-mini-bar"><i style="width:${m}%"></i></div></div>`;
+    }).join('');
+
     main.innerHTML = `
       <div class="fullbody-col">
         <div class="fullbody-wrap">
@@ -906,28 +981,25 @@ function renderSplitPanel() {
               <span class="vermilion-seal">${G.sect}</span>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;font-size:11.5px;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11.5px;">
             ${statItems.map(([lbl, val]) => `
-              <div class="glass-card" style="padding:6px 10px;flex-direction:column;align-items:stretch;gap:0;">
+              <div class="glass-card" style="padding:5px 9px;flex-direction:column;align-items:stretch;gap:0;">
                 <div style="display:flex;justify-content:space-between;"><span>${lbl}</span><b style="color:#ebd29b;">${val}</b></div>
                 <div class="stat-mini-bar"><i style="width:${Math.min(100, val * 2.5)}%"></i></div>
               </div>
             `).join('')}
           </div>
-          <div class="faction-strip">
-            <div class="fac-pill"><span>青云剑宗</span><b>${G.factions?.qingyun || 0}/3</b></div>
-            <div class="fac-pill"><span>万宝楼</span><b>${G.factions?.wanbao || 0}/3</b></div>
-            <div class="fac-pill"><span>幽冥玄宗</span><b>${G.factions?.nether || 0}/3</b></div>
-          </div>
+          <div style="font-size:10.5px;color:var(--muted);letter-spacing:1px;">兵器与大道总造诣（博采众长堆至 100 威力翻倍）</div>
+          <div class="cat-grid">${catHtml}</div>
           <div class="glass-card">
             <div style="flex:1;min-width:0;">
               <h4>修为进度（${G.exp} / ${realm.exp}）</h4>
               <div class="exp-track"><div class="exp-fill" style="width:${expPct}%"></div></div>
-              <p>气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi} · 法宝：${art.name}+${lv}</p>
+              <p>气血 ${G.hp}/${G.maxHp} · 灵力 ${Math.floor(G.qi)}/${G.maxQi} · 主战灵兽：${G.activeBeast ? D.BEAST_DEFS[G.activeBeast].name : '未出战'}</p>
             </div>
             <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
               <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
-              ${canBreak ? `<button class="sleek-btn" id="btn-break" style="border-color:var(--jade);color:var(--jade);">破境突破</button>` : ''}
+              ${canBreak ? `<button class="sleek-btn" id="btn-break" style="color:var(--jade);">破境突破</button>` : ''}
             </div>
           </div>
         </div>
@@ -941,93 +1013,90 @@ function renderSplitPanel() {
     const brk = main.querySelector('#btn-break');
     if (brk) brk.onclick = () => { tryRealmUp(false); renderAll(); };
   }
-  // 2. 行囊装备页：无立绘！左侧 6 格可自由穿戴/卸下装备 + 右侧完整背包大格子
+  // 2. 行囊装备页：无立绘！左侧 9 格身上穿戴 + 2 格纯外物法宝 + 套装激活；右侧戒指扩容行囊
   else if (curTab === 'bag') {
     const eq = G.equipment || {};
     const eqStats = getEquipStats();
     const ha = D.HEART_ARTS[G.heartArt] || {};
-    const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1;
-    const artDmg = Math.floor(art.baseDmg * (1 + (lv - 1) * 0.35));
+    const sets = getActiveSets();
     const bagCap = eqStats.bagCap || 15;
 
     const eqHtml = D.EQUIP_SLOTS.map(d => {
       const isSel = selectedEquipSlot === d.key;
-      if (d.key === 'artifact') {
-        return `
-          <div class="equip-slot filled ${isSel ? 'selected' : ''}" data-eq-slot="artifact">
-            <img src="${getItemIcon(G.artifactId)}"/>
-            <div class="eq-meta">
-              <div class="eq-type">${d.label}</div>
-              <div class="eq-name">${art.name} +${lv}</div>
-              <div class="eq-bonus">祭出威力 ${artDmg}</div>
-            </div>
-          </div>
-        `;
-      }
       const itemId = eq[d.key];
       const it = itemId && D.ITEMS[itemId];
       return `
-        <div class="equip-slot ${it ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${d.key}">
+        <div class="equip-slot compact ${it ? 'filled' : ''} ${it?.unique ? 'uniq' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${d.key}">
           ${it ? `<img src="${getItemIcon(itemId)}"/>` : `<div class="eq-empty">空</div>`}
           <div class="eq-meta">
             <div class="eq-type">${d.label}${it && it.tier ? ` · <em class="tier-tag t-${it.tier}">${it.tier}</em>` : ''}</div>
             <div class="eq-name">${it ? it.name : '未穿戴'}</div>
-            ${it ? `<div class="eq-bonus">${formatStatSummary(it.stats)}</div>` : ''}
           </div>
         </div>
       `;
     }).join('');
 
+    const trHtml = [0, 1].map(idx => {
+      const slotKey = `tr_${idx}`;
+      const tid = G.treasures && G.treasures[idx];
+      const it = tid && D.ITEMS[tid];
+      const isSel = selectedEquipSlot === slotKey;
+      return `
+        <div class="equip-slot compact ${it ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${slotKey}">
+          ${it ? `<img src="${getItemIcon(tid)}"/>` : `<div class="eq-empty">外物</div>`}
+          <div class="eq-meta">
+            <div class="eq-type">外物法宝 ${idx + 1}${it ? ` · ${it.mode === 'auto' ? '悬浮' : '主动'}` : ''}</div>
+            <div class="eq-name">${it ? it.name : '空置'}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const activeSetStr = Object.entries(sets)
+      .filter(([, n]) => n >= 2)
+      .map(([sid, n]) => `${D.SETS[sid].name}(${n}件)`).join(' · ') || '未激活套装（可自由混搭孤品）';
+
     const allOwned = Object.entries(G.bag).filter(([id, c]) => c > 0 && D.ITEMS[id]);
     const owned = allOwned.filter(([id]) => {
       if (bagFilter === 'equip') return D.ITEMS[id].type === 'equip';
-      if (bagFilter === 'other') return D.ITEMS[id].type !== 'equip';
+      if (bagFilter === 'treasure') return D.ITEMS[id].type === 'treasure';
+      if (bagFilter === 'other') return D.ITEMS[id].type !== 'equip' && D.ITEMS[id].type !== 'treasure';
       return true;
     });
     if (!selectedEquipSlot && (!selectedBagItem || !owned.some(([id]) => id === selectedBagItem))) {
       selectedBagItem = owned.length ? owned[0][0] : null;
     }
 
-    // Left slot action strip
     let leftActionHtml = '';
-    if (selectedEquipSlot === 'artifact') {
-      const ownedArts = Object.keys(G.artifacts || {});
-      leftActionHtml = `
-        <div class="eq-action-bar">
-          <div class="eq-act-info"><b>${art.name} +${lv}</b><span>${art.desc}</span></div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            ${ownedArts.length > 1 ? `<button class="sleek-btn" id="eq-unequip">切换法宝</button>` : ''}
-            <button class="sleek-btn ghost" id="eq-goto-forge">祭炼</button>
+    if (selectedEquipSlot) {
+      const isTr = selectedEquipSlot.startsWith('tr_');
+      const curId = isTr ? (G.treasures && G.treasures[Number(selectedEquipSlot.split('_')[1])]) : eq[selectedEquipSlot];
+      const sit = curId && D.ITEMS[curId];
+      if (sit) {
+        leftActionHtml = `
+          <div class="eq-action-bar">
+            <div class="eq-act-info"><b>${sit.name}（${sit.tier || ''}）</b><span>${isTr ? sit.desc : formatStatSummary(sit.stats)}</span></div>
+            <button class="sleek-btn ghost" id="eq-unequip">卸下</button>
           </div>
-        </div>
-      `;
-    } else if (selectedEquipSlot && eq[selectedEquipSlot] && D.ITEMS[eq[selectedEquipSlot]]) {
-      const sit = D.ITEMS[eq[selectedEquipSlot]];
-      leftActionHtml = `
-        <div class="eq-action-bar">
-          <div class="eq-act-info"><b>${sit.name}（${sit.tier || '装备'}）</b><span>${formatStatSummary(sit.stats)}</span></div>
-          <button class="sleek-btn ghost" id="eq-unequip">卸下</button>
-        </div>
-      `;
-    } else if (selectedEquipSlot) {
-      leftActionHtml = `
-        <div class="eq-action-bar">
-          <div class="eq-act-info"><span>该槽位当前空置，可在右侧行囊中点选对应装备穿戴。</span></div>
-        </div>
-      `;
+        `;
+      } else {
+        leftActionHtml = `<div class="eq-action-bar"><div class="eq-act-info"><span>该槽位空置，请在右侧行囊点选装备或外物法宝装配。</span></div></div>`;
+      }
     }
 
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>身上穿戴</span><span style="font-size:10.5px;color:var(--muted);">点击槽位查看或卸下</span></div>
-        <div class="equip-grid">${eqHtml}</div>
+        <div class="sec-head"><span>身上穿戴 (9格)</span><span style="font-size:10px;color:var(--jade);">${activeSetStr}</span></div>
+        <div class="equip-grid grid-3">${eqHtml}</div>
+        <div style="font-size:10px;color:var(--muted);margin:6px 0 4px;">随身外物法宝 (2格 · 纯外物不加个人属性)</div>
+        <div class="equip-grid" style="flex:0 0 auto;">${trHtml}</div>
         ${leftActionHtml}
         <div class="eq-summary-bar">
           <span>攻 +${eqStats.atk + (ha.atkBonus || 0)}</span>
           <span>防 +${eqStats.def + (ha.defBonus || 0)}</span>
-          <span>血 +${eqStats.hpMax}</span>
-          <span>会心 ${Math.round(eqStats.crit * 100)}%</span>
+          <span>暴击 ${Math.round((0.08 + (G.luck||10)*0.01 + eqStats.crit)*100)}%</span>
           <span>闪避 ${Math.round(eqStats.dodge * 100)}%</span>
+          <span>储物 ${bagCap}格</span>
         </div>
       </div>
       <div class="dual-right">
@@ -1036,7 +1105,8 @@ function renderSplitPanel() {
           <div class="filter-pills">
             <button class="filter-pill ${bagFilter==='all'?'active':''}" data-bf="all">全部</button>
             <button class="filter-pill ${bagFilter==='equip'?'active':''}" data-bf="equip">装备</button>
-            <button class="filter-pill ${bagFilter==='other'?'active':''}" data-bf="other">丹药奇物</button>
+            <button class="filter-pill ${bagFilter==='treasure'?'active':''}" data-bf="treasure">法宝</button>
+            <button class="filter-pill ${bagFilter==='other'?'active':''}" data-bf="other">丹药</button>
           </div>
         </div>
         <div class="bag-grid-5" id="bag-grid-5"></div>
@@ -1047,7 +1117,6 @@ function renderSplitPanel() {
     main.querySelectorAll('[data-bf]').forEach(b => {
       b.onclick = () => { SFX.play('click'); bagFilter = b.dataset.bf; selectedBagItem = null; renderAll(); };
     });
-
     main.querySelectorAll('[data-eq-slot]').forEach(el => {
       el.onclick = () => {
         SFX.play('click');
@@ -1058,8 +1127,6 @@ function renderSplitPanel() {
     });
     const unBtn = main.querySelector('#eq-unequip');
     if (unBtn) unBtn.onclick = () => unequipSlot(selectedEquipSlot);
-    const fgBtn = main.querySelector('#eq-goto-forge');
-    if (fgBtn) fgBtn.onclick = () => { SFX.play('click'); statusSubTab = 'skills'; renderAll(); };
 
     const grid = main.querySelector('#bag-grid-5');
     for (let i = 0; i < bagCap; i++) {
@@ -1069,7 +1136,7 @@ function renderSplitPanel() {
         const it = D.ITEMS[id];
         cell.className = 'bag-cell has-item' + (selectedBagItem === id ? ' selected' : '') + (it.tier ? ` tier-b-${it.tier}` : '');
         cell.innerHTML = `
-          ${it.tier ? `<span class="b-tier t-${it.tier}">${it.tier[0]}</span>` : ''}
+          ${it.tier ? `<span class="b-tier t-${it.tier}">${it.unique ? '孤' : it.tier[0]}</span>` : ''}
           <img src="${getItemIcon(id)}"/>
           <span class="b-cnt">×${cnt}</span>
         `;
@@ -1083,22 +1150,17 @@ function renderSplitPanel() {
     const det = main.querySelector('#bag-detail');
     if (selectedBagItem && D.ITEMS[selectedBagItem]) {
       const it = D.ITEMS[selectedBagItem];
-      if (it.type === 'equip') {
-        const curSlotId = eq[it.slot];
-        const curSlotItem = curSlotId && D.ITEMS[curSlotId];
-        const slotMeta = D.EQUIP_SLOTS.find(s => s.key === it.slot);
+      if (it.type === 'equip' || it.type === 'treasure') {
         det.innerHTML = `
           <div style="min-width:0;flex:1;">
             <div style="font-size:12.5px;color:#ebd29b;font-weight:600;">
-              ${it.name} <span class="tier-tag t-${it.tier}">${it.tier}</span>
-              <span style="font-size:10.5px;color:var(--muted);font-weight:400;">· ${slotMeta ? slotMeta.label : ''}</span>
+              ${it.name} ${it.tier ? `<span class="tier-tag t-${it.tier}">${it.tier}</span>` : ''}
+              ${it.set && D.SETS[it.set] ? `<span style="font-size:10px;color:var(--jade);">· ${D.SETS[it.set].name}</span>` : ''}
             </div>
-            <div style="font-size:10.5px;color:#6fd3a8;margin-top:2px;">${formatStatSummary(it.stats)}</div>
-            <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">
-              ${curSlotItem ? `当前已穿戴：${curSlotItem.name}（${formatStatSummary(curSlotItem.stats)}）` : it.desc}
-            </div>
+            <div style="font-size:10.5px;color:#6fd3a8;margin-top:2px;">${it.type === 'treasure' ? (it.mode === 'auto' ? '【悬浮自动出击 · 纯外物】' : '【主动祭出 · 纯外物】') : formatStatSummary(it.stats)}</div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${it.desc}</div>
           </div>
-          <button class="sleek-btn" id="bag-equip" style="flex-shrink:0;">${curSlotItem ? '替换' : '穿戴'}</button>
+          <button class="sleek-btn" id="bag-equip" style="flex-shrink:0;">${it.type === 'treasure' ? '装配法宝' : '穿戴'}</button>
         `;
         det.querySelector('#bag-equip').onclick = () => equipItem(selectedBagItem);
       } else {
@@ -1118,10 +1180,9 @@ function renderSplitPanel() {
           if (it.qi) G.qi = Math.min(G.maxQi, G.qi + Math.round(it.qi * mul));
           if (it.fullRestore) { G.hp = G.maxHp; G.qi = G.maxQi; }
           if (it.marrow) {
-            const ks = [['body','根骨'], ['wit','悟性'], ['mind','道心']];
+            const ks = [['body','根骨'], ['wit','悟性'], ['speed','遁速'], ['sense','神识']];
             const pick = ks[Math.floor(Math.random() * ks.length)];
-            G[pick[0]] += 2;
-            recalcDerivedStats(false);
+            G[pick[0]] += 2; recalcDerivedStats(false);
             const g = gainExp(it.exp || 130);
             showToast(`服下【${it.name}】，${pick[1]} +2，修为 +${g}！`);
           } else if (it.exp) {
@@ -1129,94 +1190,179 @@ function renderSplitPanel() {
             showToast(`服下【${it.name}】，修为 +${g}，状态圆满！`);
           } else if (it.type === 'box') {
             const r = Math.random();
-            if (r < 0.35) { addItem('eq_clear_jade', 1); showToast('启封遗匣，得一枚【清心玉佩】！'); }
-            else if (r < 0.75) { G.stone += 60; showToast('启封遗匣，得 60 灵石。'); }
-            else { const g = gainExp(55); showToast(`遗匣中藏有前人剑诀心得，修为 +${g}。`); }
+            if (r < 0.35) { addItem('eq_iron_wrist', 1); showToast('启封遗匣，得一件【玄铁震腕】！'); }
+            else if (r < 0.75) { G.stone += 65; showToast('启封遗匣，得 65 灵石。'); }
+            else { const g = gainExp(55); showToast(`遗匣中藏有武学心得，修为 +${g}。`); }
           } else {
-            showToast(`使用了【${it.name}】${eqStats.healBonus ? `（丹囊增幅 +${Math.round(eqStats.healBonus*100)}%）` : ''}。`);
+            showToast(`使用了【${it.name}】。`);
           }
           saveGame('auto', true); renderAll();
         };
       }
     } else {
-      det.innerHTML = '<span style="font-size:11.5px;color:var(--muted);">点选上方行囊物品查看详情，或前往鬼市装备坊置办行头。</span>';
+      det.innerHTML = '<span style="font-size:11.5px;color:var(--muted);">点选上方物品查看详情，或前往鬼市装备坊 / 拍卖会置办套装与孤品。</span>';
     }
   }
-  // 3. 功法法宝页：无立绘！左侧当前装配与祭炼台 + 右侧功法典籍库
+  // 3. 功法流派页：左侧主修心法 + 3辅修流派被动 + 4出战招式槽；右侧心法/被动/全招式库
   else if (curTab === 'skills') {
-    const art = D.ARTIFACTS[G.artifactId]; const lv = G.artifacts[G.artifactId] || 1; const cost = lv * 35;
-    const curHa = D.HEART_ARTS[G.heartArt];
-    const ownedArts = Object.keys(G.artifacts || {});
+    const curHa = D.HEART_ARTS[G.heartArt] || D.HEART_ARTS.turtle_breath;
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>本命祭炼与当前装配</span><span style="font-size:10.5px;color:var(--muted);">战前整备</span></div>
+        <div class="sec-head"><span>流派构筑与出战配置</span><span style="font-size:10px;color:var(--jade);">${curHa.style}</span></div>
         <div class="gp-body">
-          <div class="glass-card active">
-            <div style="display:flex;gap:10px;align-items:center;">
-              <img src="${getItemIcon(G.artifactId)}" style="width:42px;height:42px;object-fit:contain;"/>
-              <div><h4>${art.name} (+${lv}阶)</h4><p>${art.desc}</p></div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button class="sleek-btn" id="btn-ref" style="flex:1;">祭炼法宝（${cost} 灵石）</button>
-            ${ownedArts.length > 1 ? `<button class="sleek-btn ghost" id="btn-swap-art">切换本命</button>` : ''}
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">当前主修心法</div>
+          <div style="font-size:10.5px;color:var(--muted);">当前主修心法</div>
           <div class="glass-card active"><div><h4>${curHa.name}</h4><p>${curHa.desc}</p></div></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">出战神通槽（最多 3 门）</div>
+          <div style="font-size:10.5px;color:var(--muted);">辅修流派被动（已装 ${G.passives.length}/3）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            ${G.skills.slice(0,3).map((sid,idx)=>`<div class="glass-card" style="padding:6px 10px;"><span>槽位${idx+1} · <b style="color:#ebd29b;">${D.SKILLS[sid].name}</b></span><span style="font-size:10.5px;color:var(--muted);">灵力 ${D.SKILLS[sid].cost}</span></div>`).join('')}
+            ${G.passives.map(pid => `<div class="glass-card active" style="padding:6px 10px;"><div><h4>${D.PASSIVES[pid].name} <span style="font-size:10px;color:var(--jade);">[${D.PASSIVES[pid].style}]</span></h4><p>${D.PASSIVES[pid].desc}</p></div></div>`).join('') || '<div class="glass-card"><p>点击右侧辅修被动装配（最多 3 门）</p></div>'}
+          </div>
+          <div style="font-size:10.5px;color:var(--muted);">出战招式槽（实时集气释放 · 4 招）</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${G.skills.slice(0, 4).map((sid, idx) => {
+              const s = D.SKILLS[sid]; const p = (G.skillProf && G.skillProf[sid]) || { lv: 1 };
+              return `<div class="glass-card" style="padding:5px 10px;"><span>槽${idx+1} · <b style="color:#ebd29b;">${s.name}</b> <em style="font-style:normal;font-size:10px;color:var(--jade);">[${PROF_NAMES[p.lv]}]</em></span><span style="font-size:10px;color:var(--muted);">集气${s.atbCost} · 灵${s.qiCost}</span></div>`;
+            }).join('')}
           </div>
         </div>
       </div>
       <div class="dual-right">
-        <div class="sec-head"><span>已习得心法与神通典籍</span><span style="font-size:10.5px;color:var(--muted);">点击切换主修</span></div>
+        <div class="sec-head"><span>心法 · 辅修被动 · 招式典籍</span><button class="filter-pill active" id="btn-learn-more">藏经阁习招</button></div>
         <div class="gp-body">
-          <div style="font-size:11px;color:#ebd29b;">心法典籍</div>
-          <div id="ha-wrap" style="display:flex;flex-direction:column;gap:6px;"></div>
-          <div style="font-size:11px;color:#ebd29b;margin-top:6px;">全部已学神通</div>
-          <div id="sk-wrap" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <div style="font-size:11px;color:#ebd29b;">主修心法（点击切换）</div>
+          <div id="ha-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
+          <div style="font-size:11px;color:#ebd29b;margin-top:4px;">辅修流派被动（点击装配 / 卸下，最多 3 门）</div>
+          <div id="pa-wrap" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
+          <div style="font-size:11px;color:#ebd29b;margin-top:4px;">全部已学招式（点击置顶出战 · 同系多练堆 100 造诣）</div>
+          <div id="sk-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
         </div>
       </div>
     `;
-    main.querySelector('#btn-ref').onclick = () => {
-      if (G.stone < cost) return showToast(`灵石不足 ${cost} 枚。`);
-      G.stone -= cost; G.artifacts[G.artifactId] = lv + 1;
-      SFX.play('levelup'); showToast(`${art.name} 祭炼至 +${lv+1} 阶！`);
-      saveGame('auto', true); renderAll();
-    };
-    const swapArtBtn = main.querySelector('#btn-swap-art');
-    if (swapArtBtn) swapArtBtn.onclick = () => unequipSlot('artifact');
+    main.querySelector('#btn-learn-more').onclick = () => { activePanel = null; openLibraryModal(); };
     const hw = main.querySelector('#ha-wrap');
     G.ownedHeartArts.forEach(hid => {
-      const ha = D.HEART_ARTS[hid];
-      const c = document.createElement('div'); c.className = 'glass-card' + (G.heartArt===hid?' active':'');
+      const ha = D.HEART_ARTS[hid]; if (!ha) return;
+      const c = document.createElement('div'); c.className = 'glass-card' + (G.heartArt === hid ? ' active' : '');
       c.style.cursor = 'pointer';
-      c.innerHTML = `<div><h4>${ha.name} ${G.heartArt===hid?'[主修中]':''}</h4><p>${ha.desc}</p></div>`;
+      c.innerHTML = `<div><h4>${ha.name} <span style="font-size:10px;color:var(--jade);">[${ha.style}]</span> ${G.heartArt === hid ? '[主修]' : ''}</h4><p>${ha.desc}</p></div>`;
       c.onclick = () => { G.heartArt = hid; recalcDerivedStats(false); SFX.play('click'); showToast(`切换主修心法：${ha.name}`); saveGame('auto', true); renderAll(); };
       hw.appendChild(c);
     });
+    const pw = main.querySelector('#pa-wrap');
+    (G.ownedPassives || []).forEach(pid => {
+      const pa = D.PASSIVES[pid]; if (!pa) return;
+      const on = G.passives.includes(pid);
+      const c = document.createElement('div'); c.className = 'glass-card' + (on ? ' active' : '');
+      c.style.cursor = 'pointer'; c.style.padding = '6px 9px';
+      c.innerHTML = `<div><h4>${pa.name} <span style="font-size:9.5px;color:var(--jade);">[${pa.style}]</span></h4><p>${pa.desc}</p></div>`;
+      c.onclick = () => {
+        SFX.play('click');
+        if (on) G.passives = G.passives.filter(x => x !== pid);
+        else {
+          if (G.passives.length >= 3) G.passives.shift();
+          G.passives.push(pid);
+        }
+        saveGame('auto', true); renderAll();
+      };
+      pw.appendChild(c);
+    });
     const sw = main.querySelector('#sk-wrap');
     G.skills.forEach((sid, idx) => {
-      const s = D.SKILLS[sid];
-      const inBattle = idx < 3;
+      const s = D.SKILLS[sid]; if (!s) return;
+      const p = (G.skillProf && G.skillProf[sid]) || { lv: 1, exp: 0 };
+      const inBattle = idx < 4;
       const c = document.createElement('div'); c.className = 'glass-card' + (inBattle ? ' active' : '');
       c.style.cursor = 'pointer';
-      c.innerHTML = `<div><h4>${s.name} ${inBattle ? `<span style="font-size:10px;color:var(--jade);">[出战槽${idx+1}]</span>` : ''}</h4><p>${s.desc}</p></div><span style="font-size:11px;color:#ebd29b;flex-shrink:0;">灵力${s.cost}</span>`;
+      c.innerHTML = `<div><h4>${s.name} <span style="font-size:10px;color:var(--muted);">(${D.SKILL_CATS[s.cat].name}·${PROF_NAMES[p.lv]})</span> ${inBattle ? `<span style="font-size:10px;color:var(--jade);">[出战${idx+1}]</span>` : ''}</h4><p>${s.desc}</p></div><span style="font-size:10.5px;color:#ebd29b;flex-shrink:0;">集气${s.atbCost}</span>`;
       c.onclick = () => {
         if (idx === 0) return;
-        G.skills.splice(idx, 1);
-        G.skills.unshift(sid);
-        SFX.play('click');
-        showToast(`已将【${s.name}】装配至出战神通槽首位。`);
+        G.skills.splice(idx, 1); G.skills.unshift(sid);
+        SFX.play('click'); showToast(`已将【${s.name}】置入出战招式首位。`);
         saveGame('auto', true); renderAll();
       };
       sw.appendChild(c);
     });
   }
-  // 4. 伙伴页：左侧完整全身像/5态情绪差分 + 右侧多伙伴交互与专属支线面板
+  // 4. 伙伴 / 灵兽页：支持顶部切换「道友 | 灵兽」
   else if (curTab === 'allies') {
     syncUnlockedAllies();
+    if (allySubMode === 'beast') {
+      const bDef = D.BEAST_DEFS[selectedBeastId] || D.BEAST_DEFS.wolf;
+      const bObj = G.beasts && G.beasts[bDef.id];
+      const isActB = G.activeBeast === bDef.id;
+      const bTabs = Object.values(D.BEAST_DEFS).map(b => `<button class="gp-tab ${selectedBeastId===b.id?'active':''}" data-beast="${b.id}">${b.name}${G.beasts?.[b.id] ? '' : '(未收)'}</button>`).join('');
+      main.innerHTML = `
+        <div class="fullbody-col">
+          <div class="fullbody-wrap">
+            <img class="full-char" src="${ASSETS[bDef.asset]}" />
+            <div class="lifespan-ring">${bObj ? `${bDef.stages[Math.min(3, bObj.stage || 0)]} · Lv.${bObj.lv}` : '尚未驯化'}</div>
+          </div>
+        </div>
+        <div class="glass-panel">
+          <div class="sec-head">
+            <div class="filter-pills">
+              <button class="filter-pill" id="mode-ally">同行道友</button>
+              <button class="filter-pill active" id="mode-beast">灵兽御契</button>
+            </div>
+            <span style="font-size:10.5px;color:var(--jade);">${bDef.role}</span>
+          </div>
+          <div class="gp-tabs" style="overflow-x:auto;">${bTabs}</div>
+          <div class="gp-body">
+            <div style="font-size:20px;font-weight:700;color:#ebd29b;letter-spacing:3px;">${bDef.name} ${isActB ? '<span style="font-size:11px;color:var(--jade);">[主战中]</span>' : ''}</div>
+            <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0;">${bDef.desc}</p>
+            <div class="glass-card">
+              <div><h4>专属战技 · ${bDef.skillName}</h4><p>基础攻势 ${bDef.baseAtk} · 基础遁速 ${bDef.baseSpeed}（实时独立集气，同屏参战）</p></div>
+            </div>
+            ${bObj ? `
+              <div class="glass-card">
+                <div><h4>当前血脉：${bDef.stages[Math.min(3, bObj.stage || 0)]}（Lv.${bObj.lv}）</h4><p>亲密度 ${bObj.bond || 20} / 100 · 经验 ${bObj.exp || 0}/${bObj.lv * 40}</p></div>
+              </div>
+              <div class="ally-actions" style="grid-template-columns:repeat(3,1fr);">
+                <button class="sleek-btn ghost" id="bs-feed">喂赤灵妖果</button>
+                <button class="sleek-btn ghost" id="bs-evolve">血脉突破(50灵石)</button>
+                <button class="sleek-btn" id="bs-act">${isActB ? '收回灵兽' : '设为主战'}</button>
+              </div>
+            ` : `
+              <button class="sleek-btn" id="bs-adopt" style="margin-top:auto;">结下御兽契驯化收养（消耗 ${bDef.adoptCost} 灵石）</button>
+            `}
+          </div>
+        </div>
+      `;
+      main.querySelector('#mode-ally').onclick = () => { SFX.play('click'); allySubMode = 'ally'; renderAll(); };
+      main.querySelectorAll('[data-beast]').forEach(b => { b.onclick = () => { SFX.play('click'); selectedBeastId = b.dataset.beast; renderAll(); }; });
+      const adBtn = main.querySelector('#bs-adopt');
+      if (adBtn) adBtn.onclick = () => {
+        if (G.stone < bDef.adoptCost) return showToast(`灵石不足 ${bDef.adoptCost} 枚。`);
+        G.stone -= bDef.adoptCost;
+        G.beasts[bDef.id] = { id: bDef.id, lv: 1, exp: 0, stage: 0, bond: 25 };
+        if (!G.activeBeast) G.activeBeast = bDef.id;
+        SFX.play('levelup'); showToast(`成功收养灵兽【${bDef.name}】！`);
+        saveGame('auto', true); renderAll();
+      };
+      const fdBtn = main.querySelector('#bs-feed');
+      if (fdBtn) fdBtn.onclick = () => {
+        if ((G.bag.beast_fruit || 0) <= 0) return showToast('行囊中暂无【赤灵妖果】，可在鬼市购买。');
+        G.bag.beast_fruit--; if (G.bag.beast_fruit <= 0) delete G.bag.beast_fruit;
+        bObj.bond = Math.min(100, (bObj.bond || 20) + 12);
+        bObj.exp = (bObj.exp || 0) + 45;
+        while (bObj.exp >= bObj.lv * 40) { bObj.exp -= bObj.lv * 40; bObj.lv++; }
+        SFX.play('levelup'); showToast(`喂食赤灵妖果，${bDef.name} 升至 Lv.${bObj.lv}，亲密 +12！`);
+        saveGame('auto', true); renderAll();
+      };
+      const evBtn = main.querySelector('#bs-evolve');
+      if (evBtn) evBtn.onclick = () => {
+        if ((bObj.stage || 0) >= 3) return showToast('已进化至终极圣兽血脉！');
+        if (G.stone < 50) return showToast('血脉突破需 50 灵石。');
+        G.stone -= 50; bObj.stage = (bObj.stage || 0) + 1; bObj.lv += 1;
+        SFX.play('levelup'); showToast(`血脉蜕变！进化为【${bDef.stages[bObj.stage]}】！`);
+        saveGame('auto', true); renderAll();
+      };
+      const acBtn = main.querySelector('#bs-act');
+      if (acBtn) acBtn.onclick = () => {
+        G.activeBeast = isActB ? null : bDef.id;
+        SFX.play('click'); showToast(G.activeBeast ? `${bDef.name} 已设为主战灵兽！` : '已收回灵兽。');
+        saveGame('auto', true); renderAll();
+      };
+    } else {
     const unlockedIds = Object.keys(D.ALLY_DEFS).filter(id => G.allies[id]?.unlocked);
     if (!unlockedIds.includes(selectedAllyId)) selectedAllyId = unlockedIds[0] || 'sister';
     const a = G.allies[selectedAllyId];
@@ -1240,7 +1386,14 @@ function renderSplitPanel() {
           <div class="expr-strip">${exprHtml}</div>
         </div>
       </div>
-      <div class="glass-panel" style="width:55%;max-width:560px;">
+      <div class="glass-panel">
+        <div class="sec-head">
+          <div class="filter-pills">
+            <button class="filter-pill active" id="mode-ally">同行道友</button>
+            <button class="filter-pill" id="mode-beast">灵兽御契</button>
+          </div>
+          <span style="font-size:10.5px;color:var(--muted);">已结交 ${unlockedIds.length} 人</span>
+        </div>
         <div class="gp-tabs" style="overflow-x:auto;gap:4px;">${tabsHtml}</div>
         <div class="gp-body">
           <div style="display:flex;align-items:center;gap:12px;">
@@ -1274,6 +1427,7 @@ function renderSplitPanel() {
         </div>
       </div>
     `;
+    main.querySelector('#mode-beast').onclick = () => { SFX.play('click'); allySubMode = 'beast'; renderAll(); };
     main.querySelectorAll('[data-ally]').forEach(b => { b.onclick = () => { SFX.play('click'); selectedAllyId = b.dataset.ally; renderAll(); }; });
     main.querySelectorAll('[data-ex]').forEach(t => { t.onclick = () => { SFX.play('click'); allyExprMap[def.id] = t.dataset.ex; renderAll(); }; });
     main.querySelector('#al-talk').onclick = () => { activePanel = null; interactNpc(def.id); };
@@ -1289,7 +1443,7 @@ function renderSplitPanel() {
     };
     main.querySelector('#al-spar').onclick = () => {
       allyExprMap[def.id] = 'fierce';
-      startBattle({ name:`${def.name}（切磋）`, asset:getAllyAsset(def.id, 'fierce'), bg:'bamboo', hp:165 + def.power * 2, maxHp:165 + def.power * 2, atk:18 + Math.floor(def.power * 0.2), talkDef:20, expReward:75, stoneReward:35 });
+      startBattle({ name:`${def.name}（切磋）`, asset:getAllyAsset(def.id, 'fierce'), bg:'bamboo', hp:165 + def.power * 2, maxHp:165 + def.power * 2, atk:18 + Math.floor(def.power * 0.2), expReward:75, stoneReward:35 });
     };
     main.querySelector('#al-join').onclick = () => {
       if (a.bond < 45 && !isAct) return showToast(`需羁绊达到 45 方可邀${def.name}同行（当前 ${a.bond}）。`);
@@ -1314,8 +1468,8 @@ function renderSplitPanel() {
             if (ef.stone) G.stone += ef.stone;
             if (ef.wit) G.wit += ef.wit;
             if (ef.body) G.body += ef.body;
-            if (ef.mind) G.mind += ef.mind;
-            if (ef.talk) G.talk += ef.talk;
+            if (ef.mind) G.sense += ef.mind;
+            if (ef.talk) G.sense += ef.talk;
             if (ef.luck) G.luck += ef.luck;
             if (ef.fame) G.fame += ef.fame;
             if (ef.expr) allyExprMap[def.id] = ef.expr;
@@ -1328,6 +1482,7 @@ function renderSplitPanel() {
       };
       renderAll();
     };
+    }
   }
   // 5. 卷宗存档页：无立绘！左右双联（本地存档/音频设置/离线预缓存 + 存档码与传承）
   else if (curTab === 'save') {
@@ -1426,15 +1581,16 @@ function renderAll() {
   const bhpt = document.getElementById('bar-hp-txt'); if (bhpt) bhpt.textContent = `${G.hp}/${G.maxHp}`;
   const bqit = document.getElementById('bar-qi-txt'); if (bqit) bqit.textContent = `${G.qi}/${G.maxQi}`;
 
+  const inBattle = Boolean(window.COMBAT && window.COMBAT.state);
   const locObj = D.LOCATIONS.find(l => l.id === currentLocationId);
-  const bgKey = battleState ? battleState.enemy.bg : (locObj ? locObj.sceneBg : 'world_map');
+  const bgKey = inBattle ? window.COMBAT.state.enemy.bg : (locObj ? locObj.sceneBg : 'world_map');
   document.getElementById('world-viewport').style.backgroundImage = `url("${ASSETS[bgKey] || ASSETS.world_map}")`;
   if (window.BGM) {
-    const bgmKey = battleState ? 'combat' : (activePanel === 'allies' ? 'bamboo' : (locObj ? locObj.id : 'world_map'));
+    const bgmKey = inBattle ? 'combat' : (activePanel === 'allies' ? 'bamboo' : (locObj ? locObj.id : 'world_map'));
     BGM.playScene(bgmKey);
   }
 
-  const hideHud = Boolean(battleState || activeDialogue || activePanel);
+  const hideHud = Boolean(inBattle || activeDialogue || activePanel);
   document.getElementById('hud-tl').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-tr').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-br').style.display = hideHud ? 'none' : 'flex';
@@ -1451,7 +1607,7 @@ function renderAll() {
   const wl = document.getElementById('world-layer'); wl.innerHTML = '';
   const bl = document.getElementById('hud-bl'); bl.innerHTML = '';
 
-  if (!battleState && !activePanel) {
+  if (!inBattle && !activePanel) {
     if (!locObj) {
       // Constellation travel lines SVG
       const pairs = [['sect','inn'], ['sect','cliff'], ['cliff','market'], ['inn','market'], ['inn','altar'], ['market','forest'], ['forest','altar']];
@@ -1495,7 +1651,7 @@ function renderAll() {
 
   // Render Dialogue (3A Frosted-Obsidian Cinema Subtitle Bar)
   const dl = document.getElementById('dialogue-root'); dl.innerHTML = '';
-  if (activeDialogue && !battleState) {
+  if (activeDialogue && !inBattle) {
     const wrap = document.createElement('div'); wrap.className = 'dlg-layer';
     wrap.innerHTML = `
       <img class="dlg-portrait" src="${activeDialogue.asset || ASSETS.hero}" />
@@ -1515,72 +1671,9 @@ function renderAll() {
     dl.appendChild(wrap);
   }
 
-  // Render Combat (3A Minimalist Frosted Dual-Bar + Vermilion Seal + 5 Talisman Slots)
-  const cl = document.getElementById('combat-root'); cl.innerHTML = '';
-  if (battleState) {
-    const e = battleState.enemy;
-    const allyHtml = G.activeAlly ? `<div class="c-actor ally"><img src="${getAllyAsset(G.activeAlly, 'fierce')}" /></div>` : '';
-    const cb = document.createElement('div'); cb.className = 'combat-layer';
-    cb.innerHTML = `
-      <div class="combat-top">
-        <div class="c-side">
-          <div class="c-head">
-            <span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span>
-            <span style="display:flex;gap:5px;align-items:center;">${battleState.shield > 0 ? `<em class="c-pill" style="font-style:normal;">灵盾 ${battleState.shield}</em>` : ''}<span style="font-size:11px;color:var(--muted);">${G.hp}/${G.maxHp}</span></span>
-          </div>
-          <div class="c-track"><div class="c-fill-hp hero" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
-          <div class="c-track qi"><div class="c-fill-qi" style="width:${(G.qi/G.maxQi)*100}%"></div></div>
-        </div>
-        <div class="c-vs">斗法</div>
-        <div class="c-side">
-          <div class="c-head">
-            <span style="color:#ff9494;">${e.name}</span>
-            <span style="display:flex;gap:5px;align-items:center;">${battleState.stunned ? `<em class="c-pill stun" style="font-style:normal;">失守</em>` : ''}<span>${e.hp}/${e.maxHp}</span></span>
-          </div>
-          <div class="c-track"><div class="c-fill-hp" style="width:${(e.hp/e.maxHp)*100}%"></div></div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">攻势 ~${e.atk}</div>
-        </div>
-      </div>
-      <div class="combat-stage">
-        <div class="c-party">
-          <div class="c-actor hero"><img src="${ASSETS.hero}" /></div>
-          ${allyHtml}
-        </div>
-        <div class="c-actor enemy"><img src="${e.asset || ASSETS.wolf_boss}" /></div>
-      </div>
-      <div class="combat-bottom">
-        <div class="combat-ticker">${battleState.ticker}</div>
-        <div class="talisman-bar" id="talisman-bar"></div>
-      </div>
-    `;
-    const tb = cb.querySelector('#talisman-bar');
-    const skSvg = sid => {
-      if (sid === 'evade_step') return IC.shield;
-      if (sid === 'mind_strike') return IC.scroll;
-      if (sid === 'grandpa_finger' || sid === 'nether_claw') return IC.bolt;
-      return IC.sword;
-    };
-    G.skills.slice(0, 3).forEach(sid => {
-      const sk = D.SKILLS[sid];
-      const noQi = G.qi < sk.cost || (sk.stoneCost && G.stone < sk.stoneCost);
-      const b = document.createElement('button');
-      b.className = 'talisman-btn' + (noQi ? ' disabled' : '');
-      b.innerHTML = `${skSvg(sid)}<span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}${sk.stoneCost ? ` · 灵石${sk.stoneCost}` : ''}</span>`;
-      b.onclick = () => useBattleSkill(sid);
-      tb.appendChild(b);
-    });
-    const art = D.ARTIFACTS[G.artifactId];
-    const ab = document.createElement('button');
-    ab.className = 'talisman-btn artifact' + (battleState.artifactUsed ? ' disabled' : '');
-    ab.innerHTML = `${IC.spark}<span class="t-name">祭 · ${art.name}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
-    ab.onclick = () => useArtifactInBattle();
-    tb.appendChild(ab);
-    const fb = document.createElement('button'); fb.className = 'talisman-btn';
-    fb.style.color = 'var(--muted)';
-    fb.innerHTML = `${IC.retreat}<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
-    fb.onclick = () => { battleState = null; showToast('借地形遁走脱身。'); renderAll(); };
-    tb.appendChild(fb);
-    cl.appendChild(cb);
+  if (!inBattle) {
+    const cl = document.getElementById('combat-root');
+    if (cl) cl.innerHTML = '';
   }
 
   renderSplitPanel();

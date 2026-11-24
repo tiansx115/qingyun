@@ -69,9 +69,8 @@ window.GAME_DATA.LOCATIONS = [
     ],
     hotspots: [
       { id: 'sect_trial', label: '外门试剑 / 宗门事务' },
-      { id: 'sect_library', label: '藏经阁研读' },
-      { id: 'sect_alchemy', label: '丹房炼丹' },
-      { id: 'sect_forge', label: '祭炼本命法宝' }
+      { id: 'sect_library', label: '藏经阁习招' },
+      { id: 'sect_alchemy', label: '丹房炼丹' }
     ]
   },
   {
@@ -122,6 +121,7 @@ window.GAME_DATA.LOCATIONS = [
     ],
     hotspots: [
       { id: 'forest_stall', label: '谷口设摊售药' },
+      { id: 'forest_tame', label: '驯化收养灵兽' },
       { id: 'forest_ruin', label: '探索古修洞府' }
     ]
   },
@@ -141,25 +141,25 @@ window.GAME_DATA.QUIZ = [
   {
     q: '初入青云界，你在破庙醒来，怀中揣着一枚裂开微光的古玉戒指。你首先会如何处置？',
     opts: [
-      { t: '以一缕微弱灵识探入戒指，看看其中是否藏有前人传承。', eff: { wit:2, talk:2, talent:'残魂相伴' } },
-      { t: '先用布帛包好贴身藏起，财不露白，先摸清周围环境再说。', eff: { body:2, mind:2, talent:'深藏不露' } },
-      { t: '拿到村口杂货铺估个价，看看能换多少盘缠与干粮。', eff: { luck:2, stone:30, talent:'市井精明' } }
+      { t: '以一缕微弱灵识探入戒指，看看其中是否藏有前人传承。', eff: { wit:2, sense:3, talent:'残魂相伴' } },
+      { t: '先用布帛包好贴身藏起，财不露白，先摸清周围环境再说。', eff: { body:2, speed:2, talent:'深藏不露' } },
+      { t: '拿到村口杂货铺估个价，看看能换多少盘缠与干粮。', eff: { luck:3, stone:35, talent:'市井精明' } }
     ]
   },
   {
     q: '青云宗测灵大殿上，测灵玉柱久久未亮，台下已有几名世家弟子窃窃私语。你神色如常，心里盘算的是：',
     opts: [
-      { t: '“莫欺少年穷，今日之辱，他日必以手中之剑讨回。”', eff: { mind:3, body:1, root:'隐性变异灵根' } },
-      { t: '“资质平庸未必是坏事，至少不会惹来魔修与天骄的惦记。”', eff: { luck:3, wit:1, root:'五行均衡灵根' } },
-      { t: '“测灵柱或许灵气不足？不如试试把浑身灵力集中到一指点上去。”', eff: { wit:3, talk:2, root:'驳杂灵根' } }
+      { t: '“莫欺少年穷，今日之辱，他日必以手中之兵讨回。”', eff: { body:3, sense:2, root:'隐性变异灵根' } },
+      { t: '“资质平庸未必是坏事，至少不会惹来魔修与天骄的惦记。”', eff: { luck:3, speed:2, root:'五行均衡灵根' } },
+      { t: '“测灵柱或许灵气不足？不如试试把浑身灵力集中到一指点上去。”', eff: { wit:3, sense:2, root:'驳杂灵根' } }
     ]
   },
   {
-    q: '坊市旧书摊上摆着一本残破的《青莲剑典》，摊主开口要价五十灵石，你细看之下发现纸页墨迹尚新：',
+    q: '坊市旧书摊上摆着一本残破的武学秘籍，摊主开口要价五十灵石，你细看之下发现纸页墨迹尚新：',
     opts: [
-      { t: '不动声色指出纸墨破绽，反手十灵石买下摊角那块真·古铜残片。', eff: { talk:3, luck:2, stone:20 } },
-      { t: '懒得拆穿，但记下摊主的话术，日后自己摆摊倒货时兴许用得上。', eff: { talk:4, wit:1 } },
-      { t: '虽知书是假的，却从那几笔歪斜剑图里看出了几分卸力法门。', eff: { body:2, mind:2, skill:'mind_strike' } }
+      { t: '不动声色指出纸墨破绽，反手十灵石买下摊角那块真·古铜残片。', eff: { sense:3, luck:2, stone:25 } },
+      { t: '顺手花小钱买下几本冷门棍法、毒功残页，博采众长总有用处。', eff: { wit:3, skill:'sweep_staff' } },
+      { t: '虽知书是假的，却从那几笔歪斜图谱里看出了几分身法快刀门道。', eff: { speed:3, body:2, skill:'swift_blade' } }
     ]
   }
 ];

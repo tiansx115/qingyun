@@ -134,14 +134,17 @@ window.GAME_DATA.ALCHEMY_RECIPES = [
   { id: 'marrow_pill',   name: '筑基洗髓丹', cost: 80, targetMin: 45, targetMax: 60, speed: 2.6, desc: '服之根骨/悟性/道心随机 +2 且修为 +130，极考验控火。' }
 ];
 
-// 鬼市拍卖会动态拍品池
+// 鬼市拍卖会动态拍品池（含绝世孤品、套装重器与玄品外物法宝）
 window.GAME_DATA.AUCTION_LOTS = [
-  { itemId: 'eq_frost_blade',    startPrice: 95,  marketPrice: 160, rivalMax: 155 },
+  { itemId: 'eq_frost_blade',    startPrice: 95,  marketPrice: 165, rivalMax: 160 },
   { itemId: 'eq_xuan_armor',     startPrice: 90,  marketPrice: 155, rivalMax: 150 },
   { itemId: 'eq_shadow_boots',   startPrice: 100, marketPrice: 165, rivalMax: 160 },
-  { itemId: 'eq_dan_gourd',      startPrice: 100, marketPrice: 165, rivalMax: 158 },
-  { itemId: 'eq_ancient_pendant',startPrice: 110, marketPrice: 180, rivalMax: 175 },
-  { itemId: 'lightning_plate',   startPrice: 48,  marketPrice: 80,  rivalMax: 78 }
+  { itemId: 'eq_uniq_sky_rod',   startPrice: 190, marketPrice: 320, rivalMax: 300 },
+  { itemId: 'eq_uniq_undying',   startPrice: 180, marketPrice: 300, rivalMax: 285 },
+  { itemId: 'eq_uniq_venom_eye', startPrice: 170, marketPrice: 280, rivalMax: 265 },
+  { itemId: 'eq_ancient_ring',   startPrice: 155, marketPrice: 260, rivalMax: 245 },
+  { itemId: 'tr_flying_sword',   startPrice: 85,  marketPrice: 140, rivalMax: 135 },
+  { itemId: 'tr_soul_bell',      startPrice: 90,  marketPrice: 150, rivalMax: 145 }
 ];
 
 // 多结局定义与二周目传承点数

@@ -76,8 +76,8 @@ window.GAME_DATA.EVENTS = {
                   onWin: () => {
                     G.flags.divorceResolved = true;
                     G.fame += 45; G.mind += 8;
-                    addItem('eq_ancient_pendant', 1);
-                    showToast('三年之约大胜！东洲震动，声望 +45，得【古修剑心佩】。');
+                    addItem('eq_ancient_ring', 1);
+                    showToast('三年之约大胜！东洲震动，声望 +45，得绝世孤品【太虚古玉戒】。');
                   }
                 });
               }
@@ -104,8 +104,8 @@ window.GAME_DATA.EVENTS = {
               action: () => {
                 G.flags.divorceResolved = true;
                 G.stone += 160; G.fame += 25; G.talk += 3;
-                addItem('eq_qiankun_pouch', 1);
-                showToast('与柳家平辈论交，获灵石 160 与【乾坤储物袋】。');
+                addItem('eq_qiankun_ring', 1);
+                showToast('与柳家平辈论交，获灵石 160 与【乾坤须弥戒】。');
                 setDialogue(null); saveGame('auto', true); renderAll();
               }
             },
@@ -174,11 +174,10 @@ window.GAME_DATA.EVENTS = {
               G.allies.sister.bond += 15; G.fame += 10;
               if (!G.ownedHeartArts.includes('qingyun_breath')) G.ownedHeartArts.push('qingyun_breath');
               if (!G.skills.includes('sister_frost')) G.skills.push('sister_frost');
-              G.artifacts.frost_embryo = G.artifacts.frost_embryo || 1;
-              G.artifactId = 'frost_embryo';
               addItem('eq_qingyun_sword', 1);
+              addItem('tr_flying_sword', 1);
               setAllyExpr('sister', 'smile');
-              showToast('正式拜入青云剑宗！获【青云制式剑】与本命法宝【青霜剑胚】。');
+              showToast('正式拜入青云剑宗！获【青云制式剑】与外物法宝【悬浮青霜飞剑】。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -379,8 +378,8 @@ window.GAME_DATA.EVENTS = {
               if (G.stone < 95) return showToast('灵石不足 95 枚。');
               advanceTime(1); G.stone -= 95; G.factions.wanbao = 2;
               if (!G.ownedHeartArts.includes('wanbao_manual')) G.ownedHeartArts.push('wanbao_manual');
-              addItem('eq_qiankun_pouch', 1);
-              showToast('习得心法《万宝凝神录》，并获【乾坤储物袋】！');
+              addItem('eq_qiankun_ring', 1);
+              showToast('习得心法《万宝凝神录》，并获【乾坤须弥戒】！');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -474,9 +473,9 @@ window.GAME_DATA.EVENTS = {
               if (G.sect === '散修') G.sect = '幽冥玄宗';
               G.mind = Math.max(1, G.mind - 2);
               if (!G.ownedHeartArts.includes('nether_sutra')) G.ownedHeartArts.push('nether_sutra');
-              if (!G.skills.includes('nether_claw')) G.skills.push('nether_claw');
+              if (!G.skills.includes('blood_cleave')) G.skills.push('blood_cleave');
               const g = gainExp(75);
-              showToast(`踏入幽冥暗线！习得《幽冥噬魂诀》与《幽冥裂魂爪》，修为 +${g}。`);
+              showToast(`踏入幽冥暗线！习得《幽冥血煞诀》与《血煞裂空斩》，修为 +${g}。`);
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -519,9 +518,9 @@ window.GAME_DATA.EVENTS = {
                 hp: 255, maxHp: 255, atk: 25, talkDef: 999, expReward: 145, stoneReward: 100,
                 onWin: () => {
                   G.factions.nether = 2;
-                  G.artifacts.nether_bell = 1;
+                  addItem('tr_soul_bell', 1);
                   addItem('eq_nether_blade', 1);
-                  showToast('通过夺魂试炼！获本命法宝【幽冥摄魂铃】与【幽冥噬魂刃】。');
+                  showToast('通过夺魂试炼！获外物法宝【幽冥摄魂铃】与【幽冥噬魂刃】。');
                 }
               });
             }
@@ -619,10 +618,10 @@ window.GAME_DATA.EVENTS = {
             action: () => {
               if (G.wit < 14) return showToast('悟性不足 14，难以看破五行阵眼。');
               advanceTime(1); G.flags.forestRuinStage = 2;
-              addItem('eq_ancient_pendant', 1);
-              addItem('eq_dan_gourd', 1);
+              addItem('eq_uniq_venom_eye', 1);
+              addItem('eq_ancient_ring', 1);
               const g = gainExp(120);
-              showToast(`巧破古阵！修为 +${g}，得【古修剑心佩】与【紫金丹葫】！`);
+              showToast(`巧破古阵！修为 +${g}，得绝世孤品【蚀骨妖瞳】与【太虚古玉戒】！`);
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -631,9 +630,9 @@ window.GAME_DATA.EVENTS = {
             action: () => {
               advanceTime(1); G.flags.forestRuinStage = 2;
               G.hp = Math.max(20, Math.floor(G.hp * 0.7));
-              addItem('eq_ancient_pendant', 1);
-              addItem('eq_dan_gourd', 1);
-              showToast('强破古阵略受震荡，成功夺得【古修剑心佩】与【紫金丹葫】！');
+              addItem('eq_uniq_venom_eye', 1);
+              addItem('eq_ancient_ring', 1);
+              showToast('强破古阵略受震荡，成功夺得绝世孤品【蚀骨妖瞳】与【太虚古玉戒】！');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },

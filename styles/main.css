@@ -727,6 +727,50 @@ html, body {
   border: 1px solid rgba(212, 184, 122, 0.25); padding: 2px 7px; border-radius: 3px;
 }
 
+/* ===== v6.0 CORE MECHANICS UI (9-SLOT GEAR, MASTERY, REAL-TIME ATB, SPIRIT BEAST) ===== */
+.cat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.cat-pill {
+  background: rgba(8,10,13,0.62); border: 1px solid var(--gold-hair);
+  padding: 4px 6px; font-size: 9.5px; display: flex; flex-direction: column; gap: 2px;
+}
+.cat-pill span { color: var(--muted); }
+.cat-pill b { color: var(--gold-bright); font-size: 10px; }
+
+.equip-grid.grid-3 { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.equip-slot.compact { padding: 5px 6px; gap: 6px; }
+.equip-slot.compact img, .equip-slot.compact .eq-empty { width: 26px; height: 26px; font-size: 9px; }
+.equip-slot.compact .eq-type { font-size: 8.5px; }
+.equip-slot.compact .eq-name { font-size: 10.5px; }
+.equip-slot.uniq { border-color: rgba(235,210,155,0.8); box-shadow: inset 0 0 12px rgba(235,210,155,0.18); }
+.t-地品 { color: #f5b969; }
+.bag-cell.tier-b-地品 { border-color: rgba(245,185,105,0.65); }
+
+.c-track.poise { height: 4px; margin-top: 3px; }
+.c-fill-poise { height: 100%; background: linear-gradient(90deg, #b88a3a, #f2d085); transition: width 0.12s linear; }
+.c-track.atb { height: 4px; margin-top: 3px; }
+.c-fill-atb { height: 100%; background: linear-gradient(90deg, #4b9c7a, #84f2c2); transition: width 0.08s linear; }
+.c-fill-atb.enemy { background: linear-gradient(90deg, #9c3a2b, #f28466); }
+
+.c-actor.beast img { height: 64%; max-height: 185px; margin-left: -26px; transform: scaleX(-1); opacity: 0.95; }
+.actor-tag {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  font-size: 9.5px; padding: 1px 6px; background: rgba(8,10,13,0.82);
+  border: 1px solid var(--gold-hair); color: var(--gold-bright); white-space: nowrap;
+}
+.float-tr-wrap {
+  position: absolute; top: 8px; left: 0; display: flex; gap: 6px; pointer-events: none;
+}
+.float-tr-pill {
+  font-size: 10px; padding: 2px 8px; color: var(--gold-bright);
+  background: rgba(10,13,17,0.78); border: 1px solid rgba(212,184,122,0.45);
+}
+.talisman-bar.v6 {
+  display: flex; justify-content: center; gap: 6px; width: min(760px, 96%); flex-wrap: nowrap;
+}
+.talisman-bar.v6 .talisman-btn { flex: 1; min-width: 0; padding: 9px 5px 8px; }
+.talisman-btn.ready { filter: brightness(1.16) drop-shadow(0 0 10px rgba(235,210,155,0.28)) drop-shadow(0 8px 16px rgba(0,0,0,0.8)); }
+.talisman-btn.counter { color: #82d2ff; }
+
 @media screen and (max-height: 440px) {
   .sys-screen { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
   .dual-left, .dual-right, .glass-panel { padding: 10px 14px; }

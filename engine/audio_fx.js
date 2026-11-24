@@ -45,7 +45,11 @@ window.FX = {
   init() {
     this.canvas = document.getElementById('fx-canvas');
     this.ctx = this.canvas.getContext('2d');
-    const resize = () => { this.canvas.width = window.innerWidth; this.canvas.height = window.innerHeight; };
+    const resize = () => {
+      const host = document.getElementById('app');
+      this.canvas.width = (host && host.clientWidth) || window.innerWidth;
+      this.canvas.height = (host && host.clientHeight) || window.innerHeight;
+    };
     window.addEventListener('resize', resize); resize();
     for (let i = 0; i < 28; i++) this.particles.push(this.makeAmbient());
     const loop = () => { this.update(); requestAnimationFrame(loop); };

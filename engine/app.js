@@ -313,11 +313,6 @@ function buildRadarSvg(el) {
   `;
 }
 
-function cornersHtml() {
-  const src = ASSETS.ui_corner_filigree;
-  return `<img class="ui-corner tl" src="${src}" alt=""/><img class="ui-corner tr" src="${src}" alt=""/><img class="ui-corner bl" src="${src}" alt=""/><img class="ui-corner br" src="${src}" alt=""/>`;
-}
-
 function startQuiz() {
   G = defaultState();
   const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
@@ -342,9 +337,9 @@ function startQuiz() {
           <div class="home-brand">
             <div class="home-title-row">
               <h1 class="home-title-vert">青云问道录</h1>
-              <img class="home-seal" src="${ASSETS.ui_seal_vermilion}" alt="印" />
+              <span class="home-seal-stamp">问道</span>
             </div>
-            <div class="home-tagline">东洲修仙志 · 高自由度横屏独立版</div>
+            <div class="home-tagline">东洲修仙志 · 3A 电影写实横屏独立版</div>
             ${legNote}
           </div>
           <div class="home-plaques">
@@ -1343,10 +1338,6 @@ function renderSplitPanel() {
     }
   }
 
-  // Inject golden filigree corners onto all system frosted panels
-  sc.querySelectorAll('.glass-panel, .dual-left, .dual-right').forEach(p => {
-    p.insertAdjacentHTML('afterbegin', cornersHtml());
-  });
   host.appendChild(sc);
 }
 
@@ -1360,11 +1351,13 @@ function renderAll() {
   document.getElementById('hud-age').textContent = `${G.age}/${G.maxAge}岁`;
   document.getElementById('hud-timeline').textContent = getNextTimelineText();
 
-  // Update Top-Left Bronze HP / Qi Bars
-  const hpPct = Math.max(0, Math.min(100, Math.round((G.hp / G.maxHp) * 100)));
-  const qiPct = Math.max(0, Math.min(100, Math.round((G.qi / G.maxQi) * 100)));
-  const bhp = document.getElementById('bar-hp'); if (bhp) bhp.style.width = hpPct + '%';
-  const bqi = document.getElementById('bar-qi'); if (bqi) bqi.style.width = qiPct + '%';
+  // Update 3A Dual-Arc SVG + Micro HP/Qi Bars
+  const hpRatio = Math.max(0, Math.min(1, G.hp / G.maxHp));
+  const qiRatio = Math.max(0, Math.min(1, G.qi / G.maxQi));
+  const arcHp = document.getElementById('arc-hp'); if (arcHp) arcHp.setAttribute('stroke-dashoffset', String(92 * (1 - hpRatio)));
+  const arcQi = document.getElementById('arc-qi'); if (arcQi) arcQi.setAttribute('stroke-dashoffset', String(92 * (1 - qiRatio)));
+  const bhp = document.getElementById('bar-hp'); if (bhp) bhp.style.width = Math.round(hpRatio * 100) + '%';
+  const bqi = document.getElementById('bar-qi'); if (bqi) bqi.style.width = Math.round(qiRatio * 100) + '%';
   const bhpt = document.getElementById('bar-hp-txt'); if (bhpt) bhpt.textContent = `${G.hp}/${G.maxHp}`;
   const bqit = document.getElementById('bar-qi-txt'); if (bqit) bqit.textContent = `${G.qi}/${G.maxQi}`;
 
@@ -1396,7 +1389,7 @@ function renderAll() {
       D.LOCATIONS.forEach(loc => {
         const m = document.createElement('div'); m.className = 'map-pin';
         m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
-        m.innerHTML = `<img class="pin-compass" src="${ASSETS.ui_pin_compass}" alt=""/><div class="pin-vlabel">${loc.name}</div>`;
+        m.innerHTML = `<div class="pin-vlabel">${loc.name}</div><div class="pin-dot"></div>`;
         m.onclick = () => enterLocation(loc.id);
         wl.appendChild(m);
       });
@@ -1419,21 +1412,16 @@ function renderAll() {
     }
   }
 
-  // Render Dialogue (Dual-Roller Dark-Gold Scroll Box + Lacquer Choice Bars)
+  // Render Dialogue (3A Frosted-Obsidian Cinema Subtitle Bar)
   const dl = document.getElementById('dialogue-root'); dl.innerHTML = '';
   if (activeDialogue && !battleState) {
     const wrap = document.createElement('div'); wrap.className = 'dlg-layer';
     wrap.innerHTML = `
       <img class="dlg-portrait" src="${activeDialogue.asset || ASSETS.hero}" />
       <div class="dlg-choices-float" id="dlg-ch"></div>
-      <div class="dlg-scroll-wrap">
-        <div class="dlg-roller"></div>
-        <div class="dlg-bar">
-          ${cornersHtml()}
-          <div class="dlg-nameplate">${activeDialogue.speaker}</div>
-          <div class="dlg-text">${activeDialogue.text}</div>
-        </div>
-        <div class="dlg-roller"></div>
+      <div class="dlg-bar">
+        <div class="dlg-speaker-name">${activeDialogue.speaker}</div>
+        <div class="dlg-text">${activeDialogue.text}</div>
       </div>
     `;
     const ch = wrap.querySelector('#dlg-ch');
@@ -1446,7 +1434,7 @@ function renderAll() {
     dl.appendChild(wrap);
   }
 
-  // Render Combat (Bronze Dual-Bar + Vermilion DOU FA Medallion + 5 Illustrated Talisman Cards)
+  // Render Combat (3A Minimalist Frosted Dual-Bar + Vermilion Seal + 5 Talisman Slots)
   const cl = document.getElementById('combat-root'); cl.innerHTML = '';
   if (battleState) {
     const e = battleState.enemy;
@@ -1454,13 +1442,13 @@ function renderAll() {
     const cb = document.createElement('div'); cb.className = 'combat-layer';
     cb.innerHTML = `
       <div class="combat-top">
-        <div class="c-side left">
+        <div class="c-side">
           <div class="c-head"><span>${G.name}${G.activeAlly ? ' · ' + getAllyDef(G.activeAlly).name : ''}</span><span style="color:#6fd3a8;">灵盾 ${battleState.shield}</span></div>
           <div class="c-track"><div class="c-fill-hp hero" style="width:${(G.hp/G.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;">气血 ${G.hp}/${G.maxHp} · 灵力 ${G.qi}/${G.maxQi}</div>
         </div>
-        <div class="c-vs">斗法<small>DOU FA</small></div>
-        <div class="c-side right">
+        <div class="c-vs">斗法</div>
+        <div class="c-side">
           <div class="c-head"><span style="color:#ff9494;">${e.name}</span><span>${e.hp}/${e.maxHp}</span></div>
           <div class="c-track"><div class="c-fill-hp" style="width:${(e.hp/e.maxHp)*100}%"></div></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;">攻势 ~${e.atk}</div>
@@ -1479,29 +1467,21 @@ function renderAll() {
       </div>
     `;
     const tb = cb.querySelector('#talisman-bar');
-    const skillIconMap = {
-      basic_sword: ASSETS.item_frost_sword,
-      evade_step: ASSETS.item_lightning_disk,
-      mind_strike: ASSETS.item_jade_ring,
-      grandpa_finger: ASSETS.item_jade_ring,
-      sister_frost: ASSETS.item_frost_sword,
-      nether_claw: ASSETS.item_lightning_disk
-    };
     G.skills.slice(0, 3).forEach(sid => {
       const sk = D.SKILLS[sid];
       const b = document.createElement('button'); b.className = 'talisman-btn';
-      b.innerHTML = `<img src="${skillIconMap[sid] || ASSETS.item_frost_sword}" alt=""/><span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}</span>`;
+      b.innerHTML = `<span class="t-name">${sk.name}</span><span class="t-sub">灵力 ${sk.cost}</span>`;
       b.onclick = () => useBattleSkill(sid);
       tb.appendChild(b);
     });
     const art = D.ARTIFACTS[G.artifactId];
     const ab = document.createElement('button'); ab.className = 'talisman-btn artifact';
-    ab.innerHTML = `<img src="${getItemIcon(G.artifactId)}" alt=""/><span class="t-name">祭·${art.name.slice(0,4)}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
+    ab.innerHTML = `<span class="t-name">祭 · ${art.name}</span><span class="t-sub">${battleState.artifactUsed?'已祭出':'本命法宝'}</span>`;
     ab.onclick = () => useArtifactInBattle();
     tb.appendChild(ab);
     const fb = document.createElement('button'); fb.className = 'talisman-btn';
     fb.style.color = 'var(--muted)';
-    fb.innerHTML = `<img src="${ASSETS.ui_menu_map}" alt=""/><span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
+    fb.innerHTML = `<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
     fb.onclick = () => { battleState = null; showToast('借地形遁走脱身。'); renderAll(); };
     tb.appendChild(fb);
     cl.appendChild(cb);
@@ -1514,16 +1494,16 @@ function initHud() {
   document.getElementById('hud-tl').onclick = () => { SFX.play('click'); activePanel = 'status'; statusSubTab = 'mingge'; renderAll(); };
   const dock = document.getElementById('hud-br');
   const btns = [
-    { label:'舆图', img:'ui_menu_map',   fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
-    { label:'命格', img:'ui_menu_char',  fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
-    { label:'功法', img:'ui_menu_skill', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
-    { label:'行囊', img:'ui_menu_bag',   fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
-    { label:'伙伴', img:'ui_menu_ally',  fn:()=>{ activePanel='allies'; renderAll(); } },
-    { label:'卷宗', img:'ui_menu_save',  fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
+    { label:'舆图', icon:'map',   fn:()=>{ currentLocationId=null; activePanel=null; renderAll(); } },
+    { label:'命格', icon:'char',  fn:()=>{ activePanel='status'; statusSubTab='mingge'; renderAll(); } },
+    { label:'功法', icon:'sword', fn:()=>{ activePanel='status'; statusSubTab='skills'; renderAll(); } },
+    { label:'行囊', icon:'bag',   fn:()=>{ activePanel='status'; statusSubTab='bag'; renderAll(); } },
+    { label:'伙伴', icon:'ally',  fn:()=>{ activePanel='allies'; renderAll(); } },
+    { label:'卷宗', icon:'scroll',fn:()=>{ activePanel='status'; statusSubTab='save'; renderAll(); } }
   ];
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'dock-btn';
-    el.innerHTML = `<img src="${ASSETS[b.img]}" alt="${b.label}"/><span>${b.label}</span>`;
+    el.innerHTML = `${IC[b.icon]}<span>${b.label}</span>`;
     el.onclick = () => { SFX.play('click'); b.fn(); };
     dock.appendChild(el);
   });

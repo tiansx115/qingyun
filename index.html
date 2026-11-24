@@ -23,16 +23,23 @@
   <div id="world-layer"></div>
   <canvas id="fx-canvas"></canvas>
 
-  <!-- Top-Left Bronze Dragon Avatar Frame + Dual HP/Qi Bars + Vermilion Realm Seal -->
+  <!-- Top-Left 3A Dual-Arc Translucent Avatar + Minimalist Status -->
   <div class="hud-tl" id="hud-tl">
-    <div class="dragon-avatar">
-      <img class="avatar-face" src="assets/chars/hero.webp" alt="道友" />
-      <img class="avatar-frame" src="assets/ui/frame_avatar_dragon.png" alt="" />
+    <div class="arc-avatar">
+      <svg viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2.2"/>
+        <circle id="arc-hp" cx="34" cy="34" r="30" fill="none" stroke="#d95252" stroke-width="2.6" stroke-dasharray="92 188" stroke-dashoffset="0" stroke-linecap="round"/>
+        <circle id="arc-qi" cx="34" cy="34" r="30" fill="none" stroke="#5eb8e8" stroke-width="2.6" stroke-dasharray="92 188" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(180 34 34)"/>
+      </svg>
+      <img src="assets/chars/hero.webp" alt="道友" />
     </div>
-    <div class="hud-bars">
-      <div class="bar-track hp"><div class="bar-fill" id="bar-hp" style="width:100%"></div><span id="bar-hp-txt">120/120</span></div>
-      <div class="bar-track qi"><div class="bar-fill" id="bar-qi" style="width:100%"></div><span id="bar-qi-txt">80/80</span></div>
+    <div class="hud-tl-meta">
       <div class="hud-realm-seal" id="hud-realm-txt">炼气一层</div>
+      <div class="hud-mini-bars">
+        <div class="mini-bar hp"><i id="bar-hp" style="width:100%"></i></div>
+        <div class="mini-bar qi"><i id="bar-qi" style="width:100%"></i></div>
+      </div>
+      <div class="hud-mini-nums"><span id="bar-hp-txt">120/120</span> · <span id="bar-qi-txt">80/80</span></div>
     </div>
   </div>
 
@@ -55,7 +62,7 @@
   <div id="combat-root"></div>
   <div id="panel-root"></div>
   <div class="title-screen" id="title-root"></div>
-  <div class="ver-badge" id="ver-badge">v5.4.1</div>
+  <div class="ver-badge" id="ver-badge">v5.5</div>
 </div>
 <div class="toast" id="toast"></div>
 

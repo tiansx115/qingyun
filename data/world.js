@@ -27,17 +27,7 @@ window.GAME_DATA.ASSETS_MAP = {
   item_jade_ring: 'assets/items/jade_ring.webp',
   item_frost_sword: 'assets/items/frost_sword.webp',
   item_lightning_disk: 'assets/items/lightning_disk.webp',
-  item_osmanthus_cake: 'assets/items/osmanthus_cake.webp',
-  ui_menu_map: 'assets/ui/menu_map.png',
-  ui_menu_char: 'assets/ui/menu_char.png',
-  ui_menu_skill: 'assets/ui/menu_skill.png',
-  ui_menu_bag: 'assets/ui/menu_bag.png',
-  ui_menu_ally: 'assets/ui/menu_ally.png',
-  ui_menu_save: 'assets/ui/menu_save.png',
-  ui_frame_dragon: 'assets/ui/frame_avatar_dragon.png',
-  ui_pin_compass: 'assets/ui/pin_jade_compass.png',
-  ui_seal_vermilion: 'assets/ui/seal_vermilion.png',
-  ui_corner_filigree: 'assets/ui/corner_filigree.png'
+  item_osmanthus_cake: 'assets/items/osmanthus_cake.webp'
 };
 
 // 离线古风 BGM 槽位映射：后续放入 assets/audio/*.mp3 即可自动淡入淡出播放，缺文件时静默降级

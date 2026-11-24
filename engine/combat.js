@@ -453,34 +453,43 @@ window.COMBAT = {
     const cl = document.getElementById('combat-root');
     cl.innerHTML = '';
     const S = this.state, { G, D, ASSETS } = this._ctx, e = S.enemy;
-    const allyHtml = G.activeAlly ? `<div class="c-actor ally"><img src="${this._ctx.getAllyAsset(G.activeAlly, 'fierce')}" /></div>` : '';
+    const allyDef = G.activeAlly ? this._ctx.getAllyDef(G.activeAlly) : null;
+    const allyHtml = allyDef ? `<div class="c-actor ally"><img src="${this._ctx.getAllyAsset(G.activeAlly, 'fierce')}" /></div>` : '';
     const beastHtml = S.beastDef ? `<div class="c-actor beast"><img src="${ASSETS[S.beastDef.asset]}" /><span class="actor-tag">${S.beastDef.name}</span></div>` : '';
     const floatBadges = S.treasures.filter(t => t && t.def.mode === 'auto')
-      .map(t => `<span class="float-tr-pill">悬浮 · ${t.def.name}</span>`).join('');
+      .map(t => `<span class="float-tr-pill">${window.getSkillIconHtml(t.def.id, 'mini-sk-ico')}悬浮 · ${t.def.name}</span>`).join('');
+    const realmName = (D.REALMS[G.realmIdx] && D.REALMS[G.realmIdx].name) || '炼气';
+    const subPillsHtml = [
+      allyDef ? `<span class="c-sub-pill"><em>同行</em>${allyDef.name}</span>` : '',
+      S.beastDef ? `<span class="c-sub-pill"><em>灵兽</em>${S.beastDef.name}</span>` : ''
+    ].filter(Boolean).join('');
 
     const cb = document.createElement('div');
     cb.className = 'combat-layer';
     cb.innerHTML = `
-      <div class="combat-top">
-        <div class="c-side">
-          <div class="c-head">
-            <span>${G.name}${G.activeAlly ? ' · ' + this._ctx.getAllyDef(G.activeAlly).name : ''}</span>
-            <span id="cb-hero-meta" style="font-size:10.5px;color:var(--jade);"></span>
+      <div class="combat-top-wrap">
+        <div class="combat-top">
+          <div class="c-side">
+            <div class="c-head">
+              <span class="c-name">${G.name} <em class="c-realm">· ${realmName}</em></span>
+              <span id="cb-hero-meta" class="c-meta"></span>
+            </div>
+            <div class="c-bar-row"><div class="c-track"><div class="c-fill-hp hero" id="cb-hero-hp" style="width:100%"></div></div><span class="c-blbl">气血</span></div>
+            <div class="c-bar-row"><div class="c-track qi"><div class="c-fill-qi" id="cb-hero-qi" style="width:100%"></div></div><span class="c-blbl">灵力</span></div>
+            <div class="c-bar-row"><div class="c-track atb"><div class="c-fill-atb" id="cb-hero-atb" style="width:45%"></div></div><span class="c-blbl gold" id="cb-atb-pct">集气</span></div>
           </div>
-          <div class="c-track"><div class="c-fill-hp hero" id="cb-hero-hp" style="width:100%"></div></div>
-          <div class="c-track qi"><div class="c-fill-qi" id="cb-hero-qi" style="width:100%"></div></div>
-          <div class="c-track atb"><div class="c-fill-atb" id="cb-hero-atb" style="width:45%"></div></div>
-        </div>
-        <div class="c-vs">斗法</div>
-        <div class="c-side">
-          <div class="c-head">
-            <span style="color:#ff9494;">${e.name}</span>
-            <span id="cb-enemy-meta" style="font-size:10.5px;color:var(--muted);"></span>
+          <div class="c-vs"><span>斗<br/>法</span></div>
+          <div class="c-side enemy-side">
+            <div class="c-head">
+              <span id="cb-enemy-meta" class="c-meta"></span>
+              <span class="c-name enemy">${e.name}</span>
+            </div>
+            <div class="c-bar-row"><span class="c-blbl">气血</span><div class="c-track"><div class="c-fill-hp" id="cb-enemy-hp" style="width:100%"></div></div></div>
+            <div class="c-bar-row"><span class="c-blbl gold">架势</span><div class="c-track poise"><div class="c-fill-poise" id="cb-enemy-poise" style="width:100%"></div></div></div>
+            <div class="c-bar-row"><span class="c-blbl">集气</span><div class="c-track atb"><div class="c-fill-atb enemy" id="cb-enemy-atb" style="width:15%"></div></div></div>
           </div>
-          <div class="c-track"><div class="c-fill-hp" id="cb-enemy-hp" style="width:100%"></div></div>
-          <div class="c-track poise"><div class="c-fill-poise" id="cb-enemy-poise" style="width:100%"></div></div>
-          <div class="c-track atb"><div class="c-fill-atb enemy" id="cb-enemy-atb" style="width:15%"></div></div>
         </div>
+        ${subPillsHtml ? `<div class="c-sub-pills">${subPillsHtml}</div>` : ''}
       </div>
       <div class="combat-stage">
         <div class="c-party">
@@ -498,14 +507,18 @@ window.COMBAT = {
     `;
     const tb = cb.querySelector('#talisman-bar');
 
-    // 4 Active Battle Skills (each with its own ATB cost!)
+    // 4 Active Battle Skills (each with its own dedicated 3A icon + ATB cost!)
     G.skills.slice(0, 4).forEach(sid => {
       const sk = D.SKILLS[sid];
       if (!sk) return;
       const b = document.createElement('button');
       b.className = 'talisman-btn';
       b.dataset.skId = sid;
-      b.innerHTML = `<span class="t-name">${sk.name}</span><span class="t-sub">集气 ${sk.atbCost} · 灵 ${sk.qiCost}</span>`;
+      b.innerHTML = `
+        ${window.getSkillIconHtml(sid, 't-ico')}
+        <span class="t-name">${sk.name}</span>
+        <span class="t-sub">集气 ${sk.atbCost} · 灵 ${sk.qiCost}</span>
+      `;
       b.onclick = () => this.useSkill(sid);
       tb.appendChild(b);
     });
@@ -514,7 +527,11 @@ window.COMBAT = {
     const ctr = document.createElement('button');
     ctr.className = 'talisman-btn counter';
     ctr.id = 'cb-btn-counter';
-    ctr.innerHTML = `<span class="t-name">化劲架招</span><span class="t-sub">集气 30 · 叠盾反击</span>`;
+    ctr.innerHTML = `
+      ${window.getSkillIconHtml('counter', 't-ico')}
+      <span class="t-name">化劲架招</span>
+      <span class="t-sub">集气 30 · 叠盾反击</span>
+    `;
     ctr.onclick = () => this.useCounter();
     tb.appendChild(ctr);
 
@@ -524,7 +541,11 @@ window.COMBAT = {
       const ab = document.createElement('button');
       ab.className = 'talisman-btn artifact';
       ab.dataset.trIdx = String(idx);
-      ab.innerHTML = `<span class="t-name">${tr.def.name.slice(0, 5)}</span><span class="t-sub" id="cb-tr-sub-${idx}">就绪</span>`;
+      ab.innerHTML = `
+        ${window.getSkillIconHtml(tr.def.id, 't-ico')}
+        <span class="t-name">祭·${tr.def.name.slice(0, 4)}</span>
+        <span class="t-sub" id="cb-tr-sub-${idx}">外物就绪</span>
+      `;
       ab.onclick = () => this.useTreasure(idx);
       tb.appendChild(ab);
     });
@@ -532,7 +553,11 @@ window.COMBAT = {
     // Retreat
     const fb = document.createElement('button');
     fb.className = 'talisman-btn ghost';
-    fb.innerHTML = `<span class="t-name">遁走</span><span class="t-sub">暂避锋芒</span>`;
+    fb.innerHTML = `
+      ${window.getSkillIconHtml('retreat', 't-ico')}
+      <span class="t-name">遁走</span>
+      <span class="t-sub">暂避锋芒</span>
+    `;
     fb.onclick = () => { this.stop(); showToast('借地形遁走脱身。'); this._ctx.onBattleEnd(); };
     tb.appendChild(fb);
 
@@ -553,7 +578,9 @@ window.COMBAT = {
     setW('cb-enemy-atb', e.atb);
 
     const hm = document.getElementById('cb-hero-meta');
-    if (hm) hm.textContent = `${G.hp}/${G.maxHp} · 盾${S.shield}${S.counterTimer > 0 ? ' · 架招中' : ''} · 集气${Math.floor(S.heroAtb)}`;
+    if (hm) hm.textContent = `${G.hp}/${G.maxHp}${S.shield > 0 ? ` · 盾${S.shield}` : ''}${S.counterTimer > 0 ? ' · 架招中' : ''}`;
+    const ap = document.getElementById('cb-atb-pct');
+    if (ap) ap.textContent = `集气 ${Math.floor(S.heroAtb)}%`;
     const em = document.getElementById('cb-enemy-meta');
     if (em) em.textContent = `${e.hp}/${e.maxHp}${e.poison > 0 ? ` · 毒${e.poison}层` : ''}${e.brokenTimer > 0 ? ' · 破防!' : ''}`;
     const tk = document.getElementById('cb-ticker');
@@ -577,7 +604,10 @@ window.COMBAT = {
       const sub = document.getElementById(`cb-tr-sub-${idx}`);
       if (sub) sub.textContent = tr.cdLeft > 0 ? `冷却 ${tr.cdLeft.toFixed(1)}s` : '外物就绪';
       const btn = document.querySelector(`#talisman-bar [data-tr-idx="${idx}"]`);
-      if (btn) btn.classList.toggle('disabled', tr.cdLeft > 0);
+      if (btn) {
+        btn.classList.toggle('ready', tr.cdLeft <= 0);
+        btn.classList.toggle('disabled', tr.cdLeft > 0);
+      }
     });
   }
 };

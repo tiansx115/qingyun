@@ -917,7 +917,35 @@ window.importSaveCode = () => {
   } catch { showToast('存档码格式无效。'); }
 };
 
-// Render Full-Screen System Overlays (v5.1: Full-Body on Status/Allies; Dual-Panels on Bag/Skills/Save)
+function getStatCompareHtml(newItem) {
+  if (!newItem || newItem.type !== 'equip' || !newItem.stats) return '';
+  let targetSlot = newItem.slot;
+  if (targetSlot === 'wrist') targetSlot = !G.equipment.wristL ? 'wristL' : (!G.equipment.wristR ? 'wristR' : 'wristL');
+  else if (targetSlot === 'acc') targetSlot = !G.equipment.acc1 ? 'acc1' : (!G.equipment.acc2 ? 'acc2' : 'acc1');
+  const curId = G.equipment && G.equipment[targetSlot];
+  const curStats = (curId && D.ITEMS[curId] && D.ITEMS[curId].stats) || {};
+  const labels = { atk:'攻', def:'防', hpMax:'血', qiMax:'灵', body:'根骨', speed:'遁速', luck:'气运', sense:'神识', crit:'暴击', dodge:'闪避', expRate:'修炼', bagCap:'行囊' };
+  const keys = Array.from(new Set([...Object.keys(newItem.stats), ...Object.keys(curStats)]));
+  const parts = [];
+  keys.forEach(k => {
+    if (!labels[k]) return;
+    const nv = newItem.stats[k] || 0;
+    const ov = curStats[k] || 0;
+    const diff = nv - ov;
+    const isPct = k === 'crit' || k === 'dodge' || k === 'expRate';
+    const fmt = v => isPct ? `${Math.round(v * 100)}%` : `${v}`;
+    if (nv === 0 && diff === 0) return;
+    let deltaHtml = '';
+    if (curId && diff !== 0) {
+      const cls = diff > 0 ? 'delta-up' : 'delta-dn';
+      deltaHtml = `<em class="${cls}">(${diff > 0 ? '+' : ''}${fmt(diff)})</em>`;
+    }
+    parts.push(`<span class="cmp-chip">${labels[k]} <b>${nv >= 0 ? '+' : ''}${fmt(nv)}</b>${deltaHtml}</span>`);
+  });
+  return parts.join('');
+}
+
+// Render Full-Screen System Overlays (v6.1: Unified 3A Smoked-Obsidian Glass & 方案A Card-Stream Bag)
 function renderSplitPanel() {
   const host = document.getElementById('panel-root');
   host.innerHTML = '';
@@ -931,9 +959,9 @@ function renderSplitPanel() {
 
   const navItems = [
     { k:'mingge', l:'命格' },
-    { k:'skills', l:'功法法宝' },
+    { k:'skills', l:'功法' },
     { k:'bag', l:'行囊装备' },
-    { k:'allies', l:'伙伴' },
+    { k:'allies', l:'伙伴灵兽' },
     { k:'save', l:'卷宗' }
   ];
   const navHtml = navItems.map(n => `<button class="gp-tab ${curTab===n.k?'active':''}" data-nav="${n.k}">${n.l}</button>`).join('');
@@ -942,7 +970,7 @@ function renderSplitPanel() {
     <div class="sys-topbar">
       <button class="sleek-btn ghost" id="sp-close">← 返回东洲</button>
       <div class="sys-nav">${navHtml}</div>
-      <div class="glass-pill" style="padding:4px 12px;font-size:11px;">
+      <div class="glass-pill" style="padding:5px 14px;font-size:11.5px;">
         <img class="mini-ico" src="${ASSETS.item_spirit_stone}"/><b>${G.stone}</b>
       </div>
     </div>
@@ -962,22 +990,33 @@ function renderSplitPanel() {
 
   const main = sc.querySelector('#sys-main');
 
-  // 1. 命格页：左侧完整全身像 + 右侧五维、五行星图、门类总造诣(0~100)与修为
+  // 1. 命格页：左侧完整全身像 + 右侧核心五维、五行雷达、百兵武学总熟练度(0~100)与修为
   if (curTab === 'mingge') {
     const expPct = Math.min(100, Math.round((G.exp / Math.max(1, realm.exp)) * 100));
     const canBreak = G.exp >= realm.exp && D.REALMS[G.realmIdx + 1];
     const eq = getEquipStats();
-    const statItems = [
-      ['根骨', (G.body || 10) + (eq.body || 0)],
-      ['悟性', G.wit || 10],
-      ['遁速', (G.speed || 10) + (eq.speed || 0)],
-      ['气运', (G.luck || 10) + (eq.luck || 0)],
-      ['神识', (G.sense || 10) + (eq.sense || 0)],
-      ['声望', G.fame || 0]
+    const ha = D.HEART_ARTS[G.heartArt] || {};
+    const unlockedTr = getUnlockedTreasureSlots();
+    const totalSense = (G.sense || 10) + (eq.sense || 0);
+    const critPct = Math.round((0.08 + (G.luck || 10) * 0.01 + (eq.crit || 0) + (ha.critBonus || 0)) * 100);
+    const coreStats = [
+      ['根骨', (G.body || 10) + (eq.body || 0), ''],
+      ['悟性', G.wit || 10, ''],
+      ['遁速', (G.speed || 10) + (eq.speed || 0), ''],
+      ['气运', (G.luck || 10) + (eq.luck || 0), ''],
+      ['神识', totalSense, `可御 ${unlockedTr}/2 件外物法宝`]
     ];
-    const catHtml = Object.values(D.SKILL_CATS).map(c => {
+    const catBarsHtml = Object.values(D.SKILL_CATS).map(c => {
       const m = getCatMastery(c.id);
-      return `<div class="cat-pill"><span>${c.name}</span><b>${m}/100</b><div class="stat-mini-bar"><i style="width:${m}%"></i></div></div>`;
+      const dmgPct = Math.round(m * 0.4);
+      return `
+        <div class="mastery-row">
+          <span class="m-name">${c.name}</span>
+          <div class="m-track"><i style="width:${m}%"></i></div>
+          <span class="m-val"><b>${m}</b> / 100</span>
+          <span class="m-bonus">${dmgPct > 0 ? `+${dmgPct}%威` : '初窥'}</span>
+        </div>
+      `;
     }).join('');
 
     main.innerHTML = `
@@ -985,40 +1024,50 @@ function renderSplitPanel() {
         <div class="fullbody-wrap">
           <img class="full-char" src="${ASSETS.hero_full}" />
           <div class="dantian-waist"></div>
-          <div class="lifespan-ring">寿元 ${G.age} / ${G.maxAge} 岁</div>
+          <div class="lifespan-ring">寿元 ${G.age} / ${G.maxAge} 岁 · 声望 ${G.fame || 0}</div>
         </div>
       </div>
       <div class="glass-panel">
-        <div class="sec-head"><span>${G.name} · ${realm.name}</span><span style="font-size:11px;color:var(--muted);">${G.root}</span></div>
+        <div class="mg-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="vermilion-seal">${G.sect || '青云门人'}</span>
+            <div>
+              <div class="mg-name">${G.name} <span class="mg-realm">${realm.name}</span></div>
+              <div class="mg-sub">${G.root} · ${G.talent}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
+            ${canBreak ? `<button class="sleek-btn jade" id="btn-break">破境突破</button>` : ''}
+          </div>
+        </div>
+        <div class="mg-exp-box">
+          <div class="mg-exp-meta"><span>修为进度</span><b>${G.exp} / ${realm.exp}</b></div>
+          <div class="exp-track"><div class="exp-fill" style="width:${expPct}%"></div></div>
+        </div>
         <div class="gp-body">
-          <div class="radar-wrap">
-            ${buildRadarSvg(G.elements)}
-            <div style="display:flex;gap:8px;align-items:flex-start;">
-              <span class="vermilion-seal">${realm.name}</span>
-              <span class="vermilion-seal">${G.talent}</span>
-              <span class="vermilion-seal">${G.sect}</span>
+          <div class="mg-top-split">
+            <div class="mg-stats-list">
+              ${coreStats.map(([lbl, val, note]) => `
+                <div class="mg-stat-row">
+                  <span class="ms-lbl">${lbl}</span>
+                  <b class="ms-val">${val}</b>
+                  ${note ? `<span class="ms-note">${note}</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+            <div class="mg-radar-col">
+              ${buildRadarSvg(G.elements)}
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11.5px;">
-            ${statItems.map(([lbl, val]) => `
-              <div class="glass-card" style="padding:5px 9px;flex-direction:column;align-items:stretch;gap:0;">
-                <div style="display:flex;justify-content:space-between;"><span>${lbl}</span><b style="color:#ebd29b;">${val}</b></div>
-                <div class="stat-mini-bar"><i style="width:${Math.min(100, val * 2.5)}%"></i></div>
-              </div>
-            `).join('')}
-          </div>
-          <div style="font-size:10.5px;color:var(--muted);letter-spacing:1px;">兵器与大道总造诣（博采众长堆至 100 威力翻倍）</div>
-          <div class="cat-grid">${catHtml}</div>
-          <div class="glass-card">
-            <div style="flex:1;min-width:0;">
-              <h4>修为进度（${G.exp} / ${realm.exp}）</h4>
-              <div class="exp-track"><div class="exp-fill" style="width:${expPct}%"></div></div>
-              <p>气血 ${G.hp}/${G.maxHp} · 灵力 ${Math.floor(G.qi)}/${G.maxQi} · 主战灵兽：${G.activeBeast ? D.BEAST_DEFS[G.activeBeast].name : '未出战'}</p>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-              <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
-              ${canBreak ? `<button class="sleek-btn" id="btn-break" style="color:var(--jade);">破境突破</button>` : ''}
-            </div>
+          <div class="mg-divider">百兵武学总熟练度（0–100 · 多招兼修方能登峰造极）</div>
+          <div class="mastery-list">${catBarsHtml}</div>
+          <div class="mg-foot-strip">
+            <span>流派：<b>${ha.style || '自由修习'}</b></span>
+            <span>暴击 <b>${critPct}%</b></span>
+            <span>气血 <b>${G.hp}/${G.maxHp}</b></span>
+            <span>灵力 <b>${Math.floor(G.qi)}/${G.maxQi}</b></span>
+            <span>灵兽：<b>${G.activeBeast ? D.BEAST_DEFS[G.activeBeast].name : '未出战'}</b></span>
           </div>
         </div>
       </div>
@@ -1031,32 +1080,37 @@ function renderSplitPanel() {
     const brk = main.querySelector('#btn-break');
     if (brk) brk.onclick = () => { tryRealmUp(false); renderAll(); };
   }
-  // 2. 行囊装备页：无立绘！左侧 9 格身上穿戴 + 2 格纯外物法宝 + 套装激活；右侧戒指扩容行囊
+  // 2. 行囊装备页（v6.1 方案A）：左侧9格对称环绕穿戴 + 中置暗金道纹 + 2格神识外物法宝；右侧图文卡片流 + 独立详情对比卡
   else if (curTab === 'bag') {
     const eq = G.equipment || {};
     const eqStats = getEquipStats();
     const ha = D.HEART_ARTS[G.heartArt] || {};
     const sets = getActiveSets();
     const bagCap = eqStats.bagCap || 15;
+    const unlockedTr = getUnlockedTreasureSlots();
+    const totalSense = (G.sense || 10) + (eqStats.sense || 0);
 
-    const eqHtml = D.EQUIP_SLOTS.map(d => {
+    const renderEqSlot = (d) => {
       const isSel = selectedEquipSlot === d.key;
       const itemId = eq[d.key];
       const it = itemId && D.ITEMS[itemId];
       return `
-        <div class="equip-slot compact ${it ? 'filled' : ''} ${it?.unique ? 'uniq' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${d.key}">
-          ${it ? `<img src="${getItemIcon(itemId)}"/>` : `<div class="eq-empty">空</div>`}
-          <div class="eq-meta">
-            <div class="eq-type">${d.label}${it && it.tier ? ` · <em class="tier-tag t-${it.tier}">${it.tier}</em>` : ''}</div>
-            <div class="eq-name">${it ? it.name : '未穿戴'}</div>
+        <div class="sym-slot ${it ? 'filled' : ''} ${it?.unique ? 'uniq' : ''} ${it?.tier ? `tier-b-${it.tier}` : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${d.key}">
+          <div class="sym-ico">
+            ${it ? `<img src="${getItemIcon(itemId)}"/>` : `<span class="slot-glyph">${window.SLOT_ICONS[d.key] || ''}</span>`}
+          </div>
+          <div class="sym-meta">
+            <div class="sym-lbl">${d.label}${it && it.tier ? ` · <em class="tier-tag t-${it.tier}">${it.unique ? '孤品' : it.tier}</em>` : ''}</div>
+            <div class="sym-name">${it ? it.name.replace(/^【孤品】/, '') : '空置'}</div>
           </div>
         </div>
       `;
-    }).join('');
+    };
 
-    const unlockedTr = getUnlockedTreasureSlots();
-    const totalSense = (G.sense || 10) + (eqStats.sense || 0);
-    const trReqs = ['需神识18/筑基', '需神识32/金丹'];
+    const leftSlots = D.EQUIP_SLOTS.slice(0, 4).map(renderEqSlot).join('');
+    const rightSlots = D.EQUIP_SLOTS.slice(4, 9).map(renderEqSlot).join('');
+
+    const trReqs = ['需神识 ≥ 18 或 筑基', '需神识 ≥ 32 或 金丹'];
     const trHtml = [0, 1].map(idx => {
       const slotKey = `tr_${idx}`;
       const locked = idx >= unlockedTr;
@@ -1064,11 +1118,13 @@ function renderSplitPanel() {
       const it = tid && D.ITEMS[tid];
       const isSel = selectedEquipSlot === slotKey;
       return `
-        <div class="equip-slot compact ${it && !locked ? 'filled' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${slotKey}" style="${locked ? 'opacity:0.52;' : ''}">
-          ${locked ? `<div class="eq-empty">未开</div>` : (it ? `<img src="${getItemIcon(tid)}"/>` : `<div class="eq-empty">外物</div>`)}
-          <div class="eq-meta">
-            <div class="eq-type">体外法宝 ${idx + 1}${locked ? ` · ${trReqs[idx]}` : (it ? ` · ${it.mode === 'auto' ? '悬浮' : '主动'}` : '')}</div>
-            <div class="eq-name">${locked ? '神识不足无法驾驭' : (it ? it.name : '空置可装配')}</div>
+        <div class="tr-slot ${it && !locked ? 'filled' : ''} ${locked ? 'locked' : ''} ${isSel ? 'selected' : ''}" data-eq-slot="${slotKey}">
+          <div class="tr-ico">
+            ${locked ? `<span class="lock-glyph">${window.ICONS.lock}</span>` : (it ? window.getSkillIconHtml(tid, 'tr-sk-ico') : `<span class="slot-glyph">${window.ICONS.spark}</span>`)}
+          </div>
+          <div class="tr-meta">
+            <div class="tr-name">${locked ? '未解锁' : (it ? it.name : `外物槽 ${idx + 1} · 空置`)}</div>
+            <div class="tr-sub">${locked ? trReqs[idx] : (it ? (it.mode === 'auto' ? '悬浮自动出击 · 纯外物' : '主动祭出 · 纯外物') : '从右侧法宝页签装配')}</div>
           </div>
         </div>
       `;
@@ -1076,7 +1132,7 @@ function renderSplitPanel() {
 
     const activeSetStr = Object.entries(sets)
       .filter(([, n]) => n >= 2)
-      .map(([sid, n]) => `${D.SETS[sid].name}(${n}件)`).join(' · ') || '未激活套装（可自由混搭孤品）';
+      .map(([sid, n]) => `${D.SETS[sid].name}(${n}/4)`).join(' · ') || '未激活套装（支持套装混搭或绝世孤品）';
 
     const allOwned = Object.entries(G.bag).filter(([id, c]) => c > 0 && D.ITEMS[id]);
     const owned = allOwned.filter(([id]) => {
@@ -1089,41 +1145,39 @@ function renderSplitPanel() {
       selectedBagItem = owned.length ? owned[0][0] : null;
     }
 
-    let leftActionHtml = '';
-    if (selectedEquipSlot) {
-      const isTr = selectedEquipSlot.startsWith('tr_');
-      const curId = isTr ? (G.treasures && G.treasures[Number(selectedEquipSlot.split('_')[1])]) : eq[selectedEquipSlot];
-      const sit = curId && D.ITEMS[curId];
-      if (sit) {
-        leftActionHtml = `
-          <div class="eq-action-bar">
-            <div class="eq-act-info"><b>${sit.name}（${sit.tier || ''}）</b><span>${isTr ? sit.desc : formatStatSummary(sit.stats)}</span></div>
-            <button class="sleek-btn ghost" id="eq-unequip">卸下</button>
-          </div>
-        `;
-      } else {
-        leftActionHtml = `<div class="eq-action-bar"><div class="eq-act-info"><span>该槽位空置，请在右侧行囊点选装备或外物法宝装配。</span></div></div>`;
-      }
-    }
+    const critVal = Math.round((0.08 + (G.luck || 10) * 0.01 + eqStats.crit + (ha.critBonus || 0)) * 100);
 
     main.innerHTML = `
-      <div class="dual-left">
-        <div class="sec-head"><span>身上穿戴 (9格)</span><span style="font-size:10px;color:var(--jade);">${activeSetStr}</span></div>
-        <div class="equip-grid grid-3">${eqHtml}</div>
-        <div style="font-size:10px;color:var(--muted);margin:6px 0 4px;">体外法宝 (已开 ${unlockedTr}/2 格 · 当前神识 ${totalSense} · 纯外物不加属性)</div>
-        <div class="equip-grid" style="flex:0 0 auto;">${trHtml}</div>
-        ${leftActionHtml}
-        <div class="eq-summary-bar">
-          <span>攻 +${eqStats.atk + (ha.atkBonus || 0)}</span>
-          <span>防 +${eqStats.def + (ha.defBonus || 0)}</span>
-          <span>暴击 ${Math.round((0.08 + (G.luck||10)*0.01 + eqStats.crit)*100)}%</span>
-          <span>闪避 ${Math.round(eqStats.dodge * 100)}%</span>
-          <span>储物 ${bagCap}格</span>
+      <div class="dual-left bag-left">
+        <div class="sec-head">
+          <span>身上穿戴（9格）</span>
+          <span style="font-size:10px;color:var(--jade);">${activeSetStr}</span>
+        </div>
+        <div class="sym-equip-stage">
+          <div class="sym-col">${leftSlots}</div>
+          <div class="sym-center">
+            <div class="sym-bagua">${window.ICONS.bagua}</div>
+            <div class="sym-stat-pills">
+              <div><span>攻</span><b>+${eqStats.atk + (ha.atkBonus || 0)}</b></div>
+              <div><span>防</span><b>+${eqStats.def + (ha.defBonus || 0)}</b></div>
+              <div><span>暴</span><b>${critVal}%</b></div>
+              <div><span>闪</span><b>${Math.round(eqStats.dodge * 100)}%</b></div>
+            </div>
+          </div>
+          <div class="sym-col">${rightSlots}</div>
+        </div>
+        <div class="tr-section">
+          <div class="tr-head">
+            <span>外物法宝（神识御使 · ${unlockedTr}/2）</span>
+            <span style="font-size:10px;color:var(--muted);">当前神识 ${totalSense} · 纯外物不加属性</span>
+          </div>
+          <div class="tr-grid">${trHtml}</div>
         </div>
       </div>
-      <div class="dual-right">
+
+      <div class="dual-right bag-right">
         <div class="sec-head">
-          <span>乾坤行囊 <em style="font-style:normal;font-size:10px;color:var(--muted);">(${allOwned.length}/${bagCap})</em></span>
+          <span>乾坤行囊 <em style="font-style:normal;font-size:10.5px;color:var(--muted);">(${allOwned.length} / ${bagCap} 格)</em></span>
           <div class="filter-pills">
             <button class="filter-pill ${bagFilter==='all'?'active':''}" data-bf="all">全部</button>
             <button class="filter-pill ${bagFilter==='equip'?'active':''}" data-bf="equip">装备</button>
@@ -1131,13 +1185,13 @@ function renderSplitPanel() {
             <button class="filter-pill ${bagFilter==='other'?'active':''}" data-bf="other">丹药</button>
           </div>
         </div>
-        <div class="bag-grid-5" id="bag-grid-5"></div>
-        <div class="bag-detail" id="bag-detail"></div>
+        <div class="bag-list-stream" id="bag-list-stream"></div>
+        <div class="bag-detail-card" id="bag-detail"></div>
       </div>
     `;
 
     main.querySelectorAll('[data-bf]').forEach(b => {
-      b.onclick = () => { SFX.play('click'); bagFilter = b.dataset.bf; selectedBagItem = null; renderAll(); };
+      b.onclick = () => { SFX.play('click'); bagFilter = b.dataset.bf; selectedBagItem = null; selectedEquipSlot = null; renderAll(); };
     });
     main.querySelectorAll('[data-eq-slot]').forEach(el => {
       el.onclick = () => {
@@ -1147,51 +1201,97 @@ function renderSplitPanel() {
         renderAll();
       };
     });
-    const unBtn = main.querySelector('#eq-unequip');
-    if (unBtn) unBtn.onclick = () => unequipSlot(selectedEquipSlot);
 
-    const grid = main.querySelector('#bag-grid-5');
-    for (let i = 0; i < bagCap; i++) {
-      const cell = document.createElement('div');
-      if (i < owned.length) {
-        const [id, cnt] = owned[i];
+    // Render sleek 3A Card Stream (no ugly 5x4 box wall!)
+    const stream = main.querySelector('#bag-list-stream');
+    if (owned.length === 0) {
+      stream.innerHTML = `<div class="bag-empty-hint">当前分类下暂无灵物，可前往鬼市装备坊、万宝楼或拍卖会寻宝。</div>`;
+    } else {
+      owned.forEach(([id, cnt]) => {
         const it = D.ITEMS[id];
-        cell.className = 'bag-cell has-item' + (selectedBagItem === id ? ' selected' : '') + (it.tier ? ` tier-b-${it.tier}` : '');
-        cell.innerHTML = `
-          ${it.tier ? `<span class="b-tier t-${it.tier}">${it.unique ? '孤' : it.tier[0]}</span>` : ''}
-          <img src="${getItemIcon(id)}"/>
-          <span class="b-cnt">×${cnt}</span>
+        const row = document.createElement('div');
+        row.className = `bag-row-card ${selectedBagItem === id ? 'selected' : ''} ${it.tier ? `tier-l-${it.tier}` : ''} ${it.unique ? 'uniq' : ''}`;
+        const subLine = it.type === 'equip'
+          ? formatStatSummary(it.stats)
+          : (it.type === 'treasure' ? (it.mode === 'auto' ? '悬浮自动出击 · 纯外物' : '主动祭出 · 纯外物') : it.desc);
+        const setBadge = it.unique
+          ? `<span class="mini-seal">孤品</span>`
+          : (it.set && D.SETS[it.set] ? `<span class="mini-set">${D.SETS[it.set].name.replace('套', '')}</span>` : '');
+        const icoHtml = it.type === 'treasure'
+          ? window.getSkillIconHtml(id, 'row-sk-ico')
+          : `<img src="${getItemIcon(id)}"/>`;
+        row.innerHTML = `
+          <div class="row-ico">${icoHtml}</div>
+          <div class="row-body">
+            <div class="row-top">
+              <span class="row-name">${it.name.replace(/^【孤品】/, '')}</span>
+              ${it.tier ? `<em class="tier-tag t-${it.tier}">${it.tier}</em>` : ''}
+              ${setBadge}
+            </div>
+            <div class="row-sub">${subLine}</div>
+          </div>
+          <div class="row-cnt">×${cnt}</div>
         `;
-        cell.onclick = () => { SFX.play('click'); selectedBagItem = id; selectedEquipSlot = null; renderAll(); };
-      } else {
-        cell.className = 'bag-cell';
-      }
-      grid.appendChild(cell);
+        row.onclick = () => { SFX.play('click'); selectedBagItem = id; selectedEquipSlot = null; renderAll(); };
+        stream.appendChild(row);
+      });
     }
 
+    // Permanent High-Contrast Detail & Stat-Comparison Card
     const det = main.querySelector('#bag-detail');
-    if (selectedBagItem && D.ITEMS[selectedBagItem]) {
-      const it = D.ITEMS[selectedBagItem];
-      if (it.type === 'equip' || it.type === 'treasure') {
+    if (selectedEquipSlot) {
+      const isTr = selectedEquipSlot.startsWith('tr_');
+      const trIdx = isTr ? Number(selectedEquipSlot.split('_')[1]) : -1;
+      const curId = isTr ? (G.treasures && G.treasures[trIdx]) : eq[selectedEquipSlot];
+      const sit = curId && D.ITEMS[curId];
+      if (sit) {
+        const icoHtml = isTr ? window.getSkillIconHtml(curId, 'det-sk-ico') : `<img src="${getItemIcon(curId)}"/>`;
         det.innerHTML = `
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:12.5px;color:#ebd29b;font-weight:600;">
-              ${it.name} ${it.tier ? `<span class="tier-tag t-${it.tier}">${it.tier}</span>` : ''}
-              ${it.set && D.SETS[it.set] ? `<span style="font-size:10px;color:var(--jade);">· ${D.SETS[it.set].name}</span>` : ''}
+          <div class="det-ico">${icoHtml}</div>
+          <div class="det-info">
+            <div class="det-title">
+              <b>${sit.name}</b>
+              ${sit.tier ? `<span class="tier-tag t-${sit.tier}">${sit.tier}</span>` : ''}
+              <span class="mini-set">已穿戴</span>
             </div>
-            <div style="font-size:10.5px;color:#6fd3a8;margin-top:2px;">${it.type === 'treasure' ? (it.mode === 'auto' ? '【悬浮自动出击 · 纯外物】' : '【主动祭出 · 纯外物】') : formatStatSummary(it.stats)}</div>
-            <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${it.desc}</div>
+            <div class="det-stats">${isTr ? sit.desc : formatStatSummary(sit.stats)}</div>
+            ${!isTr ? `<div class="det-desc">${sit.desc}</div>` : ''}
+          </div>
+          <button class="sleek-btn ghost" id="eq-unequip" style="flex-shrink:0;">卸下</button>
+        `;
+        det.querySelector('#eq-unequip').onclick = () => unequipSlot(selectedEquipSlot);
+      } else {
+        const locked = isTr && trIdx >= unlockedTr;
+        det.innerHTML = `<div class="det-empty">${locked ? `该外物法宝槽尚未解锁（${trReqs[trIdx]}），提升神识或破境后可御使。` : '该槽位当前空置，点选上方行囊中的装备或法宝即可装配。'}</div>`;
+      }
+    } else if (selectedBagItem && D.ITEMS[selectedBagItem]) {
+      const it = D.ITEMS[selectedBagItem];
+      const icoHtml = it.type === 'treasure' ? window.getSkillIconHtml(selectedBagItem, 'det-sk-ico') : `<img src="${getItemIcon(selectedBagItem)}"/>`;
+      if (it.type === 'equip' || it.type === 'treasure') {
+        const cmpHtml = it.type === 'equip' ? getStatCompareHtml(it) : `<span class="cmp-chip" style="color:var(--jade);">${it.mode === 'auto' ? '悬浮自动出击 · 纯外物' : '主动祭出 · 纯外物'}</span>`;
+        det.innerHTML = `
+          <div class="det-ico">${icoHtml}</div>
+          <div class="det-info">
+            <div class="det-title">
+              <b>${it.name}</b>
+              ${it.tier ? `<span class="tier-tag t-${it.tier}">${it.tier}</span>` : ''}
+              ${it.set && D.SETS[it.set] ? `<span class="mini-set">${D.SETS[it.set].name}</span>` : ''}
+              ${it.unique ? `<span class="mini-seal">绝世孤品</span>` : ''}
+            </div>
+            <div class="det-cmp">${cmpHtml}</div>
+            <div class="det-desc">${it.desc}</div>
           </div>
           <button class="sleek-btn" id="bag-equip" style="flex-shrink:0;">${it.type === 'treasure' ? '装配法宝' : '穿戴'}</button>
         `;
         det.querySelector('#bag-equip').onclick = () => equipItem(selectedBagItem);
       } else {
         det.innerHTML = `
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:13px;color:#ebd29b;font-weight:600;">${it.name} <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${it.desc}</div>
+          <div class="det-ico">${icoHtml}</div>
+          <div class="det-info">
+            <div class="det-title"><b>${it.name}</b> <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
+            <div class="det-desc">${it.desc}</div>
           </div>
-          ${(it.type==='consumable'||it.type==='box') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">使用</button>` : `<span style="font-size:11px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
+          ${(it.type==='consumable'||it.type==='box') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">使用</button>` : `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
         `;
         const ub = det.querySelector('#bag-use');
         if (ub) ub.onclick = () => {
@@ -1222,27 +1322,35 @@ function renderSplitPanel() {
         };
       }
     } else {
-      det.innerHTML = '<span style="font-size:11.5px;color:var(--muted);">点选上方物品查看详情，或前往鬼市装备坊 / 拍卖会置办套装与孤品。</span>';
+      det.innerHTML = `<div class="det-empty">点选上方行囊物品或左侧装备槽位查看详情与属性对比。</div>`;
     }
   }
-  // 3. 功法流派页：左侧主修心法 + 3辅修流派被动 + 4出战招式槽；右侧心法/被动/全招式库
+  // 3. 功法流派页：左侧主修心法 + 3辅修流派被动 + 4出战招式槽（每招带专属图标）；右侧心法/被动/全招式库
   else if (curTab === 'skills') {
     const curHa = D.HEART_ARTS[G.heartArt] || D.HEART_ARTS.turtle_breath;
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>流派构筑与出战配置</span><span style="font-size:10px;color:var(--jade);">${curHa.style}</span></div>
+        <div class="sec-head"><span>流派构筑与出战配置</span><span style="font-size:10.5px;color:var(--jade);">${curHa.style}</span></div>
         <div class="gp-body">
-          <div style="font-size:10.5px;color:var(--muted);">当前主修心法</div>
+          <div class="sub-cap">当前主修心法</div>
           <div class="glass-card active"><div><h4>${curHa.name}</h4><p>${curHa.desc}</p></div></div>
-          <div style="font-size:10.5px;color:var(--muted);">辅修流派被动（已装 ${G.passives.length}/3）</div>
+          <div class="sub-cap">辅修流派被动（已装 ${G.passives.length}/3）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
             ${G.passives.map(pid => `<div class="glass-card active" style="padding:6px 10px;"><div><h4>${D.PASSIVES[pid].name} <span style="font-size:10px;color:var(--jade);">[${D.PASSIVES[pid].style}]</span></h4><p>${D.PASSIVES[pid].desc}</p></div></div>`).join('') || '<div class="glass-card"><p>点击右侧辅修被动装配（最多 3 门）</p></div>'}
           </div>
-          <div style="font-size:10.5px;color:var(--muted);">出战招式槽（实时集气释放 · 4 招）</div>
+          <div class="sub-cap">出战招式槽（实时集气释放 · 4 招）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
             ${G.skills.slice(0, 4).map((sid, idx) => {
               const s = D.SKILLS[sid]; const p = (G.skillProf && G.skillProf[sid]) || { lv: 1 };
-              return `<div class="glass-card" style="padding:5px 10px;"><span>槽${idx+1} · <b style="color:#ebd29b;">${s.name}</b> <em style="font-style:normal;font-size:10px;color:var(--jade);">[${PROF_NAMES[p.lv]}]</em></span><span style="font-size:10px;color:var(--muted);">集气${s.atbCost} · 灵${s.qiCost}</span></div>`;
+              return `
+                <div class="glass-card sk-slot-row">
+                  ${window.getSkillIconHtml(sid, 'sk-ico-badge')}
+                  <div style="flex:1;min-width:0;">
+                    <h4>槽${idx+1} · ${s.name} <em style="font-style:normal;font-size:10px;color:var(--jade);">[${PROF_NAMES[p.lv]}]</em></h4>
+                    <p>${D.SKILL_CATS[s.cat].name} · 集气 ${s.atbCost} · 灵力 ${s.qiCost}</p>
+                  </div>
+                </div>
+              `;
             }).join('')}
           </div>
         </div>
@@ -1250,11 +1358,11 @@ function renderSplitPanel() {
       <div class="dual-right">
         <div class="sec-head"><span>心法 · 辅修被动 · 招式典籍</span><button class="filter-pill active" id="btn-learn-more">藏经阁习招</button></div>
         <div class="gp-body">
-          <div style="font-size:11px;color:#ebd29b;">主修心法（点击切换）</div>
+          <div class="sub-cap gold">主修心法（点击切换）</div>
           <div id="ha-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
-          <div style="font-size:11px;color:#ebd29b;margin-top:4px;">辅修流派被动（点击装配 / 卸下，最多 3 门）</div>
+          <div class="sub-cap gold" style="margin-top:4px;">辅修流派被动（点击装配 / 卸下，最多 3 门）</div>
           <div id="pa-wrap" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
-          <div style="font-size:11px;color:#ebd29b;margin-top:4px;">全部已学招式（点击置顶出战 · 同系多练堆 100 造诣）</div>
+          <div class="sub-cap gold" style="margin-top:4px;">全部已学招式（点击置顶出战 · 同系多练堆 100 造诣）</div>
           <div id="sk-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
         </div>
       </div>
@@ -1265,7 +1373,7 @@ function renderSplitPanel() {
       const ha = D.HEART_ARTS[hid]; if (!ha) return;
       const c = document.createElement('div'); c.className = 'glass-card' + (G.heartArt === hid ? ' active' : '');
       c.style.cursor = 'pointer';
-      c.innerHTML = `<div><h4>${ha.name} <span style="font-size:10px;color:var(--jade);">[${ha.style}]</span> ${G.heartArt === hid ? '[主修]' : ''}</h4><p>${ha.desc}</p></div>`;
+      c.innerHTML = `<div><h4>${ha.name} <span style="font-size:10px;color:var(--jade);">[${ha.style}]</span> ${G.heartArt === hid ? '<span class="mini-seal">主修</span>' : ''}</h4><p>${ha.desc}</p></div>`;
       c.onclick = () => { G.heartArt = hid; recalcDerivedStats(false); SFX.play('click'); showToast(`切换主修心法：${ha.name}`); saveGame('auto', true); renderAll(); };
       hw.appendChild(c);
     });
@@ -1292,9 +1400,16 @@ function renderSplitPanel() {
       const s = D.SKILLS[sid]; if (!s) return;
       const p = (G.skillProf && G.skillProf[sid]) || { lv: 1, exp: 0 };
       const inBattle = idx < 4;
-      const c = document.createElement('div'); c.className = 'glass-card' + (inBattle ? ' active' : '');
+      const c = document.createElement('div'); c.className = 'glass-card sk-slot-row' + (inBattle ? ' active' : '');
       c.style.cursor = 'pointer';
-      c.innerHTML = `<div><h4>${s.name} <span style="font-size:10px;color:var(--muted);">(${D.SKILL_CATS[s.cat].name}·${PROF_NAMES[p.lv]})</span> ${inBattle ? `<span style="font-size:10px;color:var(--jade);">[出战${idx+1}]</span>` : ''}</h4><p>${s.desc}</p></div><span style="font-size:10.5px;color:#ebd29b;flex-shrink:0;">集气${s.atbCost}</span>`;
+      c.innerHTML = `
+        ${window.getSkillIconHtml(sid, 'sk-ico-badge')}
+        <div style="flex:1;min-width:0;">
+          <h4>${s.name} <span style="font-size:10px;color:var(--muted);">(${D.SKILL_CATS[s.cat].name}·${PROF_NAMES[p.lv]})</span> ${inBattle ? `<span class="mini-set">出战${idx+1}</span>` : ''}</h4>
+          <p>${s.desc}</p>
+        </div>
+        <span style="font-size:10.5px;color:#ebd29b;flex-shrink:0;">集气 ${s.atbCost}</span>
+      `;
       c.onclick = () => {
         if (idx === 0) return;
         G.skills.splice(idx, 1); G.skills.unshift(sid);
@@ -1304,19 +1419,27 @@ function renderSplitPanel() {
       sw.appendChild(c);
     });
   }
-  // 4. 伙伴 / 灵兽页：支持顶部切换「道友 | 灵兽」
+  // 4. 伙伴 / 灵兽页：支持顶部切换「同行道友 | 灵兽御契」
   else if (curTab === 'allies') {
     syncUnlockedAllies();
     if (allySubMode === 'beast') {
       const bDef = D.BEAST_DEFS[selectedBeastId] || D.BEAST_DEFS.wolf;
       const bObj = G.beasts && G.beasts[bDef.id];
       const isActB = G.activeBeast === bDef.id;
-      const bTabs = Object.values(D.BEAST_DEFS).map(b => `<button class="gp-tab ${selectedBeastId===b.id?'active':''}" data-beast="${b.id}">${b.name}${G.beasts?.[b.id] ? '' : '(未收)'}</button>`).join('');
+      const curStage = bObj ? Math.min(3, bObj.stage || 0) : 0;
+      const nextStage = bDef.stages[Math.min(3, curStage + 1)];
+      const bondPct = bObj ? Math.min(100, bObj.bond || 20) : 0;
+      const bThumbs = Object.values(D.BEAST_DEFS).map(b => `
+        <button class="beast-thumb ${selectedBeastId===b.id?'active':''} ${G.beasts?.[b.id]?'owned':''}" data-beast="${b.id}" title="${b.name}">
+          ${window.BEAST_ICONS[b.id] || ''}
+          <span>${b.name.slice(0, 2)}</span>
+        </button>
+      `).join('');
       main.innerHTML = `
         <div class="fullbody-col">
           <div class="fullbody-wrap">
             <img class="full-char" src="${ASSETS[bDef.asset]}" />
-            <div class="lifespan-ring">${bObj ? `${bDef.stages[Math.min(3, bObj.stage || 0)]} · Lv.${bObj.lv}` : '尚未驯化'}</div>
+            <div class="beast-thumb-strip">${bThumbs}</div>
           </div>
         </div>
         <div class="glass-panel">
@@ -1327,21 +1450,35 @@ function renderSplitPanel() {
             </div>
             <span style="font-size:10.5px;color:var(--jade);">${bDef.role}</span>
           </div>
-          <div class="gp-tabs" style="overflow-x:auto;">${bTabs}</div>
           <div class="gp-body">
-            <div style="font-size:20px;font-weight:700;color:#ebd29b;letter-spacing:3px;">${bDef.name} ${isActB ? '<span style="font-size:11px;color:var(--jade);">[主战中]</span>' : ''}</div>
-            <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0;">${bDef.desc}</p>
-            <div class="glass-card">
-              <div><h4>专属战技 · ${bDef.skillName}</h4><p>基础攻势 ${bDef.baseAtk} · 基础遁速 ${bDef.baseSpeed}（实时独立集气，同屏参战）</p></div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span class="vermilion-seal">${bObj ? `${curStage+1}阶灵兽` : '野生灵兽'}</span>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:21px;font-weight:700;color:#ebd29b;letter-spacing:3px;">${bDef.name}</span>
+                  ${isActB ? '<span class="mini-set">出战中</span>' : ''}
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px;">
+                  ${bObj ? `亲密 ${bObj.bond || 20}/100 · 进化：${bDef.stages[curStage]} → ${nextStage}` : '尚未驯化收养'}
+                </div>
+                <div class="bond-bar"><div class="bond-fill" style="width:${bondPct}%"></div></div>
+              </div>
+            </div>
+            <div class="beast-stat-bar">
+              <span>品阶 <b>${bObj ? bDef.stages[curStage] : '未契'}</b></span>
+              <span>攻势 <b>${bDef.baseAtk + (bObj ? bObj.lv * 4 + curStage * 10 : 0)}</b></span>
+              <span>遁速 <b>${bDef.baseSpeed + (bObj ? curStage * 3 : 0)}</b></span>
+              <span>等级 <b>${bObj ? `Lv.${bObj.lv}` : '—'}</b></span>
+            </div>
+            <div class="glass-card" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <h4>御兽战技 · ${bDef.skillName}</h4>
+              <p>${bDef.desc}（战斗中独立实时集气自动出击）</p>
             </div>
             ${bObj ? `
-              <div class="glass-card">
-                <div><h4>当前血脉：${bDef.stages[Math.min(3, bObj.stage || 0)]}（Lv.${bObj.lv}）</h4><p>亲密度 ${bObj.bond || 20} / 100 · 经验 ${bObj.exp || 0}/${bObj.lv * 40}</p></div>
-              </div>
               <div class="ally-actions" style="grid-template-columns:repeat(3,1fr);">
-                <button class="sleek-btn ghost" id="bs-feed">喂赤灵妖果</button>
-                <button class="sleek-btn ghost" id="bs-evolve">血脉突破(50灵石)</button>
-                <button class="sleek-btn" id="bs-act">${isActB ? '收回灵兽' : '设为主战'}</button>
+                <button class="sleek-btn ghost" id="bs-feed">喂食灵果</button>
+                <button class="sleek-btn ghost" id="bs-evolve">血脉进化(50灵石)</button>
+                <button class="sleek-btn" id="bs-act">${isActB ? '休战待命' : '设为出战'}</button>
               </div>
             ` : `
               <button class="sleek-btn" id="bs-adopt" style="margin-top:auto;">结下御兽契驯化收养（消耗 ${bDef.adoptCost} 灵石）</button>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qingyun-v5-7-ui3a';
+const CACHE_NAME = 'qingyun-v5-8-ui3a-full';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
@@ -8,6 +8,9 @@ const CORE_ASSETS = [
   './assets/ui3a/title_bg.jpg', './assets/ui3a/logo_calligraphy.png',
   './assets/ui3a/plaque_vert.png', './assets/ui3a/avatar_ring.png',
   './assets/ui3a/choice_bar.png', './assets/ui3a/dialogue_frame.png',
+  './assets/ui3a/panel_frame.png', './assets/ui3a/btn_small.png',
+  './assets/ui3a/hud_pill.png', './assets/ui3a/talisman_card.png',
+  './assets/ui3a/map_beacon.png', './assets/ui3a/combat_header.png',
   './assets/ui3a/ico_map.png', './assets/ui3a/ico_char.png', './assets/ui3a/ico_skill.png',
   './assets/ui3a/ico_bag.png', './assets/ui3a/ico_ally.png', './assets/ui3a/ico_save.png'
 ];

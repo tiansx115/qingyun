@@ -25,7 +25,7 @@ window.LEGACY = {
 };
 
 window.OFFLINE_CACHE = {
-  CACHE_NAME: 'qingyun-v5-7-ui3a',
+  CACHE_NAME: 'qingyun-v5-8-ui3a-full',
   async getStats() {
     if (typeof caches === 'undefined') return { supported: false, count: 0 };
     try {

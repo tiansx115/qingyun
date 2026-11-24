@@ -39,7 +39,13 @@ window.GAME_DATA.ASSETS_MAP = {
   ui3a_ico_skill: 'assets/ui3a/ico_skill.png',
   ui3a_ico_bag: 'assets/ui3a/ico_bag.png',
   ui3a_ico_ally: 'assets/ui3a/ico_ally.png',
-  ui3a_ico_save: 'assets/ui3a/ico_save.png'
+  ui3a_ico_save: 'assets/ui3a/ico_save.png',
+  ui3a_panel: 'assets/ui3a/panel_frame.png',
+  ui3a_btn: 'assets/ui3a/btn_small.png',
+  ui3a_hud_pill: 'assets/ui3a/hud_pill.png',
+  ui3a_talisman: 'assets/ui3a/talisman_card.png',
+  ui3a_beacon: 'assets/ui3a/map_beacon.png',
+  ui3a_combat_hdr: 'assets/ui3a/combat_header.png'
 };
 
 // 离线古风 BGM 槽位映射：后续放入 assets/audio/*.mp3 即可自动淡入淡出播放，缺文件时静默降级

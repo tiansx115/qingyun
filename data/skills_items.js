@@ -38,25 +38,43 @@ window.GAME_DATA.PASSIVES = {
   p_blood_fury:   { id:'p_blood_fury',   name:'血怒不屈', style:'狂战', desc:'气血低于 50% 时遁速集气 +30%，每次出手额外汲取 10 点气血。' }
 };
 
-// 招式库（不同招式消耗不同集气量 atbCost：快招35、中招55~65、重招/绝学85~100）
+// 招式库（5 大门类 × 5 招 = 共 25 招！单招满级贡献 22 点，同系博采众长练满 5 招即可堆至 100 造诣）
+// 不同招式消耗不同集气量 atbCost：快招 35~48、中招 55~75、重招/绝学 80~100
 window.GAME_DATA.SKILLS = {
-  // 剑法
-  basic_sword:    { id:'basic_sword',    name:'青云快剑', cat:'sword', elem:'gold',  atbCost:35, qiCost:8,  power:0.95, poiseDmg:14, critBonus:0.08, desc:'【快招·35集气】出剑极快，起手压制与续连招。' },
-  sister_frost:   { id:'sister_frost',   name:'霜华剑阵', cat:'sword', elem:'water', atbCost:70, qiCost:22, power:1.75, poiseDmg:28, slowEnemy:18,   desc:'【中招·70集气】寒霜剑气贯穿敌阵，击退敌方 18 点集气。' },
-  grandpa_finger: { id:'grandpa_finger', name:'玄虚剑指', cat:'sword', elem:'gold',  atbCost:95, qiCost:32, power:2.55, poiseDmg:42, critBonus:0.20, desc:'【绝学·95集气】蓄力凝聚上古剑意，极高暴击与破防爆发。' },
-  // 刀法
-  swift_blade:    { id:'swift_blade',    name:'断风快刀', cat:'blade', elem:'fire',  atbCost:40, qiCost:10, power:1.05, poiseDmg:18, drainHp:8,      desc:'【快招·40集气】狠辣快斩并汲取 8 点气血。' },
-  blood_cleave:   { id:'blood_cleave',   name:'血煞裂空斩', cat:'blade', elem:'fire', atbCost:85, qiCost:24, power:2.15, poiseDmg:36, berserkScale:true, drainHp:22, desc:'【重招·85集气】狂战核心，自身失血越多威力越恐怖并强力吸血。' },
-  // 棍法
-  sweep_staff:    { id:'sweep_staff',    name:'横扫千军棍', cat:'staff', elem:'earth', atbCost:55, qiCost:14, power:1.45, poiseDmg:34, desc:'【中招·55集气】棍势沉雄，大幅削减敌方护体定力。' },
-  sky_smash_staff:{ id:'sky_smash_staff',name:'镇岳崩山棍', cat:'staff', elem:'earth', atbCost:100,qiCost:30, power:2.85, poiseDmg:55, desc:'【绝学·100集气】极致纯数值重伤，一棍破定碎甲。' },
-  // 掌拳
-  evade_step:     { id:'evade_step',     name:'藏锋护体掌', cat:'fist',  elem:'earth', atbCost:45, qiCost:12, power:0.85, poiseDmg:16, shield:48, desc:'【快招·45集气】出掌卸力并凝出 48 点护体灵盾。' },
-  iron_counter:   { id:'iron_counter',   name:'玄铁震岳印', cat:'fist',  elem:'gold',  atbCost:75, qiCost:20, power:1.35, poiseDmg:30, shield:75, shieldDmg:0.65, desc:'【中招·75集气】叠厚盾并附加当前护盾 65% 的真实反震伤害。' },
-  // 术法毒功
-  venom_dart:     { id:'venom_dart',     name:'碧鳞毒砂',   cat:'spell', elem:'wood',  atbCost:38, qiCost:10, power:0.75, poiseDmg:10, poison:4, desc:'【快招·38集气】高频施加 4 层【蚀骨毒】，无视防御持续跳血。' },
-  venom_burst:    { id:'venom_burst',    name:'万毒蚀心爆', cat:'spell', elem:'wood',  atbCost:80, qiCost:26, power:1.20, poiseDmg:22, detonatePoison:true, desc:'【重招·80集气】引爆敌方身上全部毒层，造成巨额结算爆发！' },
-  mind_strike:    { id:'mind_strike',    name:'灵犀助阵诀', cat:'spell', elem:'water', atbCost:55, qiCost:18, power:0.70, poiseDmg:14, healTeam:65, boostAllyAtb:35, desc:'【辅助·55集气】回复气血 +65，令出战灵兽与道友集气暴涨 +35！' }
+  // ===== 剑法 (5) =====
+  basic_sword:    { id:'basic_sword',    name:'青云快剑',   cat:'sword', elem:'gold',  atbCost:35, qiCost:8,  power:0.95, poiseDmg:14, critBonus:0.08, price:25, desc:'【快招·35集气】出剑极快，起手压制与续连招。' },
+  cloud_pierce:   { id:'cloud_pierce',   name:'穿云破风剑', cat:'sword', elem:'gold',  atbCost:48, qiCost:14, power:1.30, poiseDmg:20, critBonus:0.15, price:35, desc:'【快中招·48集气】疾刺要害，自带 15% 高暴击率。' },
+  sister_frost:   { id:'sister_frost',   name:'霜华剑阵',   cat:'sword', elem:'water', atbCost:70, qiCost:22, power:1.75, poiseDmg:28, slowEnemy:18,   price:45, desc:'【中招·70集气】寒霜剑气贯穿敌阵，击退敌方 18 点集气。' },
+  star_sword_rain:{ id:'star_sword_rain',name:'九霄落星剑', cat:'sword', elem:'gold',  atbCost:88, qiCost:28, power:2.25, poiseDmg:38, critBonus:0.18, reqMastery:30, price:65, desc:'【重招·88集气】星辉剑雨倾泻，兼顾暴击爆发与破定。' },
+  grandpa_finger: { id:'grandpa_finger', name:'玄虚剑指',   cat:'sword', elem:'gold',  atbCost:95, qiCost:32, power:2.55, poiseDmg:42, critBonus:0.22, reqMastery:45, price:85, desc:'【绝学·95集气】蓄力凝聚上古剑意，极高暴击与破防爆发。' },
+
+  // ===== 刀法 (5) =====
+  swift_blade:      { id:'swift_blade',      name:'断风快刀',   cat:'blade', elem:'fire',  atbCost:40, qiCost:10, power:1.05, poiseDmg:18, drainHp:8,  price:25, desc:'【快招·40集气】狠辣快斩并汲取 8 点气血。' },
+  flame_saber:      { id:'flame_saber',      name:'焚风烈焰刀', cat:'blade', elem:'fire',  atbCost:58, qiCost:16, power:1.55, poiseDmg:26, drainHp:12, price:35, desc:'【中招·58集气】烈焰裹刃，攻势刚猛且持续吸血。' },
+  demon_parry_blade:{ id:'demon_parry_blade',name:'断江狂澜刀', cat:'blade', elem:'fire',  atbCost:72, qiCost:20, power:1.85, poiseDmg:34, berserkScale:true, price:50, desc:'【中重招·72集气】失血越多刀意越盛，大幅削减架势。' },
+  blood_cleave:     { id:'blood_cleave',     name:'血煞裂空斩', cat:'blade', elem:'fire',  atbCost:85, qiCost:24, power:2.15, poiseDmg:36, berserkScale:true, drainHp:22, reqMastery:30, price:65, desc:'【重招·85集气】狂战核心，自身失血越多威力越恐怖并强力吸血。' },
+  sky_rend_saber:   { id:'sky_rend_saber',   name:'裂天修罗斩', cat:'blade', elem:'fire',  atbCost:98, qiCost:34, power:2.75, poiseDmg:48, berserkScale:true, drainHp:32, reqMastery:45, price:90, desc:'【绝学·98集气】刀道巅峰杀招，残血一刀逆转乾坤。' },
+
+  // ===== 棍法 (5) =====
+  wind_rod:         { id:'wind_rod',         name:'疾风点穴棍', cat:'staff', elem:'earth', atbCost:38, qiCost:9,  power:0.95, poiseDmg:22, price:25, desc:'【快招·38集气】连点要害，快速削减敌方护体架势。' },
+  sweep_staff:      { id:'sweep_staff',      name:'横扫千军棍', cat:'staff', elem:'earth', atbCost:55, qiCost:14, power:1.45, poiseDmg:34, price:35, desc:'【中招·55集气】棍势沉雄，大幅削减敌方护体定力。' },
+  whirl_staff:      { id:'whirl_staff',      name:'游龙回旋棍', cat:'staff', elem:'earth', atbCost:66, qiCost:18, power:1.75, poiseDmg:36, shield:30, price:48, desc:'【中招·66集气】舞棍成风，重创敌手同时凝出 30 点护盾。' },
+  dragon_subdue_rod:{ id:'dragon_subdue_rod',name:'伏魔降龙棍', cat:'staff', elem:'earth', atbCost:90, qiCost:26, power:2.45, poiseDmg:48, slowEnemy:20, reqMastery:30, price:70, desc:'【重招·90集气】刚猛绝伦，重伤之余震退敌方 20 点集气。' },
+  sky_smash_staff:  { id:'sky_smash_staff',  name:'镇岳崩山棍', cat:'staff', elem:'earth', atbCost:100,qiCost:30, power:2.85, poiseDmg:58, reqMastery:45, price:90, desc:'【绝学·100集气】极致纯数值重伤，一棍破定碎甲。' },
+
+  // ===== 掌拳 (5) =====
+  silk_palm:   { id:'silk_palm',   name:'绵里藏针掌', cat:'fist', elem:'earth', atbCost:36, qiCost:8,  power:0.80, poiseDmg:14, shield:32, price:25, desc:'【快招·36集气】以柔克刚，高频续出 32 点护体灵盾。' },
+  evade_step:  { id:'evade_step',  name:'藏锋护体掌', cat:'fist', elem:'earth', atbCost:45, qiCost:12, power:0.90, poiseDmg:16, shield:48, price:30, desc:'【快招·45集气】出掌卸力并凝出 48 点护体灵盾。' },
+  vajra_fist:  { id:'vajra_fist',  name:'金刚伏虎拳', cat:'fist', elem:'gold',  atbCost:62, qiCost:16, power:1.30, poiseDmg:28, shield:58, price:45, desc:'【中招·62集气】金刚护体叠 58 盾，拳劲沉重破定。' },
+  iron_counter:{ id:'iron_counter',name:'玄铁震岳印', cat:'fist', elem:'gold',  atbCost:75, qiCost:20, power:1.35, poiseDmg:30, shield:75, shieldDmg:0.65, reqMastery:30, price:65, desc:'【中重招·75集气】叠厚盾并附加当前护盾 65% 的真实反震伤害。' },
+  taiji_seal:  { id:'taiji_seal',  name:'太虚镇魂印', cat:'fist', elem:'gold',  atbCost:92, qiCost:28, power:1.65, poiseDmg:40, shield:110, shieldDmg:0.90, reqMastery:45, price:90, desc:'【绝学·92集气】叠甲反伤巅峰，凝 110 盾并附带 90% 护盾真实伤害。' },
+
+  // ===== 术法毒功 (5) =====
+  venom_dart:    { id:'venom_dart',    name:'碧鳞毒砂',   cat:'spell', elem:'wood',  atbCost:38, qiCost:10, power:0.75, poiseDmg:10, poison:4, price:25, desc:'【快招·38集气】高频施加 4 层【蚀骨毒】，无视防御持续跳血。' },
+  mind_strike:   { id:'mind_strike',   name:'灵犀助阵诀', cat:'spell', elem:'water', atbCost:55, qiCost:18, power:0.70, poiseDmg:14, healTeam:65, boostAllyAtb:35, price:35, desc:'【辅助·55集气】回复气血 +65，令出战灵兽与道友集气暴涨 +35！' },
+  corpse_mist:   { id:'corpse_mist',   name:'幽冥蚀骨瘴', cat:'spell', elem:'wood',  atbCost:60, qiCost:18, power:0.95, poiseDmg:16, poison:6, slowEnemy:14, price:48, desc:'【中招·60集气】剧毒瘴气瞬间叠 6 层毒并迟滞敌方集气。' },
+  venom_burst:   { id:'venom_burst',   name:'万毒蚀心爆', cat:'spell', elem:'wood',  atbCost:80, qiCost:26, power:1.20, poiseDmg:22, detonatePoison:true, reqMastery:30, price:65, desc:'【重招·80集气】引爆敌方身上全部毒层，造成巨额结算爆发！' },
+  celestial_hymn:{ id:'celestial_hymn',name:'青冥回春大阵',cat:'spell', elem:'water', atbCost:82, qiCost:28, power:0.95, poiseDmg:18, healTeam:125, shield:55, boostAllyAtb:55, reqMastery:40, price:85, desc:'【辅助绝学·82集气】大额回血 +125 与 55 盾，令灵兽与道友瞬间爆发集气 +55！' }
 };
 
 // 身上 9 格穿戴装备槽（武器/衣服/头饰/靴子/双护腕/双饰品/1戒指）

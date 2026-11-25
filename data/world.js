@@ -4,7 +4,10 @@ window.GAME_DATA.TIMELINE = [
   { month: 4, loc: 'sect', title: '第1年·夏：青云剑宗外门试剑开启' },
   { month: 10, loc: 'market', title: '第1年·冬：鬼市岁末鉴宝大拍' },
   { month: 16, loc: 'forest', title: '第2年·夏：万妖古林秘境潮汐' },
-  { month: 36, loc: 'cliff', title: '第3年·冬：思过崖三年之约' }
+  { month: 24, loc: 'sect', title: '第2年·冬：东洲宗门大比（筑基长线）' },
+  { month: 36, loc: 'cliff', title: '第3年·冬：思过崖三年之约' },
+  { month: 48, loc: 'forest', title: '第4年·冬：幽冥魔潮入侵（金丹长线）' },
+  { month: 66, loc: 'altar', title: '第6年·夏：九霄太古秘境开启（元婴长线）' }
 ];
 
 window.GAME_DATA.ASSETS_MAP = {
@@ -69,6 +72,7 @@ window.GAME_DATA.LOCATIONS = [
     ],
     hotspots: [
       { id: 'sect_trial', label: '外门试剑 / 宗门事务' },
+      { id: 'sect_grand_tourney', label: '东洲宗门大比' },
       { id: 'sect_library', label: '藏经阁习招' },
       { id: 'sect_alchemy', label: '丹房炼丹' }
     ]
@@ -122,7 +126,8 @@ window.GAME_DATA.LOCATIONS = [
     hotspots: [
       { id: 'forest_stall', label: '谷口设摊售药' },
       { id: 'forest_tame', label: '驯化收养灵兽' },
-      { id: 'forest_ruin', label: '探索古修洞府' }
+      { id: 'forest_ruin', label: '探索古修洞府' },
+      { id: 'forest_demon_tide', label: '幽冥魔潮入侵' }
     ]
   },
   {
@@ -132,6 +137,7 @@ window.GAME_DATA.LOCATIONS = [
     npcs: [],
     hotspots: [
       { id: 'altar_break', label: '引雷破境渡劫' },
+      { id: 'altar_ancient_realm', label: '九霄太古秘境' },
       { id: 'altar_ascend', label: '问道圆满 · 结局结算' }
     ]
   }

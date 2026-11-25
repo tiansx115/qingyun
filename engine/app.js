@@ -693,35 +693,80 @@ function openEquipShop() {
   renderAll();
 }
 
-function openLibraryModal() {
-  const unlearned = Object.values(D.SKILLS).filter(s => !G.skills.includes(s.id));
-  const choices = unlearned.slice(0, 5).map(s => ({
-    text: `研习【${s.name}】(${D.SKILL_CATS[s.cat].name} · 集气${s.atbCost})`,
-    hint: '25灵石 +1月',
-    action: () => {
-      if (G.stone < 25) return showToast('灵石不足 25 枚。');
-      G.stone -= 25; advanceTime(1);
-      G.skills.push(s.id);
-      G.skillProf[s.id] = { lv: 1, exp: 0 };
-      showToast(`习得招式【${s.name}】！多练同系招式可堆高【${D.SKILL_CATS[s.cat].name}】总造诣。`);
-      activeDialogue = null; saveGame('auto', true); renderAll();
+function openLibraryModal(catFilter) {
+  if (!catFilter) {
+    const choices = Object.values(D.SKILL_CATS).map(c => {
+      const catSkills = Object.values(D.SKILLS).filter(s => s.cat === c.id);
+      const learned = catSkills.filter(s => G.skills.includes(s.id)).length;
+      const m = getCatMastery(c.id);
+      return {
+        text: `研习【${c.name}】典籍（已习 ${learned}/${catSkills.length} 招 · 总造诣 ${m}/100）`,
+        hint: c.desc.slice(0, 12),
+        action: () => openLibraryModal(c.id)
+      };
+    });
+    choices.push({
+      text: '静心演武，提升当前出战 4 招熟练度与修为', hint: '+1月 悟性+1',
+      action: () => {
+        advanceTime(1); G.wit += 1;
+        G.skills.slice(0, 4).forEach(sid => gainSkillProf(sid, 28));
+        const g = gainExp(52);
+        recalcDerivedStats(false);
+        showToast(`藏经阁演武一月，修为 +${g}，悟性 +1，出战 4 招熟练度大幅精进！`);
+        activeDialogue = null; saveGame('auto', true); renderAll();
+      }
+    });
+    choices.push({ text: '离开藏经阁', action: () => { activeDialogue = null; renderAll(); } });
+    activeDialogue = {
+      speaker: '藏经阁长老', asset: ASSETS.elder,
+      text: '“武学之道贵在博采众长。五大门类各藏五门招式，单招练至化境仅得 22 点造诣；唯同系五招皆融会贯通，方能将总熟练度推至百点化境！”',
+      choices
+    };
+    renderAll();
+    return;
+  }
+
+  const cat = D.SKILL_CATS[catFilter];
+  const curM = getCatMastery(catFilter);
+  const catSkills = Object.values(D.SKILLS).filter(s => s.cat === catFilter);
+  const choices = catSkills.map(s => {
+    const owned = G.skills.includes(s.id);
+    const reqM = s.reqMastery || 0;
+    const cost = s.price || 25;
+    if (owned) {
+      const p = (G.skillProf && G.skillProf[s.id]) || { lv: 1, exp: 0 };
+      return {
+        text: `精研已习招式【${s.name}】（当前：${PROF_NAMES[p.lv]} · 集气${s.atbCost}）`,
+        hint: p.lv >= 4 ? '已至化境' : '15灵石 熟练度+35',
+        action: () => {
+          if (p.lv >= 4) return showToast(`【${s.name}】已至化境，请改练同系其他招式以推高总造诣！`);
+          if (G.stone < 15) return showToast('灵石不足 15 枚。');
+          G.stone -= 15; advanceTime(1);
+          gainSkillProf(s.id, 35);
+          showToast(`精研【${s.name}】一月，当前【${cat.name}】总造诣：${getCatMastery(catFilter)}/100！`);
+          saveGame('auto', true); openLibraryModal(catFilter);
+        }
+      };
     }
-  }));
-  choices.push({
-    text: '静心演武，提升当前出战 4 招熟练度与修为', hint: '+1月 悟性+1',
-    action: () => {
-      advanceTime(1); G.wit += 1;
-      G.skills.slice(0, 4).forEach(sid => gainSkillProf(sid, 24));
-      const g = gainExp(48);
-      recalcDerivedStats(false);
-      showToast(`藏经阁演武一月，修为 +${g}，悟性 +1，出战招式熟练度精进！`);
-      activeDialogue = null; saveGame('auto', true); renderAll();
-    }
+    return {
+      text: `研习新招【${s.name}】（集气${s.atbCost} · 灵${s.qiCost}）`,
+      hint: reqM > 0 ? `需${cat.name}造诣${reqM} · ${cost}灵石` : `${cost}灵石 +1月`,
+      action: () => {
+        if (curM < reqM) return showToast(`需【${cat.name}】总造诣达到 ${reqM}（当前 ${curM}）方可研习此高阶招式！`);
+        if (G.stone < cost) return showToast(`灵石不足 ${cost} 枚。`);
+        G.stone -= cost; advanceTime(1);
+        G.skills.push(s.id);
+        G.skillProf[s.id] = { lv: 1, exp: 0 };
+        SFX.play('levelup');
+        showToast(`习得【${s.name}】！当前【${cat.name}】总造诣：${getCatMastery(catFilter)}/100。`);
+        saveGame('auto', true); openLibraryModal(catFilter);
+      }
+    };
   });
-  choices.push({ text: '离开藏经阁', action: () => { activeDialogue = null; renderAll(); } });
+  choices.push({ text: '← 返回门类目录', action: () => openLibraryModal(null) });
   activeDialogue = {
-    speaker: '藏经阁长老', asset: ASSETS.elder,
-    text: '“武学之道贵在博采众长。单练一招至圆满难成宗师，唯有同系招式皆融会贯通，方能将门类总造诣推至百点化境。”',
+    speaker: `藏经阁 · ${cat.name}阁`, asset: ASSETS.elder,
+    text: `【${cat.name}】当前总造诣：${curM} / 100（全${cat.name}招式伤害 +${Math.round(curM * 0.4)}%）。${cat.desc}`,
     choices
   };
   renderAll();
@@ -758,6 +803,9 @@ function handleHotspot(hid) {
   SFX.play('click');
   if (hid === 'sect_trial') {
     D.EVENTS.runSectTrial(getEventCtx());
+    renderAll();
+  } else if (hid === 'sect_grand_tourney') {
+    D.EVENTS.runGrandTourney(getEventCtx());
     renderAll();
   } else if (hid === 'sect_library') {
     openLibraryModal();
@@ -822,6 +870,12 @@ function handleHotspot(hid) {
     openBeastTameModal();
   } else if (hid === 'forest_ruin') {
     D.EVENTS.runForestRuin(getEventCtx());
+    renderAll();
+  } else if (hid === 'forest_demon_tide') {
+    D.EVENTS.runDemonTide(getEventCtx());
+    renderAll();
+  } else if (hid === 'altar_ancient_realm') {
+    D.EVENTS.runAncientRealm(getEventCtx());
     renderAll();
   } else if (hid === 'altar_break') {
     const next = D.REALMS[G.realmIdx + 1];

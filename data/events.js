@@ -19,23 +19,23 @@ window.GAME_DATA.EVENTS = {
         text: '石桌旁站着一名锦衣女修，将一纸泛黄婚书置于青石之上：“陈公子，昔年祖辈之约已成过往。如今我已入玄天宗内门，仙凡殊途，今日特来解除婚约。”',
         choices: [
           {
-            text: '当场撕毁婚书，立下三年之约', hint: '道心+5 声望+15 修为+60',
+            text: '当场撕毁婚书，立下三年之约', hint: '神识+5 声望+15 修为+60',
             action: () => {
               G.flags.divorceEvent = true;
               G.flags.divorceBranch = 'vow';
-              G.mind += 5; G.fame += 15;
+              G.sense += 5; G.fame += 15;
               const g = gainExp(60);
-              showToast(`立下三年之约（第3年·冬赴约），修为 +${g}，道心 +5。`);
+              showToast(`立下三年之约（第3年·冬赴约），修为 +${g}，神识 +5。`);
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
           {
-            text: '“按两家旧约折算一百灵石立据画押，从此两不相欠。”', hint: '灵石+100 口才+2',
+            text: '“按两家旧约折算一百灵石立据画押，从此两不相欠。”', hint: '灵石+100 神识+2',
             action: () => {
               G.flags.divorceEvent = true;
               G.flags.divorceBranch = 'money';
-              G.stone += 100; G.talk += 2;
-              showToast('双方立据画押，获补偿灵石 100 枚，口才 +2。');
+              G.stone += 100; G.sense += 2;
+              showToast('双方立据画押，获补偿灵石 100 枚，神识 +2。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -75,7 +75,7 @@ window.GAME_DATA.EVENTS = {
                   hp: 340, maxHp: 340, atk: 30, talkDef: 28, expReward: 220, stoneReward: 180,
                   onWin: () => {
                     G.flags.divorceResolved = true;
-                    G.fame += 45; G.mind += 8;
+                    G.fame += 45; G.sense += 8;
                     addItem('eq_ancient_ring', 1);
                     showToast('三年之约大胜！东洲震动，声望 +45，得绝世孤品【太虚古玉戒】。');
                   }
@@ -83,12 +83,12 @@ window.GAME_DATA.EVENTS = {
               }
             },
             {
-              text: '“三年已过，你我各自问道即可，不必徒增伤亡。”', hint: '道心+8 声望+20',
+              text: '“三年已过，你我各自问道即可，不必徒增伤亡。”', hint: '神识+8 声望+20',
               action: () => {
                 G.flags.divorceResolved = true;
-                G.mind += 8; G.fame += 20;
+                G.sense += 8; G.fame += 20;
                 const g = gainExp(110);
-                showToast(`淡然化干戈，修为 +${g}，道心 +8。`);
+                showToast(`淡然化干戈，修为 +${g}，神识 +8。`);
                 setDialogue(null); saveGame('auto', true); renderAll();
               }
             }
@@ -103,16 +103,16 @@ window.GAME_DATA.EVENTS = {
               text: '收下玄天宗客卿玉帖与贺礼', hint: '灵石+160 声望+25 乾坤袋',
               action: () => {
                 G.flags.divorceResolved = true;
-                G.stone += 160; G.fame += 25; G.talk += 3;
+                G.stone += 160; G.fame += 25; G.sense += 3;
                 addItem('eq_qiankun_ring', 1);
                 showToast('与柳家平辈论交，获灵石 160 与【乾坤须弥戒】。');
                 setDialogue(null); saveGame('auto', true); renderAll();
               }
             },
             {
-              text: '趁机提议合股经营东洲丹药商路', hint: '口才>=14 灵石+260',
+              text: '趁机提议合股经营东洲丹药商路', hint: '神识>=14 灵石+260',
               action: () => {
-                if (G.talk < 14) return showToast('口才需达到 14 方能谈妥合股条款。');
+                if (G.sense < 14) return showToast('神识需达到 14 方能谈妥合股条款。');
                 G.flags.divorceResolved = true;
                 G.stone += 260; G.fame += 20;
                 showToast('合股契约落定，当场入账 260 枚灵石。');
@@ -248,7 +248,7 @@ window.GAME_DATA.EVENTS = {
               advanceTime(1);
               G.factions.qingyun = 2;
               const earn = 95 + G.luck * 3;
-              G.stone += earn; G.talk += 1;
+              G.stone += earn; G.sense += 1;
               const g = gainExp(55);
               showToast(`稳进内门候补且盘口大捷，净赚 ${earn} 灵石，修为 +${g}。`);
               setDialogue(null); saveGame('auto', true); renderAll();
@@ -288,7 +288,7 @@ window.GAME_DATA.EVENTS = {
             advanceTime(1);
             G.factions.qingyun = 3;
             G.factions.nether = Math.max(G.factions.nether || 0, 2);
-            G.stone += 180; G.talk += 3;
+            G.stone += 180; G.sense += 3;
             showToast('两头周旋滴水不漏，暗得 180 灵石且保住双方信任。');
             setDialogue(null); saveGame('auto', true); renderAll();
           }
@@ -322,7 +322,7 @@ window.GAME_DATA.EVENTS = {
             text: '细观玉纹沁色，指出左玉断口灵气自然内敛乃真品', hint: '悟性/口才验货 获聚宝灵佩',
             action: () => {
               G.factions.wanbao = 1;
-              G.talk += 2; G.luck += 1;
+              G.sense += 2; G.luck += 1;
               addItem('eq_merchant_jade', 1);
               showToast('眼力过关！获万宝楼验货令与【聚宝灵佩】，解锁鬼市高阶装备坊。');
               setDialogue(null); saveGame('auto', true); renderAll();
@@ -332,7 +332,7 @@ window.GAME_DATA.EVENTS = {
             text: '“真假固然重要，但若把做旧那块卖给爱面子的世家公子，利润更高。”', hint: '反套路商道 灵石+65 聚宝灵佩',
             action: () => {
               G.factions.wanbao = 1;
-              G.stone += 65; G.talk += 3;
+              G.stone += 65; G.sense += 3;
               addItem('eq_merchant_jade', 1);
               showToast('沈云舒轻笑颔首，赠你【聚宝灵佩】与 65 灵石定金。');
               setDialogue(null); saveGame('auto', true); renderAll();
@@ -387,7 +387,7 @@ window.GAME_DATA.EVENTS = {
             text: '不动声色抬价诱使世家子弟高价买走假匣，按约分成', hint: '反套路 净赚135灵石',
             action: () => {
               advanceTime(1); G.factions.wanbao = 2;
-              G.stone += 135; G.talk += 3;
+              G.stone += 135; G.sense += 3;
               showToast('世家公子高价接盘，沈云舒按约奉上 135 灵石酬劳。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
@@ -471,7 +471,7 @@ window.GAME_DATA.EVENTS = {
             action: () => {
               G.factions.nether = 1;
               if (G.sect === '散修') G.sect = '幽冥玄宗';
-              G.mind = Math.max(1, G.mind - 2);
+              G.sense = Math.max(1, G.sense - 2);
               if (!G.ownedHeartArts.includes('nether_sutra')) G.ownedHeartArts.push('nether_sutra');
               if (!G.skills.includes('blood_cleave')) G.skills.push('blood_cleave');
               const g = gainExp(75);
@@ -480,9 +480,9 @@ window.GAME_DATA.EVENTS = {
             }
           },
           {
-            text: '假意敷衍，套出魔宗行踪后索要封口灵石', hint: '口才+2 灵石+45',
+            text: '假意敷衍，套出魔宗行踪后索要封口灵石', hint: '神识+2 灵石+45',
             action: () => {
-              G.talk += 2; G.stone += 45;
+              G.sense += 2; G.stone += 45;
               showToast('黑袍人冷哼一声抛下 45 灵石隐入暗巷。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
@@ -494,8 +494,8 @@ window.GAME_DATA.EVENTS = {
                 name: '幽冥接引使·墨离', asset: ASSETS.elder, bg: 'market',
                 hp: 195, maxHp: 195, atk: 22, talkDef: 18, expReward: 95, stoneReward: 75,
                 onWin: () => {
-                  G.fame += 20; G.mind += 3;
-                  showToast('击退墨离化身，东洲正道声望 +20，道心 +3。');
+                  G.fame += 20; G.sense += 3;
+                  showToast('击退墨离化身，东洲正道声望 +20，神识 +3。');
                 }
               });
             }
@@ -554,7 +554,7 @@ window.GAME_DATA.EVENTS = {
             action: () => {
               advanceTime(1);
               G.factions.nether = 3;
-              G.stone += 160; G.fame += 25; G.talk += 3;
+              G.stone += 160; G.fame += 25; G.sense += 3;
               addItem('eq_blood_cloak', 1);
               showToast('密报立功且顺走战利品，获 160 灵石与【血煞法袍】。');
               setDialogue(null); saveGame('auto', true); renderAll();
@@ -648,5 +648,217 @@ window.GAME_DATA.EVENTS = {
     G.stone += 40;
     showToast(`在古修洞府残余灵脉中采药静修一月，修为 +${g}，灵石 +40。`);
     saveGame('auto', true); renderAll();
+  },
+
+  // ===== 6. 筑基长线：东洲宗门大比（三轮淘汰 Boss 战）=====
+  runGrandTourney(ctx) {
+    const { G, ASSETS, setDialogue, startBattle, gainExp, addItem, showToast, saveGame, renderAll } = ctx;
+    const round = G.flags.tourneyRound || 0;
+    if (round >= 3) {
+      setDialogue({
+        speaker: '东洲大比执事', asset: ASSETS.elder,
+        text: '“陈道友已在东洲宗门大比力压群雄夺得魁首，如今演武台尚可供你与各宗真传切磋磨砺百兵熟练度。”',
+        choices: [
+          {
+            text: '登台与各宗真传切磋（磨砺招式熟练度）', hint: '实战切磋',
+            action: () => {
+              startBattle({
+                name: '东洲真传·剑影', asset: ASSETS.sister_fierce, bg: 'sect_plaza',
+                hp: 420, maxHp: 420, atk: 34, expReward: 160, stoneReward: 95,
+                onWin: () => showToast('演武台切磋获胜！招式熟练度精进，获灵石 95。')
+              });
+            }
+          },
+          { text: '暂不登台', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return;
+    }
+
+    const opponents = [
+      {
+        title: '初赛 · 玄天宗剑子「顾惊鸿」',
+        intro: '青云演武台上剑气纵横。玄天宗真传顾惊鸿负手而立：“青云门下久不出奇才，今日大比初战，且让我称称你的斤两。”',
+        enemy: { name:'玄天剑子·顾惊鸿', asset:ASSETS.sister_fierce, bg:'sect_plaza', hp:320, maxHp:320, atk:28, expReward:160, stoneReward:90 },
+        reward: () => { addItem('eq_qingyun_crown', 1); showToast('大比初赛胜出！获【青云剑冠】与 90 灵石！'); }
+      },
+      {
+        title: '半决 · 焚天谷刀魁「厉狂砂」',
+        intro: '半决赛擂台上热浪滚滚，焚天谷刀魁厉狂砂扛着赤铁重刀大步登台：“少拿花哨剑招糊弄老子，接我三刀不退再谈魁首！”',
+        enemy: { name:'焚天刀魁·厉狂砂', asset:ASSETS.elder, bg:'sect_plaza', hp:460, maxHp:460, atk:36, expReward:230, stoneReward:140 },
+        reward: () => { addItem('tr_flying_sword', 1); showToast('力克焚天刀魁晋级决赛！获玄品外物法宝【悬浮青霜飞剑】！'); }
+      },
+      {
+        title: '决战 · 东洲魁首「剑尊亲传·陆沉舟」',
+        intro: '云海钟鸣三声，东洲百宗齐聚观礼。上届魁首陆沉舟剑未出鞘已压得台下众人屏息：“你一路连克强敌，值得我出全剑。”',
+        enemy: { name:'剑尊亲传·陆沉舟', asset:ASSETS.sister_fierce, bg:'sect_plaza', hp:640, maxHp:640, atk:44, expReward:360, stoneReward:260 },
+        reward: () => {
+          G.fame += 60; G.sense += 4;
+          addItem('eq_uniq_sky_rod', 1);
+          if (!G.skills.includes('star_sword_rain')) {
+            G.skills.push('star_sword_rain');
+            G.skillProf.star_sword_rain = { lv: 1, exp: 0 };
+          }
+          showToast('夺得东洲宗门大比魁首！声望 +60，神识 +4，得孤品【太古混元棍】并领悟【九霄落星剑】！');
+        }
+      }
+    ];
+    const cur = opponents[round];
+    setDialogue({
+      speaker: cur.title, asset: cur.enemy.asset,
+      text: `${cur.intro}（推荐境界：炼气九层～筑基期 · 当前进度 ${round + 1}/3）`,
+      choices: [
+        {
+          text: `登台迎战【${cur.enemy.name}】`, hint: `HP ${cur.enemy.hp} · 攻 ${cur.enemy.atk}`,
+          action: () => {
+            startBattle({
+              ...cur.enemy,
+              onWin: () => {
+                G.flags.tourneyRound = round + 1;
+                cur.reward();
+                saveGame('auto', true);
+              }
+            });
+          }
+        },
+        { text: '暂作整备，稍后再战', action: () => { setDialogue(null); renderAll(); } }
+      ]
+    });
+  },
+
+  // ===== 7. 金丹长线：幽冥魔潮入侵（多路线策略 + 血魔将 Boss）=====
+  runDemonTide(ctx) {
+    const { G, ASSETS, setDialogue, startBattle, gainExp, addItem, advanceTime, showToast, saveGame, renderAll } = ctx;
+    const stage = G.flags.demonTideStage || 0;
+    if (stage >= 2) {
+      showToast('万妖古林深处的幽冥血祭大阵已被彻底摧毁，东洲魔患暂平。');
+      return;
+    }
+
+    if (stage === 0) {
+      setDialogue({
+        speaker: '万妖古林 · 血雾警讯', asset: ASSETS.wolf_boss,
+        text: '古林深处冲起三道暗红血柱，幽冥魔宗借秘境潮汐强开血祭大阵，数头妖兽发狂奔逃。你须择一策破局（推荐境界：筑基～金丹期）：',
+        choices: [
+          {
+            text: '以高超神识潜入阵眼，暗中毁去血祭灵旗', hint: '神识>=22 削弱Boss两成血量',
+            action: () => {
+              if ((G.sense || 10) < 22) return showToast('神识需达到 22 方能避开魔修巡哨潜入阵眼。');
+              advanceTime(1); G.flags.demonTideStage = 1; G.flags.demonWeakened = true;
+              const g = gainExp(140);
+              showToast(`神识潜行成功！毁去三面血旗，血魔将实力大损，修为 +${g}！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          {
+            text: '直闯外围血坛，强杀幽冥魔宗先锋队', hint: '正面硬闯 实战',
+            action: () => {
+              startBattle({
+                name: '幽冥血卫统领', asset: ASSETS.elder, bg: 'forest',
+                hp: 520, maxHp: 520, atk: 42, expReward: 240, stoneReward: 150,
+                onWin: () => {
+                  G.flags.demonTideStage = 1;
+                  addItem('tr_soul_bell', 1);
+                  showToast('击溃幽冥先锋！缴获外物法宝【幽冥摄魂铃】，直逼血魔将主坛！');
+                  saveGame('auto', true);
+                }
+              });
+            }
+          },
+          { text: '暂避锋芒，先提升修为', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return;
+    }
+
+    // stage === 1: 决战幽冥血魔将
+    const weakened = Boolean(G.flags.demonWeakened);
+    const bossHp = weakened ? 740 : 920;
+    setDialogue({
+      speaker: '幽冥血魔将 · 噬渊', asset: ASSETS.wolf_boss,
+      text: `血雾翻腾的古祭坛中央，身披玄铁魔甲的血魔将缓缓起身：“敢坏我幽冥玄宗百年大计${weakened ? '，还敢暗毁我血旗' : ''}——拿命来填阵吧！”`,
+      choices: [
+        {
+          text: '联手道友与灵兽，正面力斩幽冥血魔将！', hint: `金丹级Boss · HP ${bossHp}`,
+          action: () => {
+            startBattle({
+              name: '幽冥血魔将·噬渊', asset: ASSETS.wolf_boss, bg: 'forest',
+              hp: bossHp, maxHp: bossHp, atk: weakened ? 48 : 56, expReward: 480, stoneReward: 340,
+              onWin: () => {
+                G.flags.demonTideStage = 2;
+                G.fame += 80; G.sense += 5;
+                addItem('eq_uniq_undying', 1);
+                addItem('marrow_pill', 2);
+                showToast('斩杀幽冥血魔将！东洲举宗同庆，声望 +80，神识 +5，得孤品【不灭血衣】与洗髓丹×2！');
+                saveGame('auto', true);
+              }
+            });
+          }
+        },
+        { text: '暂退整备丹药与构筑', action: () => { setDialogue(null); renderAll(); } }
+      ]
+    });
+  },
+
+  // ===== 8. 元婴长线：九霄太古秘境（终极双 Boss 试炼）=====
+  runAncientRealm(ctx) {
+    const { G, ASSETS, setDialogue, startBattle, addItem, showToast, saveGame, renderAll } = ctx;
+    const stage = G.flags.ancientRealmStage || 0;
+    if (stage >= 2) {
+      showToast('九霄太古秘境已被你彻底通关，太古剑意常驻丹田，可随时前往渡劫台飞升结算。');
+      return;
+    }
+
+    if (stage === 0) {
+      setDialogue({
+        speaker: '九霄太古秘境 · 天枢守卫', asset: ASSETS.elder,
+        text: '渡劫台穹顶裂开一道星河古门，一尊通体玄金的太古剑傀步出星雾：“凡尘修士欲踏元婴大道，须先过我天枢剑阵。”（推荐境界：金丹～元婴期）',
+        choices: [
+          {
+            text: '拔兵迎战【太古剑傀·天枢】', hint: '终极试炼·壹 (HP 1180)',
+            action: () => {
+              startBattle({
+                name: '太古剑傀·天枢', asset: ASSETS.elder, bg: 'world_map',
+                hp: 1180, maxHp: 1180, atk: 62, expReward: 620, stoneReward: 420,
+                onWin: () => {
+                  G.flags.ancientRealmStage = 1;
+                  G.body += 4; G.speed += 4; G.sense += 4;
+                  addItem('eq_ancient_ring', 1);
+                  showToast('击碎太古剑傀！根骨/遁速/神识各 +4，得【太虚古玉戒】，太古核心已开启！');
+                  saveGame('auto', true);
+                }
+              });
+            }
+          },
+          { text: '尚需闭关沉淀，改日再来', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return;
+    }
+
+    setDialogue({
+      speaker: '九霄雷劫化身 · 太古天意', asset: ASSETS.wolf_boss,
+      text: '秘境最深处雷海翻涌，九霄天雷凝聚为万丈法相：“破此法相，东洲再无敌手，诸天大道任尔逍遥！”',
+      choices: [
+        {
+          text: '以平生所学百兵大道，迎战九霄雷劫化身！', hint: '终极试炼·贰 (HP 1680)',
+          action: () => {
+            startBattle({
+              name: '九霄雷劫化身', asset: ASSETS.wolf_boss, bg: 'world_map',
+              hp: 1680, maxHp: 1680, atk: 74, expReward: 950, stoneReward: 680,
+              onWin: () => {
+                G.flags.ancientRealmStage = 2;
+                G.fame += 150;
+                addItem('eq_uniq_venom_eye', 1);
+                addItem('condense_pill', 3);
+                showToast('斩破九霄雷劫化身！威震诸天，声望 +150，获孤品【蚀骨妖瞳】与破境凝元丹×3！');
+                saveGame('auto', true);
+              }
+            });
+          }
+        },
+        { text: '暂退调息', action: () => { setDialogue(null); renderAll(); } }
+      ]
+    });
   }
 };

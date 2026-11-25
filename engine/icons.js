@@ -16,23 +16,36 @@ window.ICONS = {
 
 // ===== v6.1 专属技能 / 外物法宝 / 战斗动作 3A 哑光金纹图标库 =====
 window.SKILL_ICONS = {
-  // 剑法
+  // 剑法 (5)
   basic_sword: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M25 5L11 19"/><path d="M25 5l-5 1.5L13 13.5"/><path d="M9 17l6 6"/><path d="M11 21l-5 5"/><path d="M6 12c3-4 8-6 13-6" opacity="0.55"/></svg>`,
+  cloud_pierce: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 16h21"/><path d="M21 11l6 5-6 5"/><path d="M6 10c4-2 8-2 12 0M6 22c4 2 8 2 12 0" opacity="0.55"/></svg>`,
   sister_frost: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M16 3v26M5 9.5l22 13M27 9.5l-22 13"/><path d="M13 6l3 3 3-3M13 26l3-3 3 3"/><circle cx="16" cy="16" r="3.5"/></svg>`,
+  star_sword_rain: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5l-2 9M16 4l-2 11M24 6l-2 10"/><path d="M16 18l2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1 2-4z"/></svg>`,
   grandpa_finger: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l3 10-3 15-3-15 3-10z"/><path d="M9 15l7-4 7 4"/><path d="M6 22c4-2 16-2 20 0" opacity="0.6"/></svg>`,
-  // 刀法
+  // 刀法 (5)
   swift_blade: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M25 6c-2 8-8 14-16 17l3-7c5-2 9-6 13-10z"/><path d="M7 21l4 4"/><path d="M5 27l4-4"/><path d="M6 11c4-3 9-4 14-3" opacity="0.5"/></svg>`,
+  flame_saber: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5c-4 5-6 11-12 16l-5 5"/><path d="M12 10c2-3 5-4 5-4s1 4-2 7c2-1 4-1 4-1s-1 5-6 6"/></svg>`,
+  demon_parry_blade: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 20c5-8 14-12 22-11-3 7-9 12-17 15"/><path d="M6 26c6-2 14-2 20 1" opacity="0.65"/></svg>`,
   blood_cleave: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 25C10 13 18 7 27 5c-2 9-8 17-18 22z"/><path d="M11 8l3 4M18 19l5 3"/><path d="M5 14c3-5 8-8 14-9" opacity="0.6"/></svg>`,
-  // 棍法
+  sky_rend_saber: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 26L28 4"/><path d="M7 8l6 6M19 18l6 6"/><path d="M4 16c6-6 14-10 23-11" opacity="0.55"/></svg>`,
+  // 棍法 (5)
+  wind_rod: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 24L25 7"/><circle cx="25" cy="7" r="2.2"/><path d="M10 10c3-2 7-2 10 0M12 23c4 1 8 0 11-3" opacity="0.6"/></svg>`,
   sweep_staff: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 26L27 6"/><path d="M9 9c6-2 13 1 16 7" stroke-width="1.3" opacity="0.65"/><path d="M7 18c4 5 11 7 17 5" stroke-width="1.3" opacity="0.65"/></svg>`,
+  whirl_staff: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="16" cy="16" r="10" stroke-dasharray="14 6"/><path d="M7 22L25 10"/></svg>`,
+  dragon_subdue_rod: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4v24"/><path d="M11 9c2-2 8-2 10 0M10 16c3-2 9-2 12 0M11 23c2-2 8-2 10 0"/><path d="M6 12l4 4-4 4M26 12l-4 4 4 4" opacity="0.65"/></svg>`,
   sky_smash_staff: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4v18"/><path d="M12 7h8M12 19h8"/><path d="M5 26l6-4 5 4 5-4 6 4"/><path d="M9 12l-4-2M23 12l4-2" opacity="0.65"/></svg>`,
-  // 掌拳
+  // 掌拳 (5)
+  silk_palm: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 16c4-6 10-6 10 0s6 6 10 0"/><circle cx="16" cy="16" r="10" opacity="0.45"/><path d="M16 9v14"/></svg>`,
   evade_step: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="11" opacity="0.45"/><path d="M16 7v10M12 10v7M20 11v6M10 17c0 4 2.5 7 6 7s6-3 6-7"/></svg>`,
+  vajra_fist: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="9" width="16" height="14" rx="3"/><path d="M12 9v6M16 9v6M20 9v6M8 17h16"/></svg>`,
   iron_counter: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4l10 4v8c0 6-4.5 10-10 12-5.5-2-10-6-10-12V8l10-4z"/><path d="M11 15l5-4 5 4-5 6-5-6z"/></svg>`,
-  // 术法毒功
+  taiji_seal: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5"/><circle cx="16" cy="16" r="6"/><path d="M16 10a3 3 0 0 1 0 6 3 3 0 0 0 0 6"/></svg>`,
+  // 术法毒功 (5)
   venom_dart: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l-9 9M27 12l-9 9M18 5l-9 9"/><circle cx="8" cy="24" r="2.2"/><circle cx="14" cy="26" r="1.4" opacity="0.7"/></svg>`,
+  corpse_mist: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 19c0-4 3-7 7-7 2-3 7-4 10-1 3 1 4 4 3 8"/><path d="M8 24c4-2 12-2 16 0M10 27c3-1 9-1 12 0" opacity="0.65"/></svg>`,
   venom_burst: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="5"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4M7.5 7.5l3 3M21.5 21.5l3 3M24.5 7.5l-3 3M10.5 21.5l-3 3"/></svg>`,
   mind_strike: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z"/><path d="M16 12v10M11 17h10"/></svg>`,
+  celestial_hymn: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="10"/><path d="M16 6l2.5 7.5L26 16l-7.5 2.5L16 26l-2.5-7.5L6 16l7.5-2.5L16 6z"/></svg>`,
   // 战斗核心动作与外物法宝
   counter: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="16" cy="16" r="10.5"/><path d="M16 5.5a5.25 5.25 0 0 1 0 10.5 5.25 5.25 0 0 0 0 10.5"/><circle cx="16" cy="10.8" r="1.4" fill="currentColor"/><circle cx="16" cy="21.2" r="1.4"/></svg>`,
   tr_flying_sword: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M26 6L10 22"/><path d="M8 20l4 4M6 26l3-3"/><path d="M6 12c4-5 12-6 18-3" opacity="0.6"/><path d="M14 26c6 0 11-4 13-10" opacity="0.6"/></svg>`,

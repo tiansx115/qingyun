@@ -62,54 +62,59 @@ window.GAME_DATA.AUDIO_MAP = {
   combat:    'assets/audio/bgm_combat.mp3'
 };
 
+window.GAME_DATA.REGIONS = [
+  { id: 'east',    name: '东洲·苍莽域',   sub: '炼气～筑基 · 宗门林立之始源地', pairs: [['sect','cave'], ['sect','inn'], ['sect','cliff'], ['cliff','market'], ['inn','market'], ['market','forest']] },
+  { id: 'south',   name: '南疆·十万巫山', sub: '筑基～金丹 · 奇蛊地火与异兽秘境', pairs: [['south_venom','south_fire'], ['south_fire','south_beast']] },
+  { id: 'north',   name: '北冥·绝域冰原', sub: '金丹～元婴 · 玄冰古阵与坠仙战场', pairs: [['north_ice','north_battle'], ['north_battle','north_sea'], ['north_battle','north_demon']] },
+  { id: 'central', name: '中州·太虚圣域', sub: '元婴～合道仙帝 · 悟道神碑与九霄雷池', pairs: [['central_city','central_stele'], ['central_stele','altar']] }
+];
+
 window.GAME_DATA.LOCATIONS = [
+  // ===== 东洲·苍莽域 (6) =====
   {
-    id: 'sect', name: '青云剑宗', icon: 'sword', x: 25, y: 36,
+    id: 'sect', region: 'east', name: '青云剑宗', icon: 'sword', x: 24, y: 38,
     sceneBg: 'sect_plaza',
     desc: '云海之上的千年剑宗，演武广场与藏经阁巍然矗立。',
-    npcs: [
-      { id: 'sister', name: '林清霜', title: '青云大师姐', char: 'sister', left: '66%' }
-    ],
+    npcs: [{ id: 'sister', name: '林清霜', title: '青云大师姐', char: 'sister', left: '66%' }],
     hotspots: [
       { id: 'sect_trial', label: '外门试剑 / 宗门事务' },
       { id: 'sect_grand_tourney', label: '东洲宗门大比' },
-      { id: 'sect_library', label: '藏经阁习招' },
+      { id: 'sect_library', label: '藏经阁参悟' },
       { id: 'sect_alchemy', label: '丹房炼丹' }
     ]
   },
   {
-    id: 'cliff', name: '后山思过崖', icon: 'scroll', x: 16, y: 68,
-    sceneBg: 'world_map',
-    desc: '云雾缭绕的悬崖石坪，常有江湖恩怨在此了断。',
-    npcs: [
-      { id: 'elder', name: '玄虚子', title: '古玉残魂', char: 'elder', left: '68%' }
-    ],
-    hotspots: [
-      { id: 'cliff_event', label: '查探崖坪石桌' }
-    ]
+    id: 'cave', region: 'east', name: '云隐仙府', icon: 'home', x: 38, y: 26,
+    sceneBg: 'bamboo',
+    desc: '翠竹云海间的私人灵脉石窟，可布阵闭关、封存跨世遗产与从容兵解转生。',
+    npcs: [],
+    hotspots: [{ id: 'cave_manage', label: '进入仙府 · 聚灵/藏宝/轮回台' }]
   },
   {
-    id: 'inn', name: '天机阁茶肆', icon: 'ally', x: 48, y: 56,
+    id: 'cliff', region: 'east', name: '后山思过崖', icon: 'scroll', x: 16, y: 68,
+    sceneBg: 'world_map',
+    desc: '云雾缭绕的悬崖石坪，常有仙途恩怨在此了断。',
+    npcs: [{ id: 'elder', name: '玄虚子', title: '古玉残魂', char: 'elder', left: '68%' }],
+    hotspots: [{ id: 'cliff_event', label: '查探崖坪石桌' }]
+  },
+  {
+    id: 'inn', region: 'east', name: '天机阁茶肆', icon: 'ally', x: 50, y: 54,
     sceneBg: 'inn',
-    desc: '灯火温暖的两层古木茶楼，四方修士在此交换情报。',
-    npcs: [
-      { id: 'innkeeper', name: '天机掌柜', title: '江湖百晓生', char: 'elder', left: '64%' }
-    ],
+    desc: '灯火温暖的两层古木茶楼，四州修士在此推演天机交换情报。',
+    npcs: [{ id: 'innkeeper', name: '天机掌柜', title: '天机百晓生', char: 'elder', left: '64%' }],
     hotspots: [
       { id: 'inn_tea', label: '品茶歇息 (10灵石回满)' },
-      { id: 'inn_rumor', label: '打听东洲传闻' }
+      { id: 'inn_rumor', label: '推演轮回盘与四州传闻' }
     ]
   },
   {
-    id: 'market', name: '鬼市黑坊', icon: 'stone', x: 70, y: 68,
+    id: 'market', region: 'east', name: '鬼市黑坊', icon: 'stone', x: 70, y: 68,
     sceneBg: 'market',
     desc: '幽暗石窟中的地下黑市，真假珍宝与古修遗物混杂其间。',
-    npcs: [
-      { id: 'merchant', name: '黑坊掌柜', title: '鬼市行商', char: 'elder', left: '67%' }
-    ],
+    npcs: [{ id: 'merchant', name: '黑坊掌柜', title: '鬼市行商', char: 'elder', left: '67%' }],
     hotspots: [
       { id: 'market_shop', label: '丹药奇物摊' },
-      { id: 'market_equip', label: '鬼市装备坊' },
+      { id: 'market_equip', label: '鬼市法器坊' },
       { id: 'market_auction', label: '鬼市拍卖会' },
       { id: 'market_faction', label: '万宝楼 · 鉴宝大拍' },
       { id: 'nether_path', label: '暗巷幽影' },
@@ -117,12 +122,10 @@ window.GAME_DATA.LOCATIONS = [
     ]
   },
   {
-    id: 'forest', name: '万妖古林', icon: 'map', x: 82, y: 34,
+    id: 'forest', region: 'east', name: '万妖古林', icon: 'map', x: 82, y: 36,
     sceneBg: 'forest',
     desc: '古松参天、灵雾翻涌的险地，深处隐现古修洞府石门。',
-    npcs: [
-      { id: 'wolf', name: '赤瞳妖狼', title: '护洞妖兽', char: 'wolf_boss', left: '66%' }
-    ],
+    npcs: [{ id: 'wolf', name: '赤瞳妖狼', title: '护洞妖兽', char: 'wolf_boss', left: '66%' }],
     hotspots: [
       { id: 'forest_stall', label: '谷口设摊售药' },
       { id: 'forest_tame', label: '驯化收养灵兽' },
@@ -130,24 +133,109 @@ window.GAME_DATA.LOCATIONS = [
       { id: 'forest_demon_tide', label: '幽冥魔潮入侵' }
     ]
   },
+
+  // ===== 南疆·十万巫山 (3) =====
   {
-    id: 'cave', name: '云隐仙府', icon: 'home', x: 36, y: 26,
-    sceneBg: 'bamboo',
-    desc: '翠竹云海间的私人灵脉石窟，可布阵闭关、封存跨世遗产与从容兵解转生。',
+    id: 'south_venom', region: 'south', name: '万蛊毒谷', icon: 'scroll', x: 26, y: 58,
+    sceneBg: 'forest',
+    desc: '瘴气弥漫的南疆奇谷，上古巫修在此留下【魂蛊大道】毒碑。',
     npcs: [],
     hotspots: [
-      { id: 'cave_manage', label: '进入仙府 · 聚灵/藏宝/轮回台' }
+      { id: 'south_dao_soul', label: '参悟【魂蛊大道】古碑' },
+      { id: 'south_trial_gu', label: '闯百蛊窟猎取毒丹' }
     ]
   },
   {
-    id: 'altar', name: '九霄渡劫台', icon: 'bolt', x: 54, y: 18,
+    id: 'south_fire', region: 'south', name: '焚天古火脉', icon: 'bolt', x: 54, y: 38,
     sceneBg: 'world_map',
-    desc: '接引九霄神雷的古石高台，大境界破境必经之地。',
+    desc: '地肺真火喷薄千丈，体修与火法修士锤炼肉身与法道的绝佳险地。',
     npcs: [],
     hotspots: [
-      { id: 'altar_break', label: '引雷破境渡劫' },
+      { id: 'south_dao_body', label: '地肺真火淬炼【体道/法道】' },
+      { id: 'south_fire_lotus', label: '深入熔岩夺赤炎灵宝' }
+    ]
+  },
+  {
+    id: 'south_beast', region: 'south', name: '百蛮御灵山', icon: 'ally', x: 78, y: 60,
+    sceneBg: 'bamboo',
+    desc: '万兽栖息的南疆灵峰，盛产赤灵朱果并流传上古【灵契大道】。',
+    npcs: [],
+    hotspots: [
+      { id: 'south_dao_pact', label: '参悟【灵契大道】兽图腾' },
+      { id: 'south_beast_hunt', label: '秘林采摘朱果与试炼' },
+      { id: 'forest_tame', label: '缔结南疆灵兽契' }
+    ]
+  },
+
+  // ===== 北冥·绝域冰原 (4) =====
+  {
+    id: 'north_ice', region: 'north', name: '北冥玄冰宫', icon: 'sword', x: 24, y: 36,
+    sceneBg: 'sect_plaza',
+    desc: '万年玄冰构筑的极北仙宫，冰壁铭刻无上【剑道】与【符阵】道痕。',
+    npcs: [],
+    hotspots: [
+      { id: 'north_dao_sword_array', label: '观摩玄冰壁参悟【剑道/符阵】' },
+      { id: 'north_ice_trial', label: '挑战玄冰护法傀儡' }
+    ]
+  },
+  {
+    id: 'north_battle', region: 'north', name: '上古坠仙战场', icon: 'map', x: 52, y: 52,
+    sceneBg: 'world_map',
+    desc: '太古仙魔大战遗墟，遍地残破古宝与不灭战魂，大机缘与大凶险并存。',
+    npcs: [],
+    hotspots: [
+      { id: 'north_scavenge', label: '神识搜寻战场遗宝' },
+      { id: 'north_war_soul', label: '激战太古战魂残影 (元婴级)' }
+    ]
+  },
+  {
+    id: 'north_sea', region: 'north', name: '天星跨海阁', icon: 'stone', x: 78, y: 34,
+    sceneBg: 'market',
+    desc: '连接海外仙岛的巨型星辰商船，售卖延寿蟠桃与悟道古茶等稀世仙珍。',
+    npcs: [],
+    hotspots: [
+      { id: 'north_sea_shop', label: '海外仙珍阁 (延寿桃/悟道茶)' }
+    ]
+  },
+  {
+    id: 'north_demon', region: 'north', name: '幽冥魔宗总坛', icon: 'bolt', x: 74, y: 70,
+    sceneBg: 'forest',
+    desc: '盘踞北冥深渊的魔道巨擘总坛，化神老魔坐镇其中。',
+    npcs: [],
+    hotspots: [
+      { id: 'north_raid_demon', label: '独闯魔坛 · 讨伐幽冥老祖 (化神Boss)' }
+    ]
+  },
+
+  // ===== 中州·太虚圣域 (3) =====
+  {
+    id: 'central_city', region: 'central', name: '中州万仙城', icon: 'ally', x: 26, y: 56,
+    sceneBg: 'inn',
+    desc: '九州修仙界最繁华的圣城，万宗天骄齐聚论道，仙典神通琳琅满目。',
+    npcs: [],
+    hotspots: [
+      { id: 'central_arena', label: '登中州天骄榜论道' },
+      { id: 'sect_library', label: '万仙圣阁参悟诸天法门' }
+    ]
+  },
+  {
+    id: 'central_stele', region: 'central', name: '太虚悟道神碑', icon: 'scroll', x: 54, y: 38,
+    sceneBg: 'sect_plaza',
+    desc: '自开天辟地便矗立于中州之巅的无字天碑，可直指六大仙道 100 圆满本源！',
+    npcs: [],
+    hotspots: [
+      { id: 'central_comprehend_dao', label: '坐忘天碑 · 专精参悟六大仙道本源' }
+    ]
+  },
+  {
+    id: 'altar', region: 'central', name: '九霄雷池渡劫台', icon: 'bolt', x: 80, y: 26,
+    sceneBg: 'world_map',
+    desc: '接引诸天混沌神雷的至高仙台，合道圣君与【满大道·万道仙帝】证道之地！',
+    npcs: [],
+    hotspots: [
+      { id: 'altar_break', label: '引雷破境（筑基～合道～万道仙帝）' },
       { id: 'altar_ancient_realm', label: '九霄太古秘境' },
-      { id: 'altar_ascend', label: '问道圆满 · 结局结算' }
+      { id: 'altar_ascend', label: '问道飞升 · 结算不朽结局' }
     ]
   }
 ];

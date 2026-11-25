@@ -1,11 +1,14 @@
 // v6.3 天地唯一【造化轮回盘】转生、1~100 灵根资质公式、个人洞府遗蜕 与 妖兽看守/仇敌搜身因果引擎
 window.REINCARNATION = (function () {
   const RELIC_LOCS = [
-    { loc: 'forest', name: '万妖古林深处古修洞府', rumor: '万妖古林深处偶有紫金轮回霞光一闪而逝' },
-    { loc: 'market', name: '鬼市黑坊暗标秘匣',     rumor: '鬼市地下暗渠近日流出一件来历不明的太古残盘' },
-    { loc: 'sect',   name: '青云剑宗试剑古碑之下', rumor: '青云剑宗演武古碑夜半曾引动异象' },
-    { loc: 'cliff',  name: '后山思过崖绝壁石缝',   rumor: '思过崖云海深处似有上古器灵隐匿' },
-    { loc: 'altar',  name: '九霄渡劫台星河裂隙',   rumor: '九霄渡劫台雷云之中曾坠落一道轮回流光' }
+    { loc: 'forest',       name: '东洲·万妖古林洞府',   rumor: '【东洲】万妖古林深处偶有紫金轮回霞光一闪而逝' },
+    { loc: 'market',       name: '东洲·鬼市黑坊暗渠',   rumor: '【东洲】鬼市地下暗渠流出一件来历不明的太古残盘' },
+    { loc: 'cliff',        name: '东洲·思过崖绝壁',     rumor: '【东洲】思过崖云海深处似有上古轮回器灵隐匿' },
+    { loc: 'south_venom',  name: '南疆·万蛊毒谷深潭',   rumor: '【南疆】十万巫山万蛊毒谷曾有轮回道音回荡' },
+    { loc: 'south_fire',   name: '南疆·焚天古火脉地心', rumor: '【南疆】焚天古火脉岩浆深处似沉浮着一方古盘' },
+    { loc: 'north_battle', name: '北冥·上古坠仙战场',   rumor: '【北冥】上古坠仙战场废墟夜半曾冲起紫金神芒' },
+    { loc: 'north_ice',    name: '北冥·玄冰宫寒渊',     rumor: '【北冥】北冥玄冰宫冰层之下封冻着一缕轮回气机' },
+    { loc: 'central_stele',name: '中州·太虚悟道神碑旁', rumor: '【中州】太虚悟道神碑之巅曾有轮回流光掠过' }
   ];
 
   const BEAST_KEYWORDS = ['狼', '妖', '兽', '蟒', '龟', '鹤', '虫', '蝠', '虎', '蛟'];
@@ -171,42 +174,49 @@ window.REINCARNATION = (function () {
     G.realmIdx = 0;
     G.exp = 0;
 
+    // 将本世通过神通兼修与碑林参悟达到的最高大道境界刻入真灵本源 G.daoBase（跨世不灭！）
+    G.daoBase = G.daoBase || {};
+    Object.keys(D.SKILL_CATS).forEach(cid => {
+      const curTotal = ctx.getCatMastery ? ctx.getCatMastery(cid) : (G.daoBase[cid] || 0);
+      const keepRatio = mode === 'calm' ? 1.0 : 0.85;
+      G.daoBase[cid] = Math.max(G.daoBase[cid] || 0, Math.floor(curTotal * keepRatio));
+    });
+
     // 5) 计算属性、大道造诣与五行灵根资质继承
-    if (mode === 'calm') {
-      // 从容坐化：高额保留神识/悟性底蕴、保留 55% 招式造诣，且灵根资质大幅跃升！
-      G.wit = Math.max(12, 10 + Math.floor((G.wit - 10) * 0.55) + 4);
-      G.sense = Math.max(14, 10 + Math.floor((G.sense - 10) * 0.55) + 5);
-      G.body = Math.max(11, 10 + Math.floor((G.body - 10) * 0.35) + 2);
-      G.speed = Math.max(11, 10 + Math.floor((G.speed - 10) * 0.35) + 2);
+    const isSamsaraBody = G.daoBody === 'samsara_immortal';
+    if (mode === 'calm' || isSamsaraBody) {
+      // 从容坐化（或万劫轮回圣胎）：高额保留神识/悟性底蕴，大道本源 100% 刻入真灵，灵根资质大幅跃升！
+      G.wit = Math.max(12, 10 + Math.floor((G.wit - 10) * 0.58) + 4);
+      G.sense = Math.max(14, 10 + Math.floor((G.sense - 10) * 0.58) + 5);
+      G.body = Math.max(11, 10 + Math.floor((G.body - 10) * 0.38) + 2);
+      G.speed = Math.max(11, 10 + Math.floor((G.speed - 10) * 0.38) + 2);
       G.luck = Math.max(12, 10 + Math.floor((G.luck - 10) * 0.45) + 2);
-      // 找当前最高灵根大幅洗练 +22，其余各 +6
       const sortedEl = Object.entries(G.elements || {}).sort((a, b) => b[1] - a[1]);
       const topKey = sortedEl[0]?.[0] || 'fire';
       Object.keys(G.elements).forEach(k => {
-        G.elements[k] = Math.min(100, (G.elements[k] || 10) + (k === topKey ? 22 : 6));
+        G.elements[k] = Math.min(100, (G.elements[k] || 10) + (k === topKey ? 22 : 7));
       });
-      // 保留 55% 神通熟练度等级感悟
       Object.keys(G.skillProf || {}).forEach(sid => {
         const curLv = G.skillProf[sid].lv || 1;
         G.skillProf[sid] = { lv: Math.max(1, Math.ceil(curLv * 0.6)), exp: 0 };
       });
       G.loc = 'sect';
     } else {
-      // 濒死仓促催动：保留极少，且随机抛落东洲荒野
+      // 濒死仓促催动：五维属性保留极少，但真灵大道印记仍保住 85%
       G.wit = Math.max(10, 10 + Math.floor((G.wit - 10) * 0.15) + 1);
       G.sense = Math.max(11, 10 + Math.floor((G.sense - 10) * 0.18) + 2);
       G.body = 10; G.speed = 10; G.luck = 10;
       const rKey = ['gold', 'wood', 'water', 'fire', 'earth'][Math.floor(Math.random() * 5)];
       G.elements[rKey] = Math.min(100, (G.elements[rKey] || 10) + 6);
-      // 仓促间神魂震荡，仅保留基础通用法术与少量宿慧
       G.skills = G.skills.slice(0, 3);
       if (!G.skills.includes('basic_sword')) G.skills.unshift('basic_sword');
       Object.keys(G.skillProf || {}).forEach(sid => {
         G.skillProf[sid] = { lv: 1, exp: 0 };
       });
-      const randLocs = ['sect', 'inn', 'market', 'forest', 'cliff'];
+      const randLocs = ['sect', 'inn', 'market', 'forest', 'cliff', 'south_beast'];
       G.loc = randLocs[Math.floor(Math.random() * randLocs.length)];
     }
+    G.maxAge = 100 + (isSamsaraBody ? 50 : 0);
 
     // 发放新世起步布衣储物戒
     G.equipment.ring = 'eq_wood_ring';

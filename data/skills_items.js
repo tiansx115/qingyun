@@ -1,12 +1,15 @@
 window.GAME_DATA = window.GAME_DATA || {};
 
 window.GAME_DATA.REALMS = [
-  { name: '炼气一层', exp: 90, maxHp: 130, maxQi: 85, ageBonus: 0 },
-  { name: '炼气四层', exp: 180, maxHp: 210, maxQi: 140, ageBonus: 12 },
-  { name: '炼气九层', exp: 300, maxHp: 310, maxQi: 215, ageBonus: 25 },
-  { name: '筑基初期', exp: 520, maxHp: 500, maxQi: 360, ageBonus: 100, tribulation: true },
-  { name: '金丹大道', exp: 900, maxHp: 880, maxQi: 640, ageBonus: 300, tribulation: true },
-  { name: '元婴真君', exp: 9999, maxHp: 1520, maxQi: 1200, ageBonus: 800, tribulation: true }
+  { name: '炼气一层', exp: 90,   maxHp: 130,  maxQi: 85,   ageBonus: 0 },
+  { name: '炼气四层', exp: 180,  maxHp: 210,  maxQi: 140,  ageBonus: 12 },
+  { name: '炼气圆满', exp: 300,  maxHp: 310,  maxQi: 215,  ageBonus: 25 },
+  { name: '筑基初期', exp: 520,  maxHp: 520,  maxQi: 360,  ageBonus: 90,  tribulation: true },
+  { name: '金丹大道', exp: 900,  maxHp: 900,  maxQi: 640,  ageBonus: 220, tribulation: true },
+  { name: '元婴真君', exp: 1500, maxHp: 1560, maxQi: 1180, ageBonus: 420, tribulation: true },
+  { name: '化神尊者', exp: 2400, maxHp: 2600, maxQi: 2000, ageBonus: 700, tribulation: true, reqDao60: 1 },
+  { name: '合道圣君', exp: 3800, maxHp: 4200, maxQi: 3400, ageBonus: 1200,tribulation: true, reqDao100: 1 },
+  { name: '万道仙帝', exp: 99999,maxHp: 8800, maxQi: 7200, ageBonus: 9999,tribulation: true, reqDao100: 6 }
 ];
 
 // 六大仙道造诣（0~100 宗师度：单门神通圆满贡献 20~22 点，须兼修同道诸法方能达 100 化境）
@@ -125,7 +128,9 @@ window.GAME_DATA.ITEMS = {
     desc:'天地间仅存一件的太古轮回至宝！寿尽洞府兵解可高额继承天赋、造诣并洗练灵根；战死瞬间亦可护住残魂仓促转生。触发后立即破空遁走，重藏世间未知处。'
   },
 
-  // ===== 丹药、灵果、奇物 =====
+  // ===== 丹药、灵果、悟道仙珍 =====
+  dao_tea:        { id:'dao_tea',        name:'悟道古茶树叶', icon:'item_osmanthus_cake', price:180, type:'dao_item', tier:'地品', daoPts:15, desc:'中州悟道神树所结奇叶，服之可任选一条仙道法则直接参悟 +15 点本源！' },
+  longevity_peach:{ id:'longevity_peach',name:'千年延寿蟠桃', icon:'item_osmanthus_cake', price:220, type:'consumable', tier:'地品', addMaxAge:40, hp:300, desc:'海外仙岛灵桃，服下可逆天增补 40 载寿元上限！' },
   heal_pill:      { id:'heal_pill',      name:'百草回春丹',   icon:'item_elixir_pill',    price:15, type:'consumable', hp:105, desc:'恢复 105 点气血，药力温润绵长。' },
   qi_pill:        { id:'qi_pill',        name:'寒泉聚灵散',   icon:'item_elixir_pill',    price:15, type:'consumable', qi:80,  desc:'恢复 80 点灵力，清冽提神。' },
   condense_pill:  { id:'condense_pill',  name:'破境凝元丹',   icon:'item_elixir_pill',    price:55, type:'consumable', exp:85, fullRestore:true, desc:'修为 +85 且气血灵力瞬间圆满。' },

@@ -860,5 +860,282 @@ window.GAME_DATA.EVENTS = {
         { text: '暂退调息', action: () => { setDialogue(null); renderAll(); } }
       ]
     });
+  },
+
+  // ===== 9. 九州四域宏大世界秘境、悟道古碑与跨州试炼总路由 =====
+  runWorldHotspot(hid, ctx) {
+    const { G, D, ASSETS, setDialogue, startBattle, gainExp, addItem, advanceTime, getCatMastery, showToast, saveGame, renderAll, buyItem } = ctx;
+    G.daoBase = G.daoBase || {};
+
+    const addDaoPts = (cid, pts) => {
+      const cur = getCatMastery ? getCatMastery(cid) : (G.daoBase[cid] || 0);
+      if (cur >= 100) {
+        showToast(`【${D.SKILL_CATS[cid].name}】已达 100 圆满化境！`);
+        return false;
+      }
+      const mul = G.daoBody === 'innate_dao_fetus' ? 1.45 : 1.0;
+      const realPts = Math.max(2, Math.round(pts * mul * (1 + (G.wit || 10) * 0.02)));
+      G.daoBase[cid] = Math.min(100, Math.max(G.daoBase[cid] || 0, cur) + realPts);
+      return realPts;
+    };
+
+    // --- 南疆：万蛊毒谷 ---
+    if (hid === 'south_dao_soul') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'south_venom');
+      const cur = getCatMastery('soul');
+      setDialogue({
+        speaker: '万蛊毒谷 · 上古巫碑', asset: ASSETS.elder,
+        text: `墨绿石碑上铭刻太古噬魂巫纹。当前【魂蛊】大道领悟：${cur}/100（大道本源随轮回永存真灵）。`,
+        choices: [
+          {
+            text: '耗费 3 月与 40 灵石静参【魂蛊大道】', hint: '魂蛊大道 +8~14',
+            action: () => {
+              if (G.stone < 40) return showToast('灵石不足 40 枚。');
+              G.stone -= 40; advanceTime(3);
+              const g = addDaoPts('soul', 9);
+              if (g) showToast(`参悟上古巫碑三月，【魂蛊】大道领悟 +${g}（当前 ${getCatMastery('soul')}/100）！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '暂离毒碑', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+    if (hid === 'south_trial_gu') {
+      startBattle({
+        name: '百蛊窟·六翼金蚕王', asset: ASSETS.wolf_boss, bg: 'forest', enemyType: 'beast',
+        hp: 580, maxHp: 580, atk: 42, expReward: 260, stoneReward: 165,
+        onWin: () => {
+          addItem('eq_venom_sachet', 1);
+          showToast('斩杀六翼金蚕王！获玄品【百虫育蛊囊】与 165 灵石！');
+        }
+      });
+      return true;
+    }
+
+    // --- 南疆：焚天古火脉 ---
+    if (hid === 'south_dao_body') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'south_fire');
+      setDialogue({
+        speaker: '焚天古火脉 · 地肺真炎', asset: ASSETS.hero,
+        text: `狂暴地火可淬炼肉身或印证天地火法（当前【体道】${getCatMastery('body')}/100 ·【法道】${getCatMastery('spell')}/100）。`,
+        choices: [
+          {
+            text: '引地火淬炼金身，参悟【体道】本源', hint: '40灵石 +3月 · 根骨+1',
+            action: () => {
+              if (G.stone < 40) return showToast('灵石不足 40 枚。');
+              G.stone -= 40; G.body += 1; advanceTime(3);
+              const g = addDaoPts('body', 9);
+              showToast(`地火淬体三月，根骨 +1${g ? `，【体道】+${g}` : ''}！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          {
+            text: '观摩地肺炎流，参悟【法道】本源', hint: '40灵石 +3月',
+            action: () => {
+              if (G.stone < 40) return showToast('灵石不足 40 枚。');
+              G.stone -= 40; advanceTime(3);
+              const g = addDaoPts('spell', 9);
+              if (g) showToast(`观火悟道三月，【法道】领悟 +${g}（当前 ${getCatMastery('spell')}/100）！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '退回火脉外围', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+    if (hid === 'south_fire_lotus') {
+      startBattle({
+        name: '地肺炎魔蛟', asset: ASSETS.wolf_boss, bg: 'world_map', enemyType: 'beast',
+        hp: 720, maxHp: 720, atk: 50, expReward: 340, stoneReward: 210,
+        onWin: () => {
+          G.elements.fire = Math.min(100, (G.elements.fire || 20) + 6);
+          addItem('marrow_pill', 1);
+          showToast('击败炎魔蛟夺得赤炎莲子！火灵根资质 +6，获【易经洗髓灵丹】！');
+        }
+      });
+      return true;
+    }
+
+    // --- 南疆：百蛮御灵山 ---
+    if (hid === 'south_dao_pact') {
+      setDialogue({
+        speaker: '百蛮御灵山 · 万灵图腾', asset: ASSETS.elder,
+        text: `古峰石壁刻满上古先民与真灵缔契之法（当前【灵契】大道：${getCatMastery('pact')}/100）。`,
+        choices: [
+          {
+            text: '献祭 40 灵石坐悟【灵契大道】三月', hint: '灵契大道 +9~14',
+            action: () => {
+              if (G.stone < 40) return showToast('灵石不足 40 枚。');
+              G.stone -= 40; advanceTime(3);
+              const g = addDaoPts('pact', 9);
+              if (g) showToast(`参悟万灵图腾，【灵契】大道 +${g}（当前 ${getCatMastery('pact')}/100）！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '离开图腾柱', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+    if (hid === 'south_beast_hunt') {
+      advanceTime(2);
+      addItem('beast_fruit', 2);
+      const e = gainExp(85);
+      showToast(`深入百蛮秘林历练两月，采得【赤灵朱果】×2，修为 +${e}！`);
+      saveGame('auto', true); renderAll();
+      return true;
+    }
+
+    // --- 北冥：玄冰宫 ---
+    if (hid === 'north_dao_sword_array') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'north_ice');
+      setDialogue({
+        speaker: '北冥玄冰宫 · 万载剑阵壁', asset: ASSETS.sister,
+        text: `冰壁之上万千剑痕交织成阵（当前【剑道】${getCatMastery('sword')}/100 ·【符阵】${getCatMastery('array')}/100）。`,
+        choices: [
+          {
+            text: '参悟冰壁【剑道】法则（60灵石 · 3月）', hint: '剑道 +11~16',
+            action: () => {
+              if (G.stone < 60) return showToast('灵石不足 60 枚。');
+              G.stone -= 60; advanceTime(3);
+              const g = addDaoPts('sword', 11);
+              if (g) showToast(`玄冰悟剑三月，【剑道】领悟 +${g}（当前 ${getCatMastery('sword')}/100）！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          {
+            text: '参悟冰壁【符阵】法则（60灵石 · 3月）', hint: '符阵 +11~16',
+            action: () => {
+              if (G.stone < 60) return showToast('灵石不足 60 枚。');
+              G.stone -= 60; advanceTime(3);
+              const g = addDaoPts('array', 11);
+              if (g) showToast(`推演寒冰古阵三月，【符阵】领悟 +${g}（当前 ${getCatMastery('array')}/100）！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '转身离去', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+    if (hid === 'north_ice_trial') {
+      startBattle({
+        name: '北冥玄冰剑卫', asset: ASSETS.sister_fierce, bg: 'sect_plaza', enemyType: 'cultivator',
+        hp: 1050, maxHp: 1050, atk: 58, expReward: 460, stoneReward: 260,
+        onWin: () => {
+          addItem('eq_frost_blade', 1);
+          showToast('击败北冥玄冰剑卫！获玄品飞剑【北冥寒魄剑】与 260 灵石！');
+        }
+      });
+      return true;
+    }
+
+    // --- 北冥：上古坠仙战场 ---
+    if (hid === 'north_scavenge') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'north_battle');
+      advanceTime(2);
+      const roll = Math.random() + (G.luck || 10) * 0.006;
+      if (roll > 0.88) {
+        addItem('dao_tea', 1);
+        showToast('神识扫过坠仙残墟，竟寻得一片无上仙珍【悟道古茶树叶】！');
+      } else if (roll > 0.55) {
+        G.stone += 150; addItem('condense_pill', 1);
+        showToast('在古修士残骸旁拾得 150 灵石与一枚【破境凝元丹】！');
+      } else {
+        const g = gainExp(120);
+        G.sense += 1;
+        showToast(`在坠仙煞气中磨砺神识两月，神识 +1，修为 +${g}。`);
+      }
+      saveGame('auto', true); renderAll();
+      return true;
+    }
+    if (hid === 'north_war_soul') {
+      startBattle({
+        name: '太古战魂·破军将', asset: ASSETS.elder, bg: 'world_map', enemyType: 'cultivator',
+        hp: 1380, maxHp: 1380, atk: 66, expReward: 640, stoneReward: 380,
+        onWin: () => {
+          addDaoPts('sword', 6); addDaoPts('body', 6);
+          showToast('斩灭太古战魂！吸收不灭战意，【剑道】与【体道】本源各精进！');
+        }
+      });
+      return true;
+    }
+
+    // --- 北冥：天星跨海阁（售卖延寿蟠桃与悟道茶！）---
+    if (hid === 'north_sea_shop') {
+      setDialogue({
+        speaker: '天星跨海阁大掌柜', asset: ASSETS.elder,
+        text: '巨舟甲板上星光流转，掌柜微笑道：“海外蓬莱仙岛三年方通航一次，延寿仙桃与悟道茶叶皆是逆天改命之物，有缘者得之。”',
+        choices: [
+          { text: '购入【千年延寿蟠桃】(寿元上限+40载)', hint: '220 灵石', action: () => buyItem('longevity_peach') },
+          { text: '购入【悟道古茶树叶】(任选大道+15)',   hint: '180 灵石', action: () => buyItem('dao_tea') },
+          { text: '购入【易经洗髓灵丹】(五维+灵根洗练)', hint: '95 灵石',  action: () => buyItem('marrow_pill') },
+          { text: '购入【九宫避劫阵盘】(替身渡雷劫)',     hint: '80 灵石',  action: () => buyItem('lightning_plate') },
+          { text: '走下星舟', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 北冥：幽冥魔宗总坛 ---
+    if (hid === 'north_raid_demon') {
+      startBattle({
+        name: '幽冥老祖·玄煞魔尊', asset: ASSETS.elder, bg: 'forest', enemyType: 'cultivator',
+        hp: 2150, maxHp: 2150, atk: 82, expReward: 1100, stoneReward: 750,
+        onWin: () => {
+          G.fame += 180;
+          addItem('dao_tea', 2);
+          showToast('荡平幽冥魔宗总坛，诛灭化神老魔！声望 +180，缴获【悟道古茶树叶】×2！');
+        }
+      });
+      return true;
+    }
+
+    // --- 中州：万仙城天骄榜 ---
+    if (hid === 'central_arena') {
+      startBattle({
+        name: '中州圣子·太虚道人', asset: ASSETS.sister_fierce, bg: 'inn', enemyType: 'cultivator',
+        hp: 2600, maxHp: 2600, atk: 92, expReward: 1350, stoneReward: 880,
+        onWin: () => {
+          G.fame += 220; G.sense += 5;
+          addItem('longevity_peach', 1);
+          showToast('登顶中州天骄榜首！获仙盟赏赐【千年延寿蟠桃】×1，神识 +5！');
+        }
+      });
+      return true;
+    }
+
+    // --- 中州：太虚悟道神碑（全六道参悟至 100 圆满圣地！）---
+    if (hid === 'central_comprehend_dao') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'central_stele');
+      const choices = Object.values(D.SKILL_CATS).map(c => {
+        const cur = getCatMastery(c.id);
+        return {
+          text: `坐忘参悟【${c.name}】本源（当前 ${cur}/100）`,
+          hint: cur >= 100 ? '已证道圆满' : '90灵石 +4月 · 大道+14~22',
+          action: () => {
+            if (cur >= 100) return showToast(`【${c.name}】已臻 100 圆满，可改修其他大道冲击满大道仙帝！`);
+            if (G.stone < 90) return showToast('太虚神碑开启护道灵阵需耗费 90 枚灵石。');
+            G.stone -= 90; advanceTime(4);
+            const g = addDaoPts(c.id, 15);
+            if (g) showToast(`坐忘天碑四月，【${c.name}】本源暴涨 +${g}（当前 ${getCatMastery(c.id)}/100）！`);
+            saveGame('auto', true);
+            D.EVENTS.runWorldHotspot('central_comprehend_dao', ctx);
+          }
+        };
+      });
+      choices.push({ text: '起身离碑', action: () => { setDialogue(null); renderAll(); } });
+      setDialogue({
+        speaker: '中州 · 太虚悟道神碑', asset: ASSETS.elder,
+        text: '万丈无字天碑映照诸天法则。欲破入【合道圣君】须至少参透 1 条圆满大道（100）；若历经轮回将【六条大道全部修满 100】，即可引动混沌劫雷登临最强境界【万道仙帝】！',
+        choices
+      });
+      return true;
+    }
+
+    return false;
   }
 };

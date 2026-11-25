@@ -4,8 +4,9 @@ const IC = window.ICONS;
 
 let G = null;
 let currentLocationId = null;
+let currentMapRegion = 'east'; // 'east' | 'south' | 'north' | 'central'
 let activePanel = null; // null | 'status' | 'allies' | 'save'
-let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag'
+let statusSubTab = 'mingge'; // 'mingge' | 'skills' | 'bag' | 'ach' | 'save'
 let selectedAllyId = 'sister';
 let allySubMode = 'ally'; // 'ally' | 'beast'
 let selectedBeastId = 'wolf';
@@ -31,6 +32,9 @@ function defaultState() {
     hp: 130, maxHp: 130, qi: 85, maxQi: 85, exp: 0,
     body: 10, wit: 10, speed: 10, luck: 10, sense: 10, fame: 0,
     elements: { gold: 28, wood: 26, water: 28, fire: 25, earth: 27 },
+    daoBase: { sword: 0, spell: 0, body: 0, array: 0, soul: 0, pact: 0 },
+    daoBody: 'mortal_body',
+    destinyTraits: [],
     root: '五行均衡灵根', talent: '宿慧通明', sect: '散修',
     age: 16, maxAge: 100, month: 1, stone: 85,
     caveOwned: false,
@@ -74,6 +78,9 @@ function defaultState() {
     flags: {}
   };
   if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
+  st.daoBase = Object.assign({ sword:0, spell:0, body:0, array:0, soul:0, pact:0 }, st.daoBase || {});
+  st.daoBody = st.daoBody || 'mortal_body';
+  st.destinyTraits = Array.isArray(st.destinyTraits) ? st.destinyTraits : [];
   st.lifeCount = st.lifeCount || 1;
   st.caveOwned = Boolean(st.caveOwned);
   st.caveVault = st.caveVault || { items: {}, stones: 0 };
@@ -137,16 +144,19 @@ function gainSkillProf(skillId, pts = 15) {
 }
 
 function getCatMastery(catId) {
-  if (!G || !G.skills) return 0;
+  if (!G) return 0;
   let total = 0;
-  G.skills.forEach(sid => {
+  (G.skills || []).forEach(sid => {
     const sk = D.SKILLS[sid];
     if (!sk || sk.cat !== catId) return;
     const p = (G.skillProf && G.skillProf[sid]) || { lv: 1, exp: 0 };
     const contrib = Math.min(22, (p.lv - 1) * 7 + Math.min(6, Math.floor((p.exp || 0) / 10)) + 1);
     total += contrib;
   });
-  return Math.min(100, total);
+  G.daoBase = G.daoBase || {};
+  const best = Math.min(100, Math.max(G.daoBase[catId] || 0, total));
+  if (total > (G.daoBase[catId] || 0)) G.daoBase[catId] = best;
+  return best;
 }
 
 function normalizeState(st) {
@@ -191,6 +201,9 @@ function normalizeState(st) {
   if ((st.factions.wanbao || 0) >= 1 && st.allies.shen) st.allies.shen.unlocked = true;
   if (st.flags.divorceBranch && st.allies.liu) st.allies.liu.unlocked = true;
   if ((st.factions.nether || 0) >= 1 && st.allies.moli) st.allies.moli.unlocked = true;
+  st.daoBase = Object.assign({ sword:0, spell:0, body:0, array:0, soul:0, pact:0 }, st.daoBase || {});
+  st.daoBody = st.daoBody || 'mortal_body';
+  st.destinyTraits = Array.isArray(st.destinyTraits) ? st.destinyTraits : [];
   st.lifeCount = st.lifeCount || 1;
   st.caveOwned = Boolean(st.caveOwned);
   st.caveVault = st.caveVault || { items: {}, stones: 0 };
@@ -402,17 +415,36 @@ function gainExp(amt) {
   if (G.exp >= need && !D.REALMS[G.realmIdx + 1]?.tribulation) tryRealmUp(false);
   return bonus;
 }
+function checkRealmDaoGate(next) {
+  if (!next) return null;
+  const masteries = Object.keys(D.SKILL_CATS).map(k => getCatMastery(k));
+  const cnt60 = masteries.filter(m => m >= 60).length;
+  const cnt100 = masteries.filter(m => m >= 100).length;
+  if (next.reqDao60 && cnt60 < next.reqDao60) {
+    return `踏入【${next.name}】须至少将 ${next.reqDao60} 条仙道参悟至 60 宗师境（当前 ${cnt60} 条）！`;
+  }
+  if (next.reqDao100 && cnt100 < next.reqDao100) {
+    if (next.reqDao100 >= 6) {
+      return `登临至强【${next.name}】须历经轮回将六条仙道全部修至 100 圆满（当前已满 ${cnt100}/6 条）！`;
+    }
+    return `突破【${next.name}】须至少完整领悟 ${next.reqDao100} 条圆满大道(100)（当前 ${cnt100} 条，可赴中州悟道碑或借轮回积累）！`;
+  }
+  return null;
+}
+
 function tryRealmUp(fromAltar) {
   const next = D.REALMS[G.realmIdx + 1];
-  if (!next) return showToast('已至当前版本最高境界。');
+  if (!next) return showToast('你已登临诸天至强【万道仙帝】之境！');
   if (G.exp < D.REALMS[G.realmIdx].exp) return showToast('修为尚未圆满。');
-  if (next.tribulation && !fromAltar) return showToast('大境界突破需前往【九霄渡劫台】引雷破境。');
+  const gateErr = checkRealmDaoGate(next);
+  if (gateErr) return showToast(gateErr);
+  if (next.tribulation && !fromAltar) return showToast('大境界突破需前往【中州·九霄雷池渡劫台】引雷破境！');
   G.exp -= D.REALMS[G.realmIdx].exp;
   G.realmIdx++;
   G.maxAge += next.ageBonus;
   recalcDerivedStats(true);
-  SFX.play('levelup'); FX.burst('235,210,155', 40, 0.5, 0.5);
-  showToast(`突破成功！踏入【${next.name}】，寿元增至 ${G.maxAge} 岁。`);
+  SFX.play('levelup'); FX.burst('235,210,155', 45, 0.5, 0.5);
+  showToast(`突破成功！证道【${next.name}】，寿元上限增至 ${G.maxAge} 岁！`);
 }
 
 // Dynamic SVG Five-Element Star Chart
@@ -563,29 +595,113 @@ function startQuiz() {
         box.appendChild(b);
       });
     } else {
+      const achStore = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.loadStore() : { unlocked: [], totalPts: 15 };
+      let pickedBody = G._pickedBody || 'mortal_body';
+      let pickedTraits = G._pickedTraits || [];
+
+      const calcUsedPts = () => {
+        if (!window.ACHIEVEMENTS) return 0;
+        const b = window.ACHIEVEMENTS.DAO_BODIES.find(x => x.id === pickedBody);
+        const tSum = pickedTraits.reduce((s, tid) => {
+          const t = window.ACHIEVEMENTS.DESTINY_TRAITS.find(x => x.id === tid);
+          return s + (t ? t.cost : 0);
+        }, 0);
+        return (b ? b.cost : 0) + tSum;
+      };
+
+      const usedPts = calcUsedPts();
+      const leftPts = achStore.totalPts - usedPts;
+      const bodiesHtml = (window.ACHIEVEMENTS ? window.ACHIEVEMENTS.DAO_BODIES : []).map(b => {
+        const unlk = window.ACHIEVEMENTS.isBodyUnlocked(b, achStore);
+        const on = pickedBody === b.id;
+        return `
+          <button class="trait-chip ${on?'active':''} ${!unlk?'locked':''}" data-body="${b.id}" title="${b.desc}">
+            <b>${b.name}</b><span>${unlk ? `${b.cost}点` : '未解锁'}</span>
+          </button>
+        `;
+      }).join('');
+      const traitsHtml = (window.ACHIEVEMENTS ? window.ACHIEVEMENTS.DESTINY_TRAITS : []).map(t => {
+        const unlk = window.ACHIEVEMENTS.isTraitUnlocked(t, achStore);
+        const on = pickedTraits.includes(t.id);
+        return `
+          <button class="trait-chip ${on?'active':''} ${!unlk?'locked':''} t-b-${t.tier}" data-trait="${t.id}" title="${t.desc}">
+            <b>${t.name}</b><span>${unlk ? `${t.cost}点` : '成就解锁'}</span>
+          </button>
+        `;
+      }).join('');
+
       const el = G.elements;
       root.innerHTML = `
-        <div class="title-box">
-          <h2 class="title-main" style="font-size:19px;letter-spacing:4px;">命格已定 · 启程东洲</h2>
-          <div style="display:flex;align-items:center;gap:18px;margin:10px 0 14px;">
-            ${buildRadarSvg(G.elements)}
-            <div style="flex:1;font-size:12.5px;line-height:1.85;color:#dfd6c6;">
-              <div><b style="color:#ebd29b;">灵根格局：</b>${G.root}（金${el.gold} · 木${el.wood} · 水${el.water} · 火${el.fire} · 土${el.earth}）</div>
-              <div><b style="color:#ebd29b;">先天气运：</b>${G.talent}</div>
-              <div><b style="color:#ebd29b;">核心五维：</b>根骨 ${G.body} · 悟性 ${G.wit} · 遁速 ${G.speed} · 气运 ${G.luck} · 神识 ${G.sense}</div>
-              <div><b style="color:#ebd29b;">天地唯一：</b>【造化轮回盘】已隐匿于东洲某处机缘</div>
-            </div>
+        <div class="title-box" style="width:min(820px,92%);max-height:90%;overflow-y:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <h2 class="title-main" style="font-size:18px;letter-spacing:3px;margin:0;">重塑仙胎 · 点选先天道体与气运</h2>
+            <span style="font-size:12px;color:var(--gold-bright);">可用天命成就点：<b>${leftPts}</b> / ${achStore.totalPts} 点</span>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--gold-hair);">
-            <span style="font-size:12.5px;color:var(--muted);">赐立道号：</span>
-            <input id="inp-name" value="${G.name}" maxlength="8" style="background:rgba(8,10,12,0.85);border:1px solid var(--gold);color:#ebd29b;padding:7px 12px;font-family:inherit;font-size:13px;" />
-            <button class="sleek-btn" id="btn-enter">踏入青云界</button>
+          <div style="font-size:11px;color:var(--muted);margin:6px 0 4px;">① 选择先天道体（限 1 具 · 悬停或点选查看效果）：</div>
+          <div class="trait-grid">${bodiesHtml}</div>
+          <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">② 勾选先天气运词条（最多 3 条 · 完成游戏内成就可永久解锁仙品词条）：</div>
+          <div class="trait-grid">${traitsHtml}</div>
+          <div id="trait-desc-bar" style="font-size:11px;color:var(--jade);margin:7px 0;min-height:16px;">
+            当前初测灵根：${G.root}（金${el.gold} 木${el.wood} 水${el.water} 火${el.fire} 土${el.earth}） · 五维：根${G.body} 悟${G.wit} 速${G.speed} 运${G.luck} 识${G.sense}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--gold-hair);">
+            <span style="font-size:12px;color:var(--muted);">赐立道号：</span>
+            <input id="inp-name" value="${G.name}" maxlength="8" style="background:rgba(8,10,12,0.85);border:1px solid var(--gold);color:#ebd29b;padding:6px 12px;font-family:inherit;font-size:13px;width:130px;" />
+            <button class="sleek-btn" id="btn-enter" style="margin-left:auto;">踏入九州修仙界</button>
           </div>
         </div>
       `;
+      const descBar = root.querySelector('#trait-desc-bar');
+      root.querySelectorAll('[data-body]').forEach(btn => {
+        btn.onclick = () => {
+          const b = window.ACHIEVEMENTS.DAO_BODIES.find(x => x.id === btn.dataset.body);
+          if (!b) return;
+          if (!window.ACHIEVEMENTS.isBodyUnlocked(b, achStore)) {
+            descBar.textContent = `【未解锁道体 · ${b.name}】${b.desc}（需达成对应天命成就解锁）`;
+            return;
+          }
+          const curBodyObj = window.ACHIEVEMENTS.DAO_BODIES.find(x => x.id === pickedBody);
+          const nextUsed = usedPts - (curBodyObj ? curBodyObj.cost : 0) + b.cost;
+          if (nextUsed > achStore.totalPts) return showToast(`天命点不足（需 ${b.cost} 点）。`);
+          G._pickedBody = b.id;
+          SFX.play('click'); renderStep();
+          const nb = document.getElementById('trait-desc-bar');
+          if (nb) nb.textContent = `【道体 · ${b.name}】${b.desc}`;
+        };
+      });
+      root.querySelectorAll('[data-trait]').forEach(btn => {
+        btn.onclick = () => {
+          const t = window.ACHIEVEMENTS.DESTINY_TRAITS.find(x => x.id === btn.dataset.trait);
+          if (!t) return;
+          if (!window.ACHIEVEMENTS.isTraitUnlocked(t, achStore)) {
+            descBar.textContent = `【未解锁气运 · ${t.name}】${t.desc}（需达成对应天命成就解锁）`;
+            return;
+          }
+          if (pickedTraits.includes(t.id)) {
+            G._pickedTraits = pickedTraits.filter(x => x !== t.id);
+          } else {
+            if (pickedTraits.length >= 3) return showToast('先天气运最多同时勾选 3 条。');
+            if (usedPts + t.cost > achStore.totalPts) return showToast(`天命点不足（需 ${t.cost} 点）。`);
+            G._pickedTraits = [...pickedTraits, t.id];
+          }
+          SFX.play('click'); renderStep();
+          const nb = document.getElementById('trait-desc-bar');
+          if (nb) nb.textContent = `【气运 · ${t.name}】${t.desc}`;
+        };
+      });
       document.getElementById('btn-enter').onclick = () => {
         const val = document.getElementById('inp-name').value.trim();
         if (val) G.name = val;
+        if (window.ACHIEVEMENTS) {
+          const bObj = window.ACHIEVEMENTS.DAO_BODIES.find(x => x.id === (G._pickedBody || 'mortal_body'));
+          if (bObj) { G.daoBody = bObj.id; bObj.apply(G); }
+          G.destinyTraits = (G._pickedTraits || []).slice();
+          G.destinyTraits.forEach(tid => {
+            const tObj = window.ACHIEVEMENTS.DESTINY_TRAITS.find(x => x.id === tid);
+            if (tObj) tObj.apply(G);
+          });
+        }
+        delete G._pickedBody; delete G._pickedTraits;
         recalcDerivedStats(true);
         SFX.play('levelup'); root.style.display = 'none';
         saveGame('auto', true); renderAll();
@@ -702,7 +818,7 @@ function getEventCtx() {
   return {
     G, D, ASSETS, SFX,
     setDialogue: d => { activeDialogue = d; },
-    startBattle, addItem, gainExp, advanceTime, recalcDerivedStats, showToast, saveGame, renderAll, buyItem, openEquipShop,
+    startBattle, addItem, gainExp, advanceTime, recalcDerivedStats, getCatMastery, showToast, saveGame, renderAll, buyItem, openEquipShop,
     getItemIcon, formatStatSummary, startQuiz,
     setAllyExpr: (id, expr) => { allyExprMap[id] = expr; }
   };
@@ -964,16 +1080,20 @@ function handleHotspot(hid) {
     renderAll();
   } else if (hid === 'altar_break') {
     const next = D.REALMS[G.realmIdx + 1];
-    if (!next) return showToast('你已至元婴之境。');
+    if (!next) return showToast('你已登临诸天至强【万道仙帝】之境！');
     if (G.exp < D.REALMS[G.realmIdx].exp) return showToast(`修为尚浅（${G.exp}/${D.REALMS[G.realmIdx].exp}）。`);
+    const gateErr = checkRealmDaoGate(next);
+    if (gateErr) return showToast(gateErr);
     if (next.tribulation) {
+      const tribHp = 240 + G.realmIdx * G.realmIdx * 85;
+      const tribAtk = 24 + G.realmIdx * 11;
       activeDialogue = {
-        speaker: '九霄雷劫', asset: ASSETS.hero,
-        text: `乌云压顶，紫电翻涌！踏入【${next.name}】前须渡过此重天劫。`,
+        speaker: '九霄混沌雷劫', asset: ASSETS.hero,
+        text: `雷池沸腾，诸天法则降临！证道【${next.name}】须渡过此重天劫${next.reqDao100 ? `（大道道果共鸣中）` : ''}。`,
         choices: [
-          { text:'以自身修为硬撼天劫', hint:'渡劫战', action: () => startBattle({ name:`${next.name}·九霄雷劫`, asset:ASSETS.wolf_boss, bg:'world_map', hp:220 + G.realmIdx*65, maxHp:220 + G.realmIdx*65, atk:24 + G.realmIdx*6, talkDef:999, expReward:0, stoneReward:85, isTribulation:true }) },
-          { text:'祭出【避雷引灵阵盘】分化天雷破境', hint:'消耗阵盘', action: () => {
-            if (!G.bag.lightning_plate || G.bag.lightning_plate <= 0) return showToast('行囊中无避雷引灵阵盘。');
+          { text:'以平生道果硬撼天劫', hint:`HP ${tribHp}`, action: () => startBattle({ name:`${next.name}·混沌雷劫`, asset:ASSETS.wolf_boss, bg:'world_map', hp:tribHp, maxHp:tribHp, atk:tribAtk, talkDef:999, expReward:0, stoneReward:120, isTribulation:true }) },
+          { text:'祭出【九宫避劫阵盘】分化天雷破境', hint:'消耗阵盘', action: () => {
+            if (!G.bag.lightning_plate || G.bag.lightning_plate <= 0) return showToast('行囊中无【九宫避劫阵盘】。');
             G.bag.lightning_plate--; SFX.play('thunder'); tryRealmUp(true);
             activeDialogue = null; saveGame('auto', true); renderAll();
           }},
@@ -986,6 +1106,9 @@ function handleHotspot(hid) {
     const canEnd = G.realmIdx >= 3 || (G.factions?.qingyun || 0) >= 3 || (G.factions?.wanbao || 0) >= 3 || (G.factions?.nether || 0) >= 3 || Object.values(G.allies || {}).some(a => (a.bond || 0) >= 85);
     if (!canEnd) return showToast('需踏入筑基、任一势力圆满(3/3)或道友羁绊达 85 方可结算结局。');
     window.MINIGAMES.openEnding(getEventCtx());
+  } else if (D.EVENTS.runWorldHotspot) {
+    D.EVENTS.runWorldHotspot(hid, getEventCtx());
+    renderAll();
   }
 }
 
@@ -1103,6 +1226,7 @@ function renderSplitPanel() {
     { k:'skills', l:'功法' },
     { k:'bag', l:'行囊装备' },
     { k:'allies', l:'伙伴灵兽' },
+    { k:'ach', l:'天命成就' },
     { k:'save', l:'卷宗' }
   ];
   const navHtml = navItems.map(n => `<button class="gp-tab ${curTab===n.k?'active':''}" data-nav="${n.k}">${n.l}</button>`).join('');
@@ -1434,17 +1558,46 @@ function renderSplitPanel() {
             <div class="det-title"><b>${it.name}</b> <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
             <div class="det-desc">${it.desc}</div>
           </div>
-          ${(it.type==='consumable'||it.type==='box') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">使用</button>` : `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
+          ${(it.type==='consumable'||it.type==='box'||it.type==='dao_item') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">${it.type==='dao_item'?'参悟服用':'使用'}</button>` : `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
         `;
         const ub = det.querySelector('#bag-use');
         if (ub) ub.onclick = () => {
+          if (it.type === 'dao_item') {
+            activePanel = null;
+            activeDialogue = {
+              speaker: '服食悟道古茶树叶', asset: ASSETS.hero,
+              text: '清冽道韵直冲泥丸宫！请选择要将这 +15 点大道本源灌注于哪一条仙道（大道本源跨世轮回不灭）：',
+              choices: [
+                ...Object.values(D.SKILL_CATS).map(c => ({
+                  text: `灌注【${c.name}】（当前 ${getCatMastery(c.id)}/100）`,
+                  hint: '+15 大道本源',
+                  action: () => {
+                    if (getCatMastery(c.id) >= 100) return showToast(`【${c.name}】已达 100 圆满，请选择其他大道！`);
+                    G.bag[selectedBagItem]--;
+                    if (G.bag[selectedBagItem] <= 0) delete G.bag[selectedBagItem];
+                    G.daoBase[c.id] = Math.min(100, getCatMastery(c.id) + (it.daoPts || 15));
+                    SFX.play('levelup');
+                    showToast(`【${c.name}】本源暴涨，当前已达 ${getCatMastery(c.id)}/100！`);
+                    activeDialogue = null; saveGame('auto', true); renderAll();
+                  }
+                })),
+                { text: '暂不服用', action: () => { activeDialogue = null; activePanel = 'status'; statusSubTab = 'bag'; renderAll(); } }
+              ]
+            };
+            renderAll();
+            return;
+          }
           G.bag[selectedBagItem]--;
           if (G.bag[selectedBagItem] <= 0) delete G.bag[selectedBagItem];
           const mul = 1 + (eqStats.healBonus || 0);
           if (it.hp) G.hp = Math.min(G.maxHp, G.hp + Math.round(it.hp * mul));
           if (it.qi) G.qi = Math.min(G.maxQi, G.qi + Math.round(it.qi * mul));
+          if (it.addMaxAge) G.maxAge += it.addMaxAge;
           if (it.fullRestore) { G.hp = G.maxHp; G.qi = G.maxQi; }
-          if (it.marrow) {
+          if (it.addMaxAge) {
+            SFX.play('levelup');
+            showToast(`服下【${it.name}】，逆天增补寿元上限 +${it.addMaxAge} 载（当前上限 ${G.maxAge} 岁）！`);
+          } else if (it.marrow) {
             const ks = [['body','根骨'], ['wit','悟性'], ['speed','遁速'], ['sense','神识']];
             const pick = ks[Math.floor(Math.random() * ks.length)];
             const eks = [['gold','金'], ['wood','木'], ['water','水'], ['fire','火'], ['earth','土']];
@@ -1796,7 +1949,66 @@ function renderSplitPanel() {
     };
     }
   }
-  // 5. 卷宗存档页：无立绘！左右双联（本地存档/音频设置/离线预缓存 + 存档码与传承）
+  // 5. 天命成就页（跨档永久留存 · 解锁特殊先天道体与先天气运词条）
+  else if (curTab === 'ach') {
+    const achSt = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.loadStore() : { unlocked: [], totalPts: 15 };
+    const achList = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.LIST : [];
+    const bodies = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.DAO_BODIES : [];
+    const traits = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.DESTINY_TRAITS : [];
+    const curBodyObj = bodies.find(b => b.id === G.daoBody) || bodies[0];
+
+    main.innerHTML = `
+      <div class="dual-left">
+        <div class="sec-head">
+          <span>先天道体 · 先天气运池</span>
+          <span style="font-size:11px;color:var(--gold-bright);">累计天命点：<b>${achSt.totalPts}</b></span>
+        </div>
+        <div class="gp-body">
+          <div class="glass-card active">
+            <div>
+              <h4>本世道体：${curBodyObj ? curBodyObj.name : '凡胎道体'}</h4>
+              <p>${curBodyObj ? curBodyObj.desc : ''}</p>
+            </div>
+          </div>
+          <div class="sub-cap gold">已解锁先天道体（开新档时自由选用）</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${bodies.map(b => {
+              const ok = window.ACHIEVEMENTS.isBodyUnlocked(b, achSt);
+              return `<div class="glass-card ${ok?'active':''}" style="padding:6px 10px;opacity:${ok?1:0.52};"><div><h4>${b.name} <span class="tier-tag t-${b.tier}">${b.tier} · ${b.cost}点</span></h4><p>${b.desc}</p></div><span style="font-size:10px;color:${ok?'var(--jade)':'var(--muted)'};flex-shrink:0;">${ok?'已解锁':'未解锁'}</span></div>`;
+            }).join('')}
+          </div>
+          <div class="sub-cap gold" style="margin-top:4px;">先天气运词条库（共 ${traits.length} 枚）</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">
+            ${traits.map(t => {
+              const ok = window.ACHIEVEMENTS.isTraitUnlocked(t, achSt);
+              return `<div class="glass-card ${ok?'active':''}" style="padding:6px 8px;opacity:${ok?1:0.5};"><div><h4>${t.name} <span class="tier-tag t-${t.tier}">${t.cost}点</span></h4><p>${t.desc}</p></div></div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="dual-right">
+        <div class="sec-head">
+          <span>天命成就录</span>
+          <span style="font-size:10.5px;color:var(--jade);">已达成 ${achSt.unlocked.length} / ${achList.length} 项</span>
+        </div>
+        <div class="gp-body">
+          ${achList.map(a => {
+            const done = achSt.unlocked.includes(a.id);
+            return `
+              <div class="glass-card ${done?'active':''}" style="padding:8px 11px;">
+                <div style="flex:1;min-width:0;">
+                  <h4>${a.title} <span style="font-size:10px;color:var(--gold-bright);">[+${a.pts}点 · ${a.rewardTxt}]</span></h4>
+                  <p>${a.desc}</p>
+                </div>
+                ${done ? `<span class="mini-set" style="flex-shrink:0;">已达成</span>` : `<span style="font-size:10px;color:var(--muted);flex-shrink:0;">待证道</span>`}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+  // 6. 卷宗存档页：无立绘！左右双联（本地存档/音频设置/离线预缓存 + 存档码与传承）
   else if (curTab === 'save') {
     const leg = window.LEGACY ? window.LEGACY.load() : { runs: 0, points: 0, endings: [] };
     main.innerHTML = `
@@ -1876,6 +2088,9 @@ function renderSplitPanel() {
 function renderAll() {
   if (!G) return;
   syncUnlockedAllies();
+  if (window.ACHIEVEMENTS) {
+    window.ACHIEVEMENTS.checkAll(G, { D, getCatMastery, showToast });
+  }
   const realm = D.REALMS[G.realmIdx];
   document.getElementById('hud-realm-txt').textContent = realm.name;
   document.getElementById('hud-date').textContent = getDateStr();
@@ -1907,25 +2122,43 @@ function renderAll() {
   document.getElementById('hud-tr').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-br').style.display = hideHud ? 'none' : 'flex';
   document.getElementById('hud-bl').style.display = (hideHud || !locObj) ? 'none' : 'flex';
+  const curReg = (D.REGIONS || []).find(r => r.id === currentMapRegion) || { id: 'east', name: '东洲·苍莽域', sub: '择一地标御剑前往', pairs: [] };
   const tc = document.getElementById('hud-tc');
   if (tc) {
     tc.style.display = hideHud ? 'none' : 'flex';
     tc.innerHTML = locObj
       ? `<div class="region-title">${locObj.name}</div><div class="region-sub">${locObj.desc}</div>`
-      : `<div class="region-title">东洲 · 山河舆图</div><div class="region-sub">择一地标御剑前往</div>`;
+      : `<div class="region-title">九州山河舆图 · ${curReg.name}</div><div class="region-sub">${curReg.sub}</div>`;
   }
 
-  // Render World Map or Full-Screen Scene
+  // Render 4-Continent Grand World Map or Full-Screen Scene
   const wl = document.getElementById('world-layer'); wl.innerHTML = '';
   const bl = document.getElementById('hud-bl'); bl.innerHTML = '';
 
   if (!inBattle && !activePanel) {
     if (!locObj) {
-      // Constellation travel lines SVG
-      const pairs = [['sect','cave'], ['cave','altar'], ['sect','inn'], ['sect','cliff'], ['cliff','market'], ['inn','market'], ['inn','altar'], ['market','forest'], ['forest','altar']];
-      const byId = Object.fromEntries(D.LOCATIONS.map(l => [l.id, l]));
-      const lines = pairs.filter(([a,b]) => byId[a] && byId[b]).map(([a,b]) => `<line x1="${byId[a].x}%" y1="${byId[a].y}%" x2="${byId[b].x}%" y2="${byId[b].y}%" stroke="rgba(235,210,155,0.32)" stroke-width="1" stroke-dasharray="3 4"/>`).join('');
+      const regLocs = D.LOCATIONS.filter(l => (l.region || 'east') === curReg.id);
+      const byId = Object.fromEntries(regLocs.map(l => [l.id, l]));
+      const lines = (curReg.pairs || []).filter(([a,b]) => byId[a] && byId[b])
+        .map(([a,b]) => `<line x1="${byId[a].x}%" y1="${byId[a].y}%" x2="${byId[b].x}%" y2="${byId[b].y}%" stroke="rgba(235,210,155,0.34)" stroke-width="1" stroke-dasharray="3 4"/>`).join('');
       wl.innerHTML = `<svg id="map-lines-svg">${lines}</svg>`;
+
+      // Bottom-Left 4-Continent Switcher Compass Bar!
+      if (D.REGIONS && D.REGIONS.length > 1) {
+        const regBar = document.createElement('div');
+        regBar.className = 'map-region-bar';
+        D.REGIONS.forEach(r => {
+          const hasMark = (G.worldRemains && D.LOCATIONS.find(l => l.id === G.worldRemains.loc)?.region === r.id)
+            || (G.nemesis && D.LOCATIONS.find(l => l.id === G.nemesis.loc)?.region === r.id);
+          const rb = document.createElement('button');
+          rb.className = 'reg-tab' + (r.id === curReg.id ? ' active' : '') + (hasMark ? ' alert' : '');
+          rb.textContent = r.name.split('·')[0] + (hasMark ? ' · 仇/遗' : '');
+          rb.onclick = () => { SFX.play('click'); currentMapRegion = r.id; renderAll(); };
+          regBar.appendChild(rb);
+        });
+        wl.appendChild(regBar);
+      }
+
       const activeLocs = new Set(D.TIMELINE.filter(t => {
         if (G.month < t.month) return false;
         if (t.loc === 'sect' && (G.factions?.qingyun || 0) < 2) return true;
@@ -1936,7 +2169,8 @@ function renderAll() {
       }).map(t => t.loc));
       if (G.worldRemains?.loc) activeLocs.add(G.worldRemains.loc);
       if (G.nemesis?.loc) activeLocs.add(G.nemesis.loc);
-      D.LOCATIONS.forEach(loc => {
+
+      regLocs.forEach(loc => {
         const m = document.createElement('div');
         m.className = 'map-pin' + (activeLocs.has(loc.id) ? ' has-event' : '');
         m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
@@ -1952,8 +2186,8 @@ function renderAll() {
         n.onclick = () => interactNpc(npc.id);
         wl.appendChild(n);
       });
-      const back = document.createElement('button'); back.className = 'sleek-btn ghost'; back.textContent = '← 东洲舆图';
-      back.onclick = () => { SFX.play('click'); currentLocationId = null; renderAll(); };
+      const back = document.createElement('button'); back.className = 'sleek-btn ghost'; back.textContent = '← 九州舆图';
+      back.onclick = () => { SFX.play('click'); if (locObj.region) currentMapRegion = locObj.region; currentLocationId = null; renderAll(); };
       bl.appendChild(back);
       locObj.hotspots.forEach(h => {
         const b = document.createElement('button'); b.className = 'sleek-btn'; b.textContent = h.label;

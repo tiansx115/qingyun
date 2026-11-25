@@ -1916,6 +1916,7 @@
           <button class="ow-micro-btn" id="ow-btn-cave">回洞府</button>
           <button class="ow-micro-btn" id="ow-btn-birth" style="display:none;">童年手记</button>
           <button class="ow-micro-btn" id="ow-btn-tod">昼</button>
+          <button class="ow-micro-btn" id="ow-btn-clock" title="切换岁月自然流逝">流逝:开</button>
           <button class="ow-micro-btn" id="ow-btn-m1">一月</button>
           <button class="ow-micro-btn" id="ow-btn-y1">闭关</button>
           <button class="ow-micro-btn crimson" id="ow-btn-break" style="display:none;">破境渡劫</button>
@@ -1963,7 +1964,7 @@
             <span class="ow-sk-name" id="ow-fly-txt">御剑</span>
           </button>
         </div>
-        <div class="ow-whisper-bl">WASD / 点地行走 · 点怪或 F/2/3/4 斗法<br/>E 交互 · Space 御剑 · 右键转视角</div>
+        <div class="ow-whisper-bl">WASD/点地行走 · F/2/3/4 斗法 · Shift 闪避<br/>E 交互 · Space 御剑 · 右键转视角</div>
         <div class="ow-menu-br">
           <button class="ow-seal-btn primary" data-ow-tab="map">
             <svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/></svg><span>舆图</span>
@@ -2045,6 +2046,24 @@
           renderModal();
         }
       }
+      let autoClockOn = true;
+      document.getElementById('ow-btn-clock').onclick = () => {
+        autoClockOn = !autoClockOn;
+        document.getElementById('ow-btn-clock').textContent = autoClockOn ? '流逝:开' : '流逝:停';
+        showOwToast(autoClockOn ? '岁月恢复自然流逝（每 25 秒推进一月）' : '已暂停岁月自然流逝');
+      };
+      setInterval(() => {
+        if (!autoClockOn) return;
+        const md = document.getElementById('life-sim-modal');
+        const ct = document.getElementById('v10-title-curtain');
+        if ((md && md.classList.contains('open')) || ct) return;
+        const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
+        saveState(); syncTopHud();
+        if (res && res.proactiveEvent) {
+          showOwToast(`${res.proactiveEvent.title}：${res.proactiveEvent.desc}`);
+        }
+        checkMortality();
+      }, 25000);
       document.getElementById('ow-btn-m1').onclick = () => {
         const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
         saveState(); syncTopHud();
@@ -2112,16 +2131,12 @@
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });
 
-    // 隐藏旧版 app.js 割裂开场幕布，改用统一 3A 沧溟界开场幕布
+    // 隐藏旧版静态容器，启动统一 3A 沧溟界引擎
     const oldTitle = document.getElementById('title-root');
     if (oldTitle) oldTitle.style.display = 'none';
 
     mountMainBg3D();
-    setInterval(() => {
-      syncTopHud();
-      const ot = document.getElementById('title-root');
-      if (ot && ot.style.display !== 'none') ot.style.display = 'none';
-    }, 1200);
+    setInterval(syncTopHud, 2000);
 
     // 统一 3A 宋明开场标题幕布（让第一次打开游戏的玩家清晰了解世界并一键开局！）
     const hasSave = !!localStorage.getItem(LS_KEY);

@@ -770,8 +770,16 @@
       vfxList.push({ mesh: shock, life: 0.42, maxLife: 0.42, vy: 0, expand: 3.5 });
     };
 
-    const combatState = { cdStrike: 0, cdSpell: 0, cdShield: 0, shieldTime: 0 };
+    const combatState = { cdStrike: 0, cdSpell: 0, cdShield: 0, shieldTime: 0, cdDash: 0 };
     let camShake = 0;
+
+    // 实时敌怪锁定准星环（清晰标示 F/2 即将命中的目标！）
+    const lockRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.75, 0.96, 24),
+      new THREE.MeshBasicMaterial({ color: 0xf7d070, side: THREE.DoubleSide, transparent: true, opacity: 0 })
+    );
+    lockRing.rotateX(-Math.PI / 2); lockRing.position.y = 0.07;
+    scene.add(lockRing);
 
     // 实景掉落战利品光球池（击杀敌怪当场爆落地面，走近磁吸拾取！）
     const lootOrbs = [];
@@ -944,6 +952,17 @@
       if (k === '2') castSkill('spell');
       if (k === '3') castSkill('shield');
       if (k === '4') castSkill('pill');
+      if (k === 'shift' && combatState.cdDash <= 0) {
+        combatState.cdDash = 2.4;
+        const dx = (keys.d || keys.arrowright ? 1 : 0) - (keys.a || keys.arrowleft ? 1 : 0);
+        const dz = (keys.s || keys.arrowdown ? 1 : 0) - (keys.w || keys.arrowup ? 1 : 0);
+        const len = Math.hypot(dx, dz) || 1;
+        const ux = dx || dz ? dx / len : heroPos.facing;
+        const uz = dx || dz ? dz / len : 0;
+        for (let s = 0; s < 5; s++) tryMoveHero(ux * 0.72, uz * 0.72);
+        spawnFloatText(heroPos.x, 2.3, heroPos.z, '缩地闪避', '#9ff2cf');
+        if (window.SFX && window.SFX.play) { try { window.SFX.play('click'); } catch {} }
+      }
     };
     const onKeyUp = e => { keys[e.key.toLowerCase()] = false; };
     window.addEventListener('keydown', onKeyDown); window.addEventListener('keyup', onKeyUp);
@@ -1024,6 +1043,16 @@
       if (combatState.cdStrike > 0) combatState.cdStrike = Math.max(0, combatState.cdStrike - dt);
       if (combatState.cdSpell > 0) combatState.cdSpell = Math.max(0, combatState.cdSpell - dt);
       if (combatState.cdShield > 0) combatState.cdShield = Math.max(0, combatState.cdShield - dt);
+      if (combatState.cdDash > 0) combatState.cdDash = Math.max(0, combatState.cdDash - dt);
+      // 更新目标锁定金圈
+      const lockTg = findNearestHostile(11.0);
+      if (lockTg) {
+        lockRing.position.set(lockTg.x, 0.07, lockTg.z);
+        lockRing.material.opacity = 0.55 + Math.sin(t * 7) * 0.25;
+        lockRing.rotation.z = t * 1.6;
+      } else {
+        lockRing.material.opacity = 0;
+      }
       if (combatState.shieldTime > 0) {
         combatState.shieldTime -= dt; shieldDome.rotation.y = t * 1.8;
         if (combatState.shieldTime <= 0) shieldDome.visible = false;
@@ -1128,6 +1157,7 @@
           if (ld < 0.9) {
             scene.remove(lo.mesh);
             lootOrbs.splice(i, 1);
+            if (window.SFX && window.SFX.play) { try { window.SFX.play('click'); } catch {} }
             spawnFloatText(heroPos.x, 2.7, heroPos.z, `+${lo.en.rewardStones}石 +${lo.en.rewardExp}修`, '#6fd3a8');
             if (opts.onEnemyKilled) opts.onEnemyKilled(lo.en);
           }

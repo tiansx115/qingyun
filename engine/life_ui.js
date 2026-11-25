@@ -2111,6 +2111,7 @@
       }, 25000);
       document.getElementById('ow-btn-m1').onclick = () => {
         const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
+        const npcLogs = window.LivingEvents ? window.LivingEvents.stepLivingNpcs(WORLD, 1) : [];
         saveState(); syncTopHud();
         if (window.LivingEvents && Math.random() < 0.42) {
           const ev = window.LivingEvents.rollLivingSocialEvent(HERO, WORLD);
@@ -2120,7 +2121,7 @@
             renderModal(); checkMortality(); return;
           }
         }
-        const msg = (res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
+        const msg = npcLogs[0] || ((res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`));
         showOwToast(msg);
         checkMortality();
       };
@@ -2131,10 +2132,11 @@
         const gain = Math.round((70 + (nd.leyline || 40) * 1.1) * caveBonus);
         HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
         const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 12, 'seclude');
+        const npcLogs = window.LivingEvents ? window.LivingEvents.stepLivingNpcs(WORLD, 12) : [];
         saveState(); syncTopHud();
         const msg = HERO.exp >= HERO.maxExp
           ? `闭关一年修为圆满(${HERO.exp}/${HERO.maxExp})！可点击顶部【破境渡劫】`
-          : ((res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `闭关一年出关！修为 +${gain}，当前第 ${WORLD.year} 年`));
+          : (npcLogs[0] || ((res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `闭关一年出关！修为 +${gain}，当前第 ${WORLD.year} 年`)));
         showOwToast(msg);
         checkMortality();
       };

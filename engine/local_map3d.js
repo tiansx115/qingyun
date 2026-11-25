@@ -1257,13 +1257,33 @@
         v.mesh.material.opacity = Math.max(0, v.life / v.maxLife);
       }
 
-      // NPC 散步 & 气泡
+      // 街道活人 NPC 彼此相遇对话（不再是各自闭眼瞎走的木偶！）
       bubbleTick += dt;
-      if (bubbleTick >= 3.8 && npcActors.length) {
+      if (bubbleTick >= 3.2 && npcActors.length) {
         bubbleTick = 0;
-        const pick = npcActors[Math.floor(Math.random() * npcActors.length)];
-        pick.sp.bubbleSp.material.map = makeBubbleTexture(ambientLines[Math.floor(Math.random() * ambientLines.length)]);
-        pick.sp.bubbleSp.material.needsUpdate = true; pick.bubbleLife = 3.2;
+        let paired = false;
+        for (let i = 0; i < npcActors.length && !paired; i++) {
+          for (let j = i + 1; j < npcActors.length; j++) {
+            const a = npcActors[i], b = npcActors[j];
+            if (Math.hypot(a.x - b.x, a.z - b.z) < 4.2 && a.bubbleLife <= 0 && b.bubbleLife <= 0) {
+              const pairs = [
+                [`道友，本地丹药涨到 ×${plate.priceIndex.pill} 了！`, '唉，散修日子愈发难熬喽…'],
+                ['刚听说城外那头妖兽又伤人了！', '可不是嘛，出城千万记得躲红圈！'],
+                ['不知哪家大宗又要开十年大比了？', '咱们还是先多攒点灵石稳妥。']
+              ];
+              const pr = pairs[Math.floor(Math.random() * pairs.length)];
+              a.wait = 3.0; b.wait = 3.0; // 停下脚步寒暄！
+              a.sp.bubbleSp.material.map = makeBubbleTexture(pr[0]); a.sp.bubbleSp.material.needsUpdate = true; a.bubbleLife = 3.2;
+              b.sp.bubbleSp.material.map = makeBubbleTexture(pr[1]); b.sp.bubbleSp.material.needsUpdate = true; b.bubbleLife = 3.4;
+              paired = true; break;
+            }
+          }
+        }
+        if (!paired) {
+          const pick = npcActors[Math.floor(Math.random() * npcActors.length)];
+          pick.sp.bubbleSp.material.map = makeBubbleTexture(ambientLines[Math.floor(Math.random() * ambientLines.length)]);
+          pick.sp.bubbleSp.material.needsUpdate = true; pick.bubbleLife = 3.2;
+        }
       }
       npcActors.forEach(a => {
         if (a.bubbleLife > 0) { a.bubbleLife -= dt; a.sp.bubbleSp.material.opacity = Math.min(1, a.bubbleLife * 1.5); }

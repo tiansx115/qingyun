@@ -184,7 +184,81 @@
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
-  const LivingEvents = { generateNpcGreeting, rollLivingSocialEvent };
+  // ===== 让每个活着的 NPC 真正过自己的人生（自主游历迁徙、修炼破境、衰老坐化、NPC 彼此恩怨火拼） =====
+  function stepLivingNpcs(world, months) {
+    if (!world || !Array.isArray(world.people)) return [];
+    const yrs = Math.max(0.08, (months || 1) / 12);
+    const logs = [];
+    const alive = world.people.filter(p => p.alive);
+    const REALM_NAMES = ['凡人', '炼气', '筑基', '金丹', '元婴', '化神', '合道'];
+
+    alive.forEach(p => {
+      p.age = (p.age || 20) + yrs;
+      // 1. 寿终自然坐化
+      if (p.age >= (p.maxAge || 120)) {
+        p.alive = false;
+        const msg = `第${world.year}年：【${p.name}】(${p.realm})寿元耗尽，于【${(world.nodeMap[p.plateId] || {}).name || p.plateId}】安详坐化。`;
+        world.chronicles.unshift({ year: world.year, tag: '坐化', text: msg });
+        logs.push(msg);
+        return;
+      }
+      // 2. 自主跨板块游历迁徙（优先前往高灵脉或有遗迹的邻接板块）
+      if (Math.random() < Math.min(0.45, 0.08 * months)) {
+        const cur = world.nodeMap && world.nodeMap[p.plateId];
+        if (cur && cur.neighbors && cur.neighbors.length) {
+          const cands = cur.neighbors.map(id => world.nodeMap[id]).filter(n => n && (!n.isSea || world.seaTechUnlocked));
+          if (cands.length) {
+            cands.sort((a, b) => (b.leyline || 0) - (a.leyline || 0));
+            const dst = Math.random() < 0.65 ? cands[0] : cands[Math.floor(Math.random() * cands.length)];
+            p.plateId = dst.id;
+            p.memories = p.memories || [];
+            p.memories.unshift(`第${world.year}年：云游迁居至【${dst.name}】`);
+            if (p.memories.length > 8) p.memories.length = 8;
+          }
+        }
+      }
+      // 3. 自主修炼破境
+      if ((p.realmIdx || 1) < 5 && Math.random() < 0.008 * months * ((p.daoWit || 70) / 70)) {
+        p.realmIdx = (p.realmIdx || 1) + 1;
+        p.realm = REALM_NAMES[p.realmIdx] || '金丹';
+        p.maxAge = Math.round((p.maxAge || 120) * 1.45);
+        const ndName = (world.nodeMap[p.plateId] || {}).name || p.plateId;
+        const msg = `第${world.year}年：【${p.name}】于【${ndName}】闭关突破，正式晋升【${p.realm}】！`;
+        p.memories.unshift(msg);
+        world.chronicles.unshift({ year: world.year, tag: '破境', text: msg });
+        logs.push(msg);
+      }
+    });
+
+    // 4. 同城 NPC 彼此之间的真实江湖互动（结伴论道 / 坊市争宝火拼）
+    const byPlate = {};
+    world.people.filter(p => p.alive).forEach(p => {
+      (byPlate[p.plateId] = byPlate[p.plateId] || []).push(p);
+    });
+    for (const pid in byPlate) {
+      const grp = byPlate[pid];
+      if (grp.length >= 2 && Math.random() < Math.min(0.4, 0.06 * months)) {
+        const a = grp[0], b = grp[1];
+        const ndName = (world.nodeMap[pid] || {}).name || pid;
+        const clash = a.factionId !== b.factionId && Math.random() < 0.45;
+        if (clash) {
+          const msg = `第${world.year}年：【${a.name}】与【${b.name}】在【${ndName}】坊市因争夺灵材大打出手，引得满城围观！`;
+          a.memories.unshift(`与【${b.name}】在${ndName}结下梁子`);
+          b.memories.unshift(`与【${a.name}】在${ndName}结下梁子`);
+          world.chronicles.unshift({ year: world.year, tag: '争锋', text: msg });
+          logs.push(msg);
+        } else {
+          const msg = `第${world.year}年：【${a.name}】与【${b.name}】于【${ndName}】煮茶论道，互换修炼心得。`;
+          a.memories.unshift(`与【${b.name}】在${ndName}论道结缘`);
+          logs.push(msg);
+        }
+        break; // 每步最多 1 条鲜活头条，避免刷屏
+      }
+    }
+    return logs;
+  }
+
+  const LivingEvents = { generateNpcGreeting, rollLivingSocialEvent, stepLivingNpcs };
   if (typeof module !== 'undefined' && module.exports) module.exports = LivingEvents;
   root.LivingEvents = LivingEvents;
 })(typeof window !== 'undefined' ? window : globalThis);

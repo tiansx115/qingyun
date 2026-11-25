@@ -812,12 +812,37 @@
     bindSceneActions(body);
   }
 
+  function mountMainBg3D() {
+    ensureInit();
+    if (!window.Map3D || !window.THREE) return;
+    const app = document.getElementById('app');
+    if (!app) return;
+    let host = document.getElementById('main-map3d-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'main-map3d-host';
+      host.style.cssText = 'position:absolute;inset:0;z-index:10;cursor:grab;';
+      app.appendChild(host);
+    }
+    const wl = document.getElementById('world-layer');
+    if (wl) { wl.style.display = 'none'; }
+    requestAnimationFrame(() => {
+      window.Map3D.mount(host, WORLD, HERO, selectedPlateId, pid => {
+        selectedPlateId = pid;
+        activeTab = 'map';
+        activeScene = null;
+        document.getElementById('life-sim-modal').classList.add('open');
+        renderModal();
+      });
+    });
+  }
+
   function mount() {
     if (!window.WorldCore || !window.LifeSim) return;
     injectStyles();
     const btn = document.createElement('button');
     btn.id = 'btn-open-life-sim';
-    btn.textContent = '🏔️ 沧溟 2.5D 地图 · 人生 v8.8';
+    btn.textContent = '🏔️ 沧溟 2.5D 地图 · 人生 v8.9';
     btn.onclick = () => {
       document.getElementById('life-sim-modal').classList.add('open');
       renderModal();
@@ -829,7 +854,7 @@
     modal.innerHTML = `
       <div class="ls-box">
         <div class="ls-head">
-          <h2 id="ls-title">沧溟修仙模拟人生 v8.8</h2>
+          <h2 id="ls-title">沧溟修仙模拟人生 v8.9</h2>
           <button class="ls-btn red" id="ls-close">✕ 关闭</button>
         </div>
         <div class="ls-tabs">
@@ -847,10 +872,14 @@
     document.getElementById('ls-close').onclick = () => {
       if (window.Map3D) window.Map3D.dispose();
       modal.classList.remove('open');
+      mountMainBg3D();
     };
     modal.querySelectorAll('.ls-tab').forEach(t => {
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });
+
+    // 启动即把真 2.5D Three.js 立体山海大地图挂载到主游戏全屏 #world-viewport！
+    mountMainBg3D();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);

@@ -6,7 +6,7 @@
   'use strict';
 
   const LS_KEY = 'qingyun_v87_world_life_v1';
-  const APP_VER = 'v11.4';
+  const APP_VER = 'v11.5';
   let WORLD = null;
   let HERO = null;
   let activeTab = 'map';
@@ -1338,28 +1338,47 @@
     } else {
       const en = window.WorldCore.calcConservation(WORLD);
       const myFac = HERO.myFactionId ? WORLD.factions.find(f => f.id === HERO.myFactionId && f.alive) : null;
+      const hasDsKey = !!(localStorage.getItem('cangming_ds_key') || '').trim();
       body.innerHTML = `
         ${sceneHtml}
         <div class="ls-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div><b>5 池守恒(20,000)</b>：核${en.core} / 游${en.ambient} / 表${en.surf} / 锁${en.locked} / 煞${en.shaE} · 遗迹 <b>${(WORLD.ruins||[]).length}</b> 座 · 涌现制度 <b>${(WORLD.institutions||[]).length}</b> 项</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="ls-btn blue" id="ls-open-birth">📜 0–18 岁童年手记</button>
-            <label class="ls-btn jade" style="display:inline-block;">📂 导入实验室 v7.4 JSON<input type="file" id="ls-import-file" accept=".json" style="display:none;" /></label>
-            <button class="ls-btn" id="ls-regen-world">⚡ 25ms 重建新 1200 年社会</button>
+            <button class="ls-btn blue" id="ls-open-birth">童年手记</button>
+            <button class="ls-btn jade" id="ls-export-save">导出存档</button>
+            <label class="ls-btn" style="display:inline-block;">读取存档<input type="file" id="ls-import-save" accept=".json" style="display:none;" /></label>
+            <label class="ls-btn jade" style="display:inline-block;">导入实验室JSON<input type="file" id="ls-import-file" accept=".json" style="display:none;" /></label>
+            <button class="ls-btn red" id="ls-regen-world">重建新1200年世界</button>
+          </div>
+        </div>
+        <div class="ls-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-color:rgba(112,184,240,0.4);">
+          <div style="font-size:11px;">
+            <b style="color:#a8d4ff;">DeepSeek AI 自由交涉引擎</b>
+            <span class="ls-pill ${hasDsKey?'jade':''}">${hasDsKey ? '已配置 Key · 实时AI模式' : '未配置 · 本地人格裁定模式'}</span>
+            <span style="color:#938c7e;">（Key 仅保存在你本机浏览器 localStorage）</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="password" class="ls-input" id="inp-ds-key" value="${hasDsKey ? '••••••••••••' : ''}" placeholder="输入 sk-... DeepSeek Key" style="width:200px;" />
+            <button class="ls-btn blue" id="btn-save-ds">保存</button>
+            ${hasDsKey ? '<button class="ls-btn red" id="btn-clear-ds">清除</button>' : ''}
           </div>
         </div>
         ${myFac ? `
           <div class="ls-card" style="border-color:#6fd3a8;">
-            <h3><span>🏯 我的宗门治理 · 【${myFac.name}】</span><span>门徒 ${myFac.disciples} 人 · 官僚 ${Math.round(myFac.bureaucracy||0)} · 不公 ${Math.round(myFac.inequality||0)} · 杂役 ${myFac.servants||0}</span></h3>
+            <h3><span>我的宗门治理 · 【${myFac.name}】</span><span>门徒 ${myFac.disciples} 人 · 官僚 ${Math.round(myFac.bureaucracy||0)} · 不公 ${Math.round(myFac.inequality||0)} · 杂役 ${myFac.servants||0}</span></h3>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="ls-btn red" data-sect="exploit_servants">⛓️ 压榨杂役(+90石/不公↑)</button>
-              <button class="ls-btn jade" data-sect="treat_well">🤝 厚待放权(-45石/民心与掌控↑)</button>
-              <button class="ls-btn blue" data-sect="recruit">📣 招募散修(-55石/门徒+20)</button>
-              <button class="ls-btn" data-sect="host_inst">⚖️ 创办本宗十年交易盛会(-100石/写入世界制度)</button>
-              <button class="ls-btn jade" data-sect="expedition">🧭 派弟子探查周边灵脉(-40石/带回灵石灵草)</button>
+              <button class="ls-btn red" data-sect="exploit_servants">压榨杂役(+90石/不公与通缉↑)</button>
+              <button class="ls-btn jade" data-sect="treat_well">厚待放权(-45石/民心与掌控↑)</button>
+              <button class="ls-btn blue" data-sect="recruit">招募散修(-55石/门徒+20)</button>
+              <button class="ls-btn" data-sect="host_inst">创办本宗十年交易盛会(-100石)</button>
+              <button class="ls-btn jade" data-sect="expedition">派弟子探查周边灵脉(-40石)</button>
             </div>
           </div>
         ` : ''}
+        <div class="ls-card" style="max-height:175px;overflow-y:auto;">
+          <h3><span>《沧溟界实时编年史》（共 ${(WORLD.chronicles||[]).length} 条真实演化与玩家史迹）</span></h3>
+          ${(WORLD.chronicles || []).slice(0, 28).map(c => `<div style="padding:3px 0;border-bottom:1px dashed rgba(212,184,122,0.12);font-size:10.5px;"><span class="ls-pill">${c.tag || '史'}</span> ${c.text}</div>`).join('') || '暂无史册记录'}
+        </div>
         <div class="ls-grid-2">
           <div class="ls-card" style="max-height:420px;overflow-y:auto;">
             <h3>自然涌现的社会制度（动态周期·腐化·停办）</h3>
@@ -1388,7 +1407,48 @@
         } catch (err) { alert('导入失败：' + err.message); }
       };
       const rg = document.getElementById('ls-regen-world');
-      if (rg) rg.onclick = () => { freshWorld(Math.floor(Math.random() * 99999)); pushLog(`⚡ 已重建全新 1200 年世界！`); switchViewLayer('local', HERO.locId); renderModal(); };
+      if (rg) rg.onclick = () => {
+        if (!confirm('确认清空当前存档并重新演化一个全新的 1200 年沧溟界？')) return;
+        freshWorld(Math.floor(Math.random() * 99999)); pushLog(`⚡ 已重建全新 1200 年世界！`); switchViewLayer('local', HERO.locId); renderModal();
+      };
+      const exSave = document.getElementById('ls-export-save');
+      if (exSave) exSave.onclick = () => {
+        const slimWorld = Object.assign({}, WORLD, { nodeMap: undefined });
+        const blob = new Blob([JSON.stringify({ world: slimWorld, hero: HERO }, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `qingyun_save_${HERO.name}_第${WORLD.year}年.json`;
+        a.click();
+        showOwToast('已导出完整游戏存档 JSON！');
+      };
+      const imSave = document.getElementById('ls-import-save');
+      if (imSave) imSave.onchange = async e => {
+        const file = e.target.files?.[0]; if (!file) return;
+        try {
+          const parsed = JSON.parse(await file.text());
+          if (!parsed.world || !parsed.hero) throw new Error('非有效存档格式');
+          WORLD = parsed.world;
+          WORLD.nodeMap = Object.fromEntries(WORLD.nodes.map(n => [n.id, n]));
+          HERO = parsed.hero;
+          selectedPlateId = HERO.locId || 'E2';
+          saveState(); switchViewLayer('local', HERO.locId); renderModal();
+          showOwToast(`已读取存档：【${HERO.name}】第 ${WORLD.year} 年！`);
+        } catch (err) { alert('读取存档失败：' + err.message); }
+      };
+      const bSaveDs = document.getElementById('btn-save-ds');
+      if (bSaveDs) bSaveDs.onclick = () => {
+        const v = (document.getElementById('inp-ds-key')?.value || '').trim();
+        if (!v || v.startsWith('••')) { showOwToast('请输入有效的 sk-... API Key'); return; }
+        localStorage.setItem('cangming_ds_key', v);
+        showOwToast('DeepSeek API Key 已保存到本地浏览器！现可在江湖面板开启真实 AI 自由交涉');
+        renderModal();
+      };
+      const bClrDs = document.getElementById('btn-clear-ds');
+      if (bClrDs) bClrDs.onclick = () => {
+        localStorage.removeItem('cangming_ds_key');
+        showOwToast('已清除本机 DeepSeek API Key');
+        renderModal();
+      };
       const ob = document.getElementById('ls-open-birth');
       if (ob) ob.onclick = () => { activeScene = { type: 'birth_story', data: { step: 0, picks: [] } }; renderModal(); };
       body.querySelectorAll('[data-sect]').forEach(btn => {

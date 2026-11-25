@@ -97,117 +97,145 @@
     st.textContent = `
       #ow-hud {
         position:absolute; inset:0; z-index:32; pointer-events:none;
-        font-family:"Songti SC","Noto Serif SC",serif; color:#e6dfd3;
+        font-family:"Songti SC","Kaiti SC","Noto Serif SC",serif; color:#ebe3d3;
       }
+      /* 顶部水墨卷轴地名与时辰栏 */
       .ow-top-bar {
-        position:absolute; top:12px; left:50%; transform:translateX(-50%); pointer-events:auto;
-        display:flex; align-items:center; gap:8px; padding:6px 14px;
-        background:rgba(8,13,20,0.84); border:1px solid rgba(212,184,122,0.45);
-        border-radius:20px; backdrop-filter:blur(6px); box-shadow:0 4px 18px rgba(0,0,0,0.55);
-        font-size:11.5px; white-space:nowrap;
+        position:absolute; top:14px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:flex; align-items:center; gap:10px; padding:6px 26px;
+        background:linear-gradient(90deg, rgba(7,10,14,0) 0%, rgba(10,14,19,0.82) 14%, rgba(10,14,19,0.82) 86%, rgba(7,10,14,0) 100%);
+        border-top:1px solid rgba(212,184,122,0.45);
+        border-bottom:1px solid rgba(212,184,122,0.45);
+        font-size:12px; letter-spacing:1px; white-space:nowrap;
       }
-      .ow-nearby-wrap {
-        position:absolute; bottom:84px; left:50%; transform:translateX(-50%); pointer-events:auto;
-        display:none;
+      .ow-micro-btn {
+        background:rgba(212,184,122,0.08); border:1px solid rgba(212,184,122,0.38); color:#ebd5a2;
+        padding:2px 9px; border-radius:2px; font-size:11px; cursor:pointer; font-family:inherit;
+        letter-spacing:1px; transition:all 0.16s;
       }
-      .ow-skill-bar {
-        position:absolute; bottom:18px; left:50%; transform:translateX(-50%); pointer-events:auto;
-        display:flex; gap:6px; padding:5px 8px; background:rgba(8,13,20,0.86);
-        border:1px solid rgba(212,184,122,0.45); border-radius:10px;
-        box-shadow:0 6px 20px rgba(0,0,0,0.65); backdrop-filter:blur(5px);
+      .ow-micro-btn:hover { background:rgba(212,184,122,0.26); color:#fff; border-color:#f2daa0; }
+      .ow-micro-btn.crimson {
+        background:linear-gradient(180deg, rgba(168,48,40,0.92), rgba(112,26,22,0.95));
+        border-color:#f2daa0; color:#fff4dc; font-weight:700;
       }
-      .ow-sk-btn {
-        background:rgba(212,184,122,0.12); border:1px solid rgba(212,184,122,0.42); color:#f6e7c1;
-        padding:6px 10px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;
-        font-family:inherit; white-space:nowrap;
-      }
-      .ow-sk-btn:hover { background:rgba(111,211,168,0.28); border-color:#6fd3a8; color:#fff; }
-      .ow-sk-btn.fire:hover { background:rgba(224,98,88,0.32); border-color:#ff9d95; }
-      .ow-nearby-wrap.show { display:block; }
-      #ow-nearby-btn {
-        background:linear-gradient(180deg, rgba(28,74,58,0.96), rgba(14,42,33,0.98));
-        border:1.5px solid #6fd3a8; color:#eafff5; padding:8px 18px; border-radius:22px;
-        font-size:13px; font-weight:700; letter-spacing:1px; cursor:pointer; font-family:inherit;
-        box-shadow:0 6px 24px rgba(0,0,0,0.68), 0 0 16px rgba(111,211,168,0.35);
-      }
-      #ow-nearby-btn:hover { background:rgba(36,96,74,0.98); transform:translateY(-1px); }
-      .ow-ctrl-bl {
-        position:absolute; left:16px; bottom:16px; pointer-events:auto;
-        display:flex; align-items:flex-end; gap:10px;
-      }
-      .ow-dpad {
-        display:grid; grid-template-columns:repeat(3,32px); grid-template-rows:repeat(3,32px); gap:3px;
-        background:rgba(8,12,18,0.65); padding:5px; border-radius:10px; border:1px solid rgba(212,184,122,0.3);
-      }
-      .ow-dpad button {
-        background:rgba(212,184,122,0.14); border:1px solid rgba(212,184,122,0.35); color:#f2daa0;
-        border-radius:5px; cursor:pointer; font-size:13px; font-weight:700; user-select:none;
-      }
-      .ow-dpad button:active { background:rgba(111,211,168,0.4); }
-      .ow-hint-box {
-        background:rgba(8,12,18,0.78); border:1px solid rgba(212,184,122,0.28); border-radius:6px;
-        padding:6px 10px; font-size:10.5px; color:#cfc6b4; line-height:1.55;
-      }
-      .ow-menu-br {
-        position:absolute; right:16px; bottom:16px; pointer-events:auto;
-        display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; max-width:460px;
-      }
-      .ow-menu-btn {
-        background:rgba(12,18,28,0.9); border:1px solid rgba(212,184,122,0.48); color:#f2daa0;
-        padding:7px 11px; border-radius:5px; font-size:11.5px; font-weight:700; cursor:pointer;
-        font-family:inherit; box-shadow:0 4px 14px rgba(0,0,0,0.55);
-      }
-      .ow-menu-btn:hover { background:rgba(212,184,122,0.24); color:#fff; }
-      .ow-menu-btn.accent {
-        background:linear-gradient(180deg, rgba(168,52,46,0.95), rgba(118,28,24,0.98));
-        border-color:#f2daa0; color:#fff5e0;
-      }
-      #ow-toast {
-        position:fixed; top:66px; left:50%; transform:translateX(-50%); z-index:9900;
-        background:rgba(10,18,28,0.94); border:1px solid #6fd3a8; color:#eafff5;
-        padding:7px 16px; border-radius:18px; font-size:12px; pointer-events:none;
-        opacity:0; transition:opacity 0.25s; box-shadow:0 6px 22px rgba(0,0,0,0.65);
-      }
-      #ow-toast.show { opacity:1; }
+      /* 右上角圆形青铜八卦罗盘小地图 */
       #ow-minimap-box {
-        position:absolute; right:16px; top:68px; pointer-events:auto;
-        width:152px; background:rgba(8,13,20,0.86); border:1.5px solid rgba(212,184,122,0.55);
-        border-radius:8px; padding:5px; box-shadow:0 6px 20px rgba(0,0,0,0.65);
-        backdrop-filter:blur(5px);
-      }
-      #ow-minimap-head {
-        display:flex; justify-content:space-between; align-items:center;
-        font-size:10px; color:#f2daa0; margin-bottom:4px; padding:0 2px;
+        position:absolute; right:20px; top:66px; pointer-events:auto;
+        width:138px; height:138px; border-radius:50%;
+        background:radial-gradient(circle, rgba(12,20,28,0.88) 62%, rgba(28,24,18,0.96) 100%);
+        border:2px solid rgba(212,184,122,0.72);
+        box-shadow:0 0 0 3px rgba(8,11,15,0.75), 0 0 0 4px rgba(212,184,122,0.35), 0 8px 24px rgba(0,0,0,0.72);
+        display:flex; align-items:center; justify-content:center;
       }
       #ow-minimap-cv {
-        display:block; width:140px; height:128px; border-radius:4px;
-        background:#0b1522; border:1px solid rgba(212,184,122,0.25);
+        display:block; width:124px; height:124px; border-radius:50%; cursor:pointer;
       }
-      #ow-minimap-legend {
-        display:flex; justify-content:space-between; font-size:9px; color:#9d9586; margin-top:3px; padding:0 2px;
+      .mm-card {
+        position:absolute; font-size:9px; color:#d4b87a; font-weight:700;
+        text-shadow:0 1px 3px #000; pointer-events:none;
       }
-      #ow-goal-box {
-        position:absolute; right:16px; top:242px; pointer-events:auto;
-        width:186px; background:rgba(8,13,20,0.82); border:1px solid rgba(212,184,122,0.38);
-        border-radius:7px; padding:7px 9px; font-size:10px; line-height:1.5;
-        box-shadow:0 4px 16px rgba(0,0,0,0.55); backdrop-filter:blur(5px);
+      .mm-n { top:-6px; left:50%; transform:translateX(-50%); background:#0c1016; padding:0 3px; }
+      .mm-s { bottom:-6px; left:50%; transform:translateX(-50%); background:#0c1016; padding:0 3px; }
+      .mm-w { left:-6px; top:50%; transform:translateY(-50%); background:#0c1016; padding:0 2px; }
+      .mm-e { right:-6px; top:50%; transform:translateY(-50%); background:#0c1016; padding:0 2px; }
+      #ow-minimap-title {
+        position:absolute; bottom:-22px; left:50%; transform:translateX(-50%);
+        font-size:10.5px; color:#e5d3a8; white-space:nowrap; letter-spacing:1.2px;
+        text-shadow:0 1px 4px #000;
       }
+      /* 靠近交互金条 */
+      .ow-nearby-wrap {
+        position:absolute; bottom:94px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:none;
+      }
+      .ow-nearby-wrap.show { display:block; }
+      #ow-nearby-btn {
+        background:linear-gradient(90deg, rgba(12,24,22,0.88), rgba(20,52,44,0.94), rgba(12,24,22,0.88));
+        border:1px solid #80dec0; color:#f4fff9; padding:7px 22px; border-radius:3px;
+        font-size:12.5px; font-weight:700; letter-spacing:1.5px; cursor:pointer; font-family:inherit;
+        box-shadow:0 4px 20px rgba(0,0,0,0.7), inset 0 0 12px rgba(111,211,168,0.2);
+      }
+      #ow-nearby-btn:hover { background:rgba(28,74,60,0.96); transform:translateY(-1px); }
+      /* 底部居中 3A 鎏金动作技能槽 */
+      .ow-skill-bar {
+        position:absolute; bottom:18px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:flex; gap:8px; padding:6px 10px;
+        background:linear-gradient(180deg, rgba(10,14,19,0.78), rgba(6,9,13,0.92));
+        border:1px solid rgba(212,184,122,0.48); border-radius:4px;
+        box-shadow:0 8px 26px rgba(0,0,0,0.75);
+      }
+      .ow-sk-slot {
+        position:relative; width:54px; height:54px; cursor:pointer;
+        background:radial-gradient(circle at 50% 35%, rgba(28,36,46,0.92), rgba(10,14,19,0.98));
+        border:1px solid rgba(212,184,122,0.55); border-radius:3px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+        color:#f0dec0; font-family:inherit; transition:all 0.14s; overflow:hidden;
+      }
+      .ow-sk-slot:hover { border-color:#80dec0; transform:translateY(-2px); box-shadow:0 4px 12px rgba(111,211,168,0.28); }
+      .ow-sk-slot.active-fly { border-color:#6fd3a8; box-shadow:0 0 14px rgba(111,211,168,0.45); }
+      .ow-sk-slot svg { width:22px; height:22px; stroke:#e6cc93; fill:none; stroke-width:1.7; }
+      .ow-sk-name { font-size:10px; letter-spacing:0.8px; color:#e6d6b5; }
+      .ow-sk-key {
+        position:absolute; top:2px; left:4px; font-size:9px; color:#a89b82; font-family:sans-serif; font-weight:700;
+      }
+      .ow-sk-cd {
+        position:absolute; inset:0; background:rgba(5,8,12,0.76); color:#ffd299;
+        display:none; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:sans-serif;
+      }
+      .ow-sk-cd.on { display:flex; }
+      /* 左下角极简操作轻提示 */
+      .ow-whisper-bl {
+        position:absolute; left:18px; bottom:18px; pointer-events:none;
+        font-size:10.5px; color:rgba(230,220,200,0.68); letter-spacing:0.8px;
+        text-shadow:0 1px 4px rgba(0,0,0,0.9);
+      }
+      /* 右下角 5 枚宋明玉印功能键 */
+      .ow-menu-br {
+        position:absolute; right:18px; bottom:18px; pointer-events:auto;
+        display:flex; gap:7px;
+      }
+      .ow-seal-btn {
+        width:48px; height:48px; cursor:pointer;
+        background:linear-gradient(180deg, rgba(16,22,30,0.9), rgba(8,12,18,0.96));
+        border:1px solid rgba(212,184,122,0.52); border-radius:3px;
+        color:#ecd8ae; font-family:inherit; font-size:12px; font-weight:700; letter-spacing:1px;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.65); transition:all 0.15s;
+      }
+      .ow-seal-btn svg { width:16px; height:16px; stroke:#d4b87a; fill:none; stroke-width:1.6; }
+      .ow-seal-btn:hover { background:rgba(34,44,56,0.96); border-color:#f5e2b5; color:#fff; transform:translateY(-2px); }
+      .ow-seal-btn.primary {
+        background:linear-gradient(180deg, rgba(145,42,36,0.92), rgba(92,22,19,0.96));
+        border-color:#f0d498; color:#fff3dc;
+      }
+      .ow-seal-btn.primary svg { stroke:#fff3dc; }
+      #ow-toast {
+        position:fixed; top:60px; left:50%; transform:translateX(-50%); z-index:9900;
+        background:rgba(10,15,21,0.92); border:1px solid rgba(212,184,122,0.7); color:#f6ecd4;
+        padding:6px 18px; border-radius:2px; font-size:12px; letter-spacing:1px; pointer-events:none;
+        opacity:0; transition:opacity 0.25s; box-shadow:0 6px 24px rgba(0,0,0,0.75);
+      }
+      #ow-toast.show { opacity:1; }
       #life-sim-modal {
-        position:fixed; inset:0; z-index:9800; background:rgba(5,8,12,0.88);
-        backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:10px;
-        font-family:"Songti SC","Noto Serif SC",serif; color:#e6dfd3;
+        position:fixed; inset:0; z-index:9800; background:rgba(4,7,11,0.84);
+        backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; padding:12px;
+        font-family:"Songti SC","Noto Serif SC",serif; color:#e8e0d2;
       }
       #life-sim-modal.open { display:flex; }
       .ls-box {
-        width:min(1180px, 98vw); height:min(740px, 95vh); background:#0c1017;
-        border:1px solid rgba(212,184,122,0.5); border-radius:6px; display:flex; flex-direction:column; overflow:hidden;
+        width:min(1160px, 96vw); height:min(720px, 92vh);
+        background:linear-gradient(180deg, #0d1219 0%, #090c12 100%);
+        border:1px solid rgba(212,184,122,0.58);
+        box-shadow:0 0 0 3px rgba(8,11,15,0.85), 0 0 0 4px rgba(212,184,122,0.22), 0 20px 60px rgba(0,0,0,0.85);
+        border-radius:3px; display:flex; flex-direction:column; overflow:hidden;
       }
       .ls-head {
-        display:flex; justify-content:space-between; align-items:center; padding:8px 14px;
-        background:#080b10; border-bottom:1px solid rgba(212,184,122,0.28);
+        display:flex; justify-content:space-between; align-items:center; padding:10px 18px;
+        background:linear-gradient(90deg, rgba(20,26,34,0.95), rgba(11,15,22,0.95));
+        border-bottom:1px solid rgba(212,184,122,0.32);
       }
-      .ls-head h2 { font-size:14px; color:#f2daa0; margin:0; letter-spacing:1px; }
-      .ls-tabs { display:flex; gap:5px; padding:7px 14px; background:#0a0d13; border-bottom:1px solid rgba(212,184,122,0.18); flex-wrap:wrap; }
+      .ls-head h2 { font-size:15px; color:#f2daa0; margin:0; letter-spacing:2px; font-weight:700; }
+      .ls-tabs { display:flex; gap:6px; padding:8px 18px; background:#090d13; border-bottom:1px solid rgba(212,184,122,0.2); flex-wrap:wrap; }
       .ls-tab {
         padding:5px 11px; font-size:11.5px; border:1px solid rgba(212,184,122,0.28); border-radius:3px;
         background:rgba(212,184,122,0.06); color:#9d9586; cursor:pointer;
@@ -1203,8 +1231,8 @@
       const holds = (nd.holdings || []).map(h => {
         const f = WORLD.factions.find(x => x.id === h.factionId);
         return f ? f.name : '';
-      }).filter(Boolean).slice(0, 2).join('/') || '无主荒野';
-      regEl.innerHTML = `<b style="color:#f2daa0;">📍 ${nd.name}</b> (${nd.id}) · 脉<b style="color:#6fd3a8;">${nd.leyline}</b> · 暗森<b style="color:${(nd.darkForestIdx||0)>=55?'#ff9d95':'#70b8f0'};">${nd.darkForestIdx||0}</b> · ${holds}`;
+      }).filter(Boolean).slice(0, 1).join('') || '无主荒野';
+      regEl.innerHTML = `<b style="color:#f5e2b5;letter-spacing:1.5px;">${nd.name}</b> <span style="color:#8f8776;">·</span> <span style="color:#9ff2cf;">灵脉${nd.leyline}</span> <span style="color:#8f8776;">·</span> <span style="color:${(nd.darkForestIdx||0)>=55?'#ff9d95':'#c8bfa8'};">${holds}</span>`;
     }
     const goalEl = document.getElementById('ow-goal-txt');
     if (goalEl) {
@@ -1239,12 +1267,35 @@
     const eng = activeMapEngine();
     const d = eng && eng.getMinimapData ? eng.getMinimapData() : null;
     if (!d) return;
-    if (head) head.textContent = d.mode === 'local' ? `📍 ${d.title}` : '🌍 五洲七海';
+    if (head) head.textContent = d.mode === 'local' ? d.title : '五洲七海';
     const ctx = cv.getContext('2d');
     const W = cv.width, H = cv.height;
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = d.mode === 'local' ? '#132421' : '#091a2c';
+    ctx.fillStyle = d.mode === 'local' ? '#101d1c' : '#081624';
     ctx.fillRect(0, 0, W, H);
+    // 八卦罗盘细环刻度
+    ctx.strokeStyle = 'rgba(212,184,122,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, W * 0.32, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2, 4); ctx.lineTo(W / 2, H - 4); ctx.moveTo(4, H / 2); ctx.lineTo(W - 4, H / 2); ctx.stroke();
+
+    // 同步底部 3A 动作栏实时技能冷却遮罩
+    if (viewLayer === 'local' && window.LocalMap3D && window.LocalMap3D.getCombatHudState) {
+      const cs = window.LocalMap3D.getCombatHudState();
+      if (cs) {
+        const setCd = (id, val) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (val > 0.08) { el.textContent = val.toFixed(1); el.classList.add('on'); }
+          else el.classList.remove('on');
+        };
+        setCd('cd-strike', cs.cdStrike);
+        setCd('cd-spell', cs.cdSpell);
+        setCd('cd-shield', cs.cdShield);
+        const fb = document.getElementById('ow-btn-fly');
+        if (fb) fb.classList.toggle('active-fly', !!cs.flying);
+      }
+    }
 
     const ox = d.ox || 0, oz = d.oz || 0;
     const sx = x => ((x - ox) / d.w + 0.5) * W;
@@ -1418,9 +1469,11 @@
       },
       onInteract: target => handleWorldInteract(target),
       onFlyToggle: flying => {
+        const ft = document.getElementById('ow-fly-txt');
         const fb = document.getElementById('ow-btn-fly');
-        if (fb) fb.textContent = flying ? '🗡️' : '🚶';
-        showOwToast(flying ? '🗡️ 已祭出飞剑！进入【御剑飞行】状态' : '🚶 已收剑落地，恢复【徒步漫游】');
+        if (ft) ft.textContent = flying ? '御剑中' : '御剑';
+        if (fb) fb.classList.toggle('active-fly', !!flying);
+        showOwToast(flying ? '祭出飞剑 · 进入御剑凌空状态' : '收剑落地 · 恢复徒步漫游');
       },
       onHeroStatsChange: () => syncTopHud(),
       onEnemyKilled: en => {
@@ -1496,49 +1549,69 @@
       hud.id = 'ow-hud';
       hud.innerHTML = `
         <div class="ow-top-bar">
-          <span id="ow-region-info">📍 加载沧溟山河……</span>
-          <button class="ls-btn jade" id="ow-btn-layer" style="padding:3px 8px;font-weight:700;">🌍 出城·大洲地图</button>
-          <button class="ls-btn" id="ow-btn-tod" style="padding:3px 7px;">☀️ 昼</button>
-          <button class="ls-btn" id="ow-btn-m1" style="padding:3px 7px;">⏱ +1月</button>
-          <button class="ls-btn blue" id="ow-btn-y1" style="padding:3px 7px;">🧘 闭关1年</button>
-          <button class="ls-btn red" id="ow-btn-break" style="padding:3px 9px;font-weight:700;display:none;">⚡ 破境渡劫</button>
+          <span id="ow-region-info">沧溟山河</span>
+          <button class="ow-micro-btn" id="ow-btn-layer">出城舆图</button>
+          <button class="ow-micro-btn" id="ow-btn-tod">昼</button>
+          <button class="ow-micro-btn" id="ow-btn-m1">一月</button>
+          <button class="ow-micro-btn" id="ow-btn-y1">闭关</button>
+          <button class="ow-micro-btn crimson" id="ow-btn-break" style="display:none;">破境渡劫</button>
         </div>
-        <div id="ow-minimap-box">
-          <div id="ow-minimap-head"><span id="ow-minimap-title">📍 小地图</span><span style="color:#6fd3a8;">点击寻路</span></div>
-          <canvas id="ow-minimap-cv" width="140" height="128" style="cursor:pointer;"></canvas>
-          <div id="ow-minimap-legend"><span>🟢我</span><span>🟡建筑</span><span>🔵NPC</span><span>🔴妖</span></div>
-        </div>
-        <div id="ow-goal-box">
-          <div style="color:#f2daa0;font-weight:700;border-bottom:1px solid rgba(212,184,122,0.22);padding-bottom:3px;margin-bottom:4px;">🧭 仙途风向与传闻</div>
-          <div id="ow-goal-txt" style="color:#d6cfc0;">探索城镇、打坐破境、结交众生…</div>
+        <div id="ow-minimap-box" title="点击罗盘任意方位自动寻路">
+          <span class="mm-card mm-n">北</span><span class="mm-card mm-s">南</span>
+          <span class="mm-card mm-w">西</span><span class="mm-card mm-e">东</span>
+          <canvas id="ow-minimap-cv" width="124" height="124"></canvas>
+          <div id="ow-minimap-title">沧溟舆图</div>
         </div>
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
           <button id="ow-nearby-btn">[E] 交互</button>
         </div>
         <div class="ow-skill-bar" id="ow-skill-bar">
-          <button class="ow-sk-btn" data-sk="strike">[F/1] ⚔️ 剑诀</button>
-          <button class="ow-sk-btn fire" data-sk="spell">[2] 🔥 天雷</button>
-          <button class="ow-sk-btn" data-sk="shield">[3] 🛡️ 灵盾</button>
-          <button class="ow-sk-btn" data-sk="pill">[4] 💊 丹药</button>
+          <button class="ow-sk-slot" data-sk="strike">
+            <span class="ow-sk-key">F</span>
+            <svg viewBox="0 0 24 24"><path d="M19 5L5 19M14 5h5v5M7 13l4 4"/></svg>
+            <span class="ow-sk-name">剑诀</span>
+            <div class="ow-sk-cd" id="cd-strike"></div>
+          </button>
+          <button class="ow-sk-slot" data-sk="spell">
+            <span class="ow-sk-key">2</span>
+            <svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+            <span class="ow-sk-name">天雷</span>
+            <div class="ow-sk-cd" id="cd-spell"></div>
+          </button>
+          <button class="ow-sk-slot" data-sk="shield">
+            <span class="ow-sk-key">3</span>
+            <svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"/></svg>
+            <span class="ow-sk-name">灵盾</span>
+            <div class="ow-sk-cd" id="cd-shield"></div>
+          </button>
+          <button class="ow-sk-slot" data-sk="pill">
+            <span class="ow-sk-key">4</span>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="15" r="5"/><path d="M9 10c0-2 1.5-4 3-5 1.5 1 3 3 3 5M10 4h4"/></svg>
+            <span class="ow-sk-name">丹药</span>
+          </button>
+          <button class="ow-sk-slot" id="ow-btn-fly">
+            <span class="ow-sk-key">空</span>
+            <svg viewBox="0 0 24 24"><path d="M3 17l9-12 9 12M7 17h10"/></svg>
+            <span class="ow-sk-name" id="ow-fly-txt">御剑</span>
+          </button>
         </div>
-        <div class="ow-ctrl-bl">
-          <div class="ow-dpad">
-            <span></span><button data-dir="0,-1">▲</button><span></span>
-            <button data-dir="-1,0">◀</button><button id="ow-btn-fly" title="切换御剑飞行(Space)">🚶</button><button data-dir="1,0">▶</button>
-            <span></span><button data-dir="0,1">▼</button><span></span>
-          </div>
-          <div class="ow-hint-box">
-            <div><b style="color:#6fd3a8;">WASD / 点地</b> 行走 · <b style="color:#ff9d95;">点怪 / F / 1-4</b> 即时斗法</div>
-            <div><b style="color:#f2daa0;">Space</b> 御剑 · <b style="color:#f2daa0;">E</b> 进建筑/对话 · <b>右键</b>转视角</div>
-          </div>
-        </div>
+        <div class="ow-whisper-bl">WASD / 点击行走 · 点怪或 F/2/3/4 即时斗法 · E 交互 · Space 御剑 · 右键转视角</div>
         <div class="ow-menu-br">
-          <button class="ow-menu-btn accent" data-ow-tab="map">🗺️ 战略图</button>
-          <button class="ow-menu-btn" data-ow-tab="life">🧬 人物</button>
-          <button class="ow-menu-btn" data-ow-tab="social">🤝 江湖</button>
-          <button class="ow-menu-btn" data-ow-tab="bag">🎒 行囊</button>
-          <button class="ow-menu-btn" data-ow-tab="beasts">🐾 妖兽</button>
-          <button class="ow-menu-btn" data-ow-tab="world">🏛️ 世界</button>
+          <button class="ow-seal-btn primary" data-ow-tab="map">
+            <svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/></svg><span>舆图</span>
+          </button>
+          <button class="ow-seal-btn" data-ow-tab="life">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 20c1.5-4 12.5-4 14 0"/></svg><span>人物</span>
+          </button>
+          <button class="ow-seal-btn" data-ow-tab="bag">
+            <svg viewBox="0 0 24 24"><path d="M6 8h12l1 12H5L6 8zM9 8V6a3 3 0 016 0v2"/></svg><span>行囊</span>
+          </button>
+          <button class="ow-seal-btn" data-ow-tab="social">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 19c1-3 5-4 8-3M13 19c1-3 5-4 8-3"/></svg><span>江湖</span>
+          </button>
+          <button class="ow-seal-btn" data-ow-tab="world">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 010 18M12 3a13 13 0 000 18"/></svg><span>天道</span>
+          </button>
         </div>
       `;
       app.appendChild(hud);
@@ -1552,14 +1625,6 @@
           else showOwToast('请进入城镇/野外实景地图进行即时战斗');
         };
       });
-      hud.querySelectorAll('[data-dir]').forEach(b => {
-        const [vx, vz] = b.dataset.dir.split(',').map(Number);
-        const start = () => { const e = activeMapEngine(); if (e) e.setJoystick(vx, vz); };
-        const stop = () => { const e = activeMapEngine(); if (e) e.setJoystick(0, 0); };
-        b.addEventListener('pointerdown', start);
-        b.addEventListener('pointerup', stop);
-        b.addEventListener('pointerleave', stop);
-      });
       document.getElementById('ow-btn-fly').onclick = () => {
         const e = activeMapEngine(); if (e) e.toggleFly();
       };
@@ -1572,9 +1637,9 @@
       document.getElementById('ow-btn-tod').onclick = () => {
         if (viewLayer !== 'local' || !window.LocalMap3D) { showOwToast('昼夜灯火切换仅在局部城镇实景中生效'); return; }
         const m = window.LocalMap3D.cycleTimeOfDay();
-        const lb = { day: '☀️ 昼', dusk: '🌇 暮', night: '🌙 夜' }[m];
+        const lb = { day: '昼', dusk: '暮', night: '夜' }[m];
         document.getElementById('ow-btn-tod').textContent = lb;
-        showOwToast(m === 'night' ? '🌙 暮色四合，仙镇华灯初上，黑市暗巷鬼火幽幽…' : (m === 'dusk' ? '🌇 残阳如血，倦鸟归林…' : '☀️ 晨曦初照，灵气复苏'));
+        showOwToast(m === 'night' ? '暮色四合，仙镇华灯初上，黑市鬼火幽幽…' : (m === 'dusk' ? '残阳如血，倦鸟归林…' : '晨曦初照，天地灵气复苏'));
       };
       document.getElementById('ow-btn-break').onclick = () => attemptBreakthrough();
       document.getElementById('ow-minimap-cv').onclick = e => {

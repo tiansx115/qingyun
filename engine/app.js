@@ -86,6 +86,7 @@ function defaultState() {
   st.caveVault = st.caveVault || { items: {}, stones: 0 };
   st.stolenMarketPool = Array.isArray(st.stolenMarketPool) ? st.stolenMarketPool : [];
   if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
+  if (window.WORLD_SIM) window.WORLD_SIM.initWorldState(st);
   return st;
 }
 
@@ -209,6 +210,7 @@ function normalizeState(st) {
   st.caveVault = st.caveVault || { items: {}, stones: 0 };
   st.stolenMarketPool = Array.isArray(st.stolenMarketPool) ? st.stolenMarketPool : [];
   if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
+  if (window.WORLD_SIM) window.WORLD_SIM.initWorldState(st);
   return st;
 }
 
@@ -374,24 +376,23 @@ function unequipSlot(slot) {
   renderAll();
 }
 function getDateStr() {
+  if (window.WORLD_SIM) return window.WORLD_SIM.formatDate(G);
   const y = Math.floor((G.month - 1) / 12) + 1;
   const s = ['春','春','春','夏','夏','夏','秋','秋','秋','冬','冬','冬'][(G.month - 1) % 12];
   return `第${y}年·${s}`;
 }
 function getNextTimelineText() {
-  const active = D.TIMELINE.find(t => {
-    if (G.month < t.month) return false;
-    if (t.loc === 'sect' && (G.factions?.qingyun || 0) < 2) return true;
-    if (t.loc === 'market' && (G.factions?.wanbao || 0) < 2) return true;
-    if (t.loc === 'forest' && (G.flags?.forestRuinStage || 0) < 2) return true;
-    if (t.loc === 'cliff' && !G.flags?.divorceResolved) return true;
-    return false;
-  });
-  if (active) return `正在发生：${active.title}`;
+  if (G.worldState && G.worldState.lastHeadline) {
+    return G.worldState.lastHeadline;
+  }
   const next = D.TIMELINE.find(t => t.month > G.month);
-  return next ? `${next.title}（余${next.month - G.month}月）` : '东洲风云变幻，大道可期';
+  return next ? `${next.title}（余${next.month - G.month}月）` : '五洲风云变幻，大道可期';
 }
 function advanceTime(months = 1) {
+  if (window.WORLD_SIM) {
+    window.WORLD_SIM.advanceDays(getEventCtx(), Math.max(1, Math.round(months * 30)), { seclusion: false });
+    return;
+  }
   const prevYear = Math.floor((G.month - 1) / 12);
   G.month += months;
   const newYear = Math.floor((G.month - 1) / 12);
@@ -711,11 +712,24 @@ function startQuiz() {
   renderStep();
 }
 
-function enterLocation(locId) {
+function enterLocation(locId, skipTravel) {
   SFX.play('click');
-  currentLocationId = locId;
-  if (G) G.loc = locId || 'map';
-  activePanel = null; activeDialogue = null; renderAll();
+  if (!G) return;
+  if (!G.loc || G.loc === 'map') G.loc = 'sect';
+  if (skipTravel || G.loc === locId || !window.WORLD_SIM) {
+    currentLocationId = locId;
+    G.loc = locId || 'sect';
+    const lo = D.LOCATIONS.find(l => l.id === locId);
+    if (lo && lo.region) currentMapRegion = lo.region;
+    activePanel = null; activeDialogue = null; renderAll();
+    return;
+  }
+  activePanel = null;
+  window.WORLD_SIM.openTravelModal(getEventCtx(), locId, arrivedId => {
+    currentLocationId = arrivedId;
+    const lo = D.LOCATIONS.find(l => l.id === arrivedId);
+    if (lo && lo.region) currentMapRegion = lo.region;
+  });
 }
 
 function interactNpc(npcId) {
@@ -818,7 +832,7 @@ function getEventCtx() {
   return {
     G, D, ASSETS, SFX,
     setDialogue: d => { activeDialogue = d; },
-    startBattle, addItem, gainExp, advanceTime, recalcDerivedStats, getCatMastery, showToast, saveGame, renderAll, buyItem, openEquipShop,
+    startBattle, addItem, gainExp, advanceTime, recalcDerivedStats, getEquipStats, getCatMastery, showToast, saveGame, renderAll, buyItem, openEquipShop,
     getItemIcon, formatStatSummary, startQuiz,
     setAllyExpr: (id, expr) => { allyExprMap[id] = expr; }
   };
@@ -1011,8 +1025,10 @@ function handleHotspot(hid) {
     renderAll();
   } else if (hid === 'inn_tea') {
     if (G.stone < 10) return showToast('囊中灵石不足 10 枚。');
-    advanceTime(1); G.stone -= 10; G.wit += 1; recalcDerivedStats(true);
-    showToast('在天机阁品茶歇息，气血灵力圆满，悟性 +1。');
+    if (window.WORLD_SIM) window.WORLD_SIM.advanceDays(getEventCtx(), 2);
+    else advanceTime(1);
+    G.stone -= 10; G.wit += 1; recalcDerivedStats(true);
+    showToast('在天机茶肆品茗调息两日，气血灵力圆满，悟性 +1。');
     saveGame('auto', true); renderAll();
   } else if (hid === 'inn_rumor') {
     window.REINCARNATION.ensureWorldRelic(G);
@@ -1057,13 +1073,17 @@ function handleHotspot(hid) {
     renderAll();
   } else if (hid === 'market_trade') {
     const eq = getEquipStats();
-    advanceTime(1); const earn = 35 + Math.floor(((G.sense || 10) + eq.sense) * 1.6); G.stone += earn; G.sense += 1;
-    showToast(`凭借神识眼力做成一笔鉴宝买卖，净赚 ${earn} 灵石，神识 +1。`);
+    if (window.WORLD_SIM) window.WORLD_SIM.advanceDays(getEventCtx(), 5);
+    else advanceTime(1);
+    const earn = 35 + Math.floor(((G.sense || 10) + eq.sense) * 1.6); G.stone += earn; G.sense += 1;
+    showToast(`耗时五日凭神识眼力做成鉴宝买卖，净赚 ${earn} 灵石，神识 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'forest_stall') {
     const eq = getEquipStats();
-    advanceTime(1); const earn = 75 + eq.luck * 2; G.stone += earn; G.luck += 1;
-    showToast(`在古林谷口设摊售药，半日售罄，净赚 ${earn} 灵石，气运 +1。`);
+    if (window.WORLD_SIM) window.WORLD_SIM.advanceDays(getEventCtx(), 10);
+    else advanceTime(1);
+    const earn = Math.round((75 + eq.luck * 2) * (G.worldState?.priceMul || 1.0)); G.stone += earn; G.luck += 1;
+    showToast(`在谷口设摊售药一旬(10日)，乘市价行情净赚 ${earn} 灵石，气运 +1。`);
     saveGame('auto', true); renderAll();
   } else if (hid === 'forest_tame') {
     openBeastTameModal();
@@ -1221,11 +1241,13 @@ function renderSplitPanel() {
   sc.className = 'sys-screen';
   sc.style.backgroundImage = `url("${curTab === 'allies' ? ASSETS.bamboo : ASSETS.world_map}")`;
 
+  const unreadCnt = (G.letters || []).filter(x => !x.read).length;
   const navItems = [
     { k:'mingge', l:'命格' },
     { k:'skills', l:'功法' },
     { k:'bag', l:'行囊装备' },
     { k:'allies', l:'伙伴灵兽' },
+    { k:'news', l: unreadCnt > 0 ? `邸报(${unreadCnt})` : '天下邸报' },
     { k:'ach', l:'天命成就' },
     { k:'save', l:'卷宗' }
   ];
@@ -1264,10 +1286,11 @@ function renderSplitPanel() {
     const unlockedTr = getUnlockedTreasureSlots();
     const totalSense = (G.sense || 10) + (eq.sense || 0);
     const critPct = Math.round((0.08 + (G.luck || 10) * 0.01 + (eq.crit || 0) + (ha.critBonus || 0)) * 100);
+    const spdLi = window.WORLD_SIM ? window.WORLD_SIM.getPlayerSpeedLi(G, eq) : 25;
     const coreStats = [
       ['根骨', (G.body || 10) + (eq.body || 0), ''],
       ['悟性', G.wit || 10, ''],
-      ['遁速', (G.speed || 10) + (eq.speed || 0), ''],
+      ['遁速', (G.speed || 10) + (eq.speed || 0), `日行 ${spdLi.toLocaleString()} 里`],
       ['气运', (G.luck || 10) + (eq.luck || 0), ''],
       ['神识', totalSense, `可御 ${unlockedTr}/2 件外物法宝`]
     ];
@@ -1304,7 +1327,7 @@ function renderSplitPanel() {
             </div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="sleek-btn" id="btn-med">静室吐纳 (+1月)</button>
+            <button class="sleek-btn" id="btn-med">择期闭关</button>
             ${canBreak ? `<button class="sleek-btn jade" id="btn-break">破境突破</button>` : ''}
           </div>
         </div>
@@ -1340,9 +1363,15 @@ function renderSplitPanel() {
       </div>
     `;
     main.querySelector('#btn-med').onclick = () => {
-      SFX.play('click'); advanceTime(1); recalcDerivedStats(true);
-      const g = gainExp(38); showToast(`静修一月，状态圆满，修为 +${g}。`);
-      saveGame('auto', true); renderAll();
+      SFX.play('click');
+      activePanel = null;
+      if (window.WORLD_SIM) {
+        window.WORLD_SIM.openSeclusionModal(getEventCtx(), 38, '静室吐纳');
+      } else {
+        advanceTime(1); recalcDerivedStats(true);
+        const g = gainExp(38); showToast(`静修一月，状态圆满，修为 +${g}。`);
+        saveGame('auto', true); renderAll();
+      }
     };
     const brk = main.querySelector('#btn-break');
     if (brk) brk.onclick = () => { tryRealmUp(false); renderAll(); };
@@ -1949,7 +1978,91 @@ function renderSplitPanel() {
     };
     }
   }
-  // 5. 天命成就页（跨档永久留存 · 解锁特殊先天道体与先天气运词条）
+  // 5. 天下邸报 · 飞剑传书 · 九大势力与活跃修士名录
+  else if (curTab === 'news') {
+    if (window.WORLD_SIM) window.WORLD_SIM.initWorldState(G);
+    (G.letters || []).forEach(l => { l.read = true; });
+    const powers = window.WORLD_SIM ? window.WORLD_SIM.NINE_POWERS : [];
+    const npcs = G.simNpcs || [];
+    const newsList = G.worldNews || [];
+    const letters = G.letters || [];
+
+    main.innerHTML = `
+      <div class="dual-left">
+        <div class="sec-head">
+          <span>九大势力风云 · 沧溟天骄榜</span>
+          <span style="font-size:10px;color:var(--jade);">物价 ${(G.worldState?.priceMul || 1).toFixed(2)}x · 业煞 ${G.karma || 0}</span>
+        </div>
+        <div class="gp-body">
+          <div class="glass-card active" style="padding:7px 10px;">
+            <div>
+              <h4>当前天下大势</h4>
+              <p>${G.worldState?.warDesc || '五洲四海风平浪静'}</p>
+            </div>
+          </div>
+          ${letters.length ? `<div class="sub-cap gold">万里飞剑传书（${letters.length} 封）</div>` : ''}
+          ${letters.map(lt => `
+            <div class="glass-card" style="padding:6px 10px;">
+              <div style="flex:1;min-width:0;">
+                <h4>${lt.title} <span style="font-size:9.5px;color:var(--muted);">${lt.dateStr}</span></h4>
+                <p>${lt.text}</p>
+              </div>
+              ${lt.locId ? `<button class="sleek-btn" data-goto="${lt.locId}" style="padding:4px 10px;font-size:10.5px;flex-shrink:0;">动身前往</button>` : ''}
+            </div>
+          `).join('')}
+          <div class="sub-cap gold">五洲活跃修士实时动态（生老病死与夺宝同步演化）</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${npcs.map(n => {
+              const rName = D.REALMS[n.realmIdx]?.name || '炼气';
+              const lName = D.LOCATIONS.find(l => l.id === n.loc)?.name || '未知海域';
+              const holdsRelic = G.worldRelic?.holder === 'npc' && G.worldRelic?.npcId === n.id;
+              return `
+                <div class="glass-card ${holdsRelic ? 'active' : ''}" style="padding:6px 10px;opacity:${n.alive ? 1 : 0.48};">
+                  <div style="flex:1;min-width:0;">
+                    <h4>${n.name} <span style="font-size:10px;color:var(--muted);">(${n.title})</span> ${holdsRelic ? '<span class="mini-seal">怀揣轮回盘!</span>' : ''}</h4>
+                    <p>${n.alive ? `${rName} · 寿元 ${n.age}/${n.maxAge}岁 · 现处【${lName}】` : '已于大劫或寿尽中陨落化道'}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <div class="sub-cap gold" style="margin-top:4px;">九大势力声望与门风</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${powers.map(p => `
+              <div class="glass-card" style="padding:6px 10px;">
+                <div><h4>${p.name} <span style="font-size:10px;color:var(--jade);">[${p.zone} · 声望 ${G.factionRep?.[p.id] || 0}]</span></h4><p>${p.desc}</p></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="dual-right">
+        <div class="sec-head">
+          <span>《沧溟风物邸报》编年史</span>
+          <span style="font-size:10.5px;color:var(--muted);">每跨满 30 日自动推演天下变局</span>
+        </div>
+        <div class="gp-body">
+          ${newsList.map(nw => `
+            <div class="glass-card" style="padding:7px 11px;align-items:flex-start;">
+              <span class="mini-set" style="flex-shrink:0;margin-top:2px;">${nw.tag || '风闻'}</span>
+              <div style="flex:1;min-width:0;">
+                <p style="color:var(--text);font-size:11.5px;">${nw.text}</p>
+                <p style="font-size:9.5px;color:var(--muted);margin-top:2px;">${nw.dateStr || ''}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    main.querySelectorAll('[data-goto]').forEach(btn => {
+      btn.onclick = () => {
+        const tid = btn.dataset.goto;
+        activePanel = null;
+        enterLocation(tid);
+      };
+    });
+  }
+  // 6. 天命成就页（跨档永久留存 · 解锁特殊先天道体与先天气运词条）
   else if (curTab === 'ach') {
     const achSt = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.loadStore() : { unlocked: [], totalPts: 15 };
     const achList = window.ACHIEVEMENTS ? window.ACHIEVEMENTS.LIST : [];
@@ -2149,10 +2262,11 @@ function renderAll() {
         regBar.className = 'map-region-bar';
         D.REGIONS.forEach(r => {
           const hasMark = (G.worldRemains && D.LOCATIONS.find(l => l.id === G.worldRemains.loc)?.region === r.id)
-            || (G.nemesis && D.LOCATIONS.find(l => l.id === G.nemesis.loc)?.region === r.id);
+            || (G.nemesis && D.LOCATIONS.find(l => l.id === G.nemesis.loc)?.region === r.id)
+            || (G.worldRelic?.holder === 'npc' && D.LOCATIONS.find(l => l.id === G.worldRelic.loc)?.region === r.id);
           const rb = document.createElement('button');
           rb.className = 'reg-tab' + (r.id === curReg.id ? ' active' : '') + (hasMark ? ' alert' : '');
-          rb.textContent = r.name.split('·')[0] + (hasMark ? ' · 仇/遗' : '');
+          rb.textContent = r.name.split('(')[0] + (hasMark ? ' · 异动' : '');
           rb.onclick = () => { SFX.play('click'); currentMapRegion = r.id; renderAll(); };
           regBar.appendChild(rb);
         });
@@ -2169,12 +2283,15 @@ function renderAll() {
       }).map(t => t.loc));
       if (G.worldRemains?.loc) activeLocs.add(G.worldRemains.loc);
       if (G.nemesis?.loc) activeLocs.add(G.nemesis.loc);
+      if (G.worldRelic?.holder === 'npc' && G.worldRelic.loc) activeLocs.add(G.worldRelic.loc);
 
+      const playerCurLoc = G.loc === 'map' ? 'sect' : (G.loc || 'sect');
       regLocs.forEach(loc => {
+        const isHere = loc.id === playerCurLoc;
         const m = document.createElement('div');
-        m.className = 'map-pin' + (activeLocs.has(loc.id) ? ' has-event' : '');
+        m.className = 'map-pin' + (activeLocs.has(loc.id) || isHere ? ' has-event' : '');
         m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
-        m.innerHTML = `<div class="pin-vlabel">${loc.name}</div><div class="pin-dot"></div>`;
+        m.innerHTML = `<div class="pin-vlabel">${loc.name}${isHere ? '·驻' : ''}</div><div class="pin-dot"></div>`;
         m.onclick = () => enterLocation(loc.id);
         wl.appendChild(m);
       });
@@ -2194,13 +2311,16 @@ function renderAll() {
         b.onclick = () => handleHotspot(h.id);
         bl.appendChild(b);
       });
-      // 若当前地点留有前世妖兽盘踞遗骸 或 搜身宿敌，动态显示追讨按钮！
-      if ((G.worldRemains && G.worldRemains.loc === locObj.id) || (G.nemesis && G.nemesis.loc === locObj.id)) {
+      // 若当前地点留有前世妖兽盘踞遗骸、搜身宿敌 或 怀揣造化轮回盘的具名NPC，动态显示按钮！
+      const hasRemainsHere = G.worldRemains && G.worldRemains.loc === locObj.id;
+      const hasNemesisHere = G.nemesis && G.nemesis.loc === locObj.id;
+      const hasRelicNpcHere = G.worldRelic && G.worldRelic.holder === 'npc' && G.worldRelic.loc === locObj.id;
+      if (hasRemainsHere || hasNemesisHere || hasRelicNpcHere) {
         const rb = document.createElement('button');
         rb.className = 'sleek-btn jade';
-        rb.textContent = G.worldRemains && G.worldRemains.loc === locObj.id
+        rb.textContent = hasRemainsHere
           ? `追索前世遗骸（${G.worldRemains.beastName}盘踞）`
-          : `手刃前世死敌 · ${G.nemesis.name}`;
+          : (hasNemesisHere ? `手刃前世死敌 · ${G.nemesis.name}` : `谋夺【造化轮回盘】(${G.worldRelic.npcName})`);
         rb.onclick = () => handleHotspot('reclaim_remains');
         bl.appendChild(rb);
       }

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'qingyun-v7-0-0';
+const CACHE_NAME = 'qingyun-v8-0-0';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
   './data/skills_items.js', './data/beasts.js', './data/world.js', './data/allies.js', './data/events.js',
-  './engine/icons.js', './engine/audio_fx.js', './engine/achievements.js', './engine/reincarnation.js', './engine/combat.js', './engine/minigames.js', './engine/app.js',
+  './engine/icons.js', './engine/audio_fx.js', './engine/achievements.js', './engine/world_sim.js', './engine/reincarnation.js', './engine/combat.js', './engine/minigames.js', './engine/app.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
   './assets/ui3a/title_bg.jpg', './assets/ui3a/logo_calligraphy.png',
   './assets/ui3a/plaque_vert.png', './assets/ui3a/avatar_ring.png',

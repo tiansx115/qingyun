@@ -959,10 +959,10 @@ window.GAME_DATA.EVENTS = {
       return true;
     }
 
-    // --- 南疆：百蛮御灵山 ---
+    // --- 南疆：万灵栖兽岭 ---
     if (hid === 'south_dao_pact') {
       setDialogue({
-        speaker: '百蛮御灵山 · 万灵图腾', asset: ASSETS.elder,
+        speaker: '万灵栖兽岭 · 万灵图腾', asset: ASSETS.elder,
         text: `古峰石壁刻满上古先民与真灵缔契之法（当前【灵契】大道：${getCatMastery('pact')}/100）。`,
         choices: [
           {
@@ -984,7 +984,7 @@ window.GAME_DATA.EVENTS = {
       advanceTime(2);
       addItem('beast_fruit', 2);
       const e = gainExp(85);
-      showToast(`深入百蛮秘林历练两月，采得【赤灵朱果】×2，修为 +${e}！`);
+      showToast(`深入栖兽秘岭历练两月，采得【赤灵朱果】×2，修为 +${e}！`);
       saveGame('auto', true); renderAll();
       return true;
     }
@@ -1108,7 +1108,7 @@ window.GAME_DATA.EVENTS = {
       return true;
     }
 
-    // --- 中州：太虚悟道神碑（全六道参悟至 100 圆满圣地！）---
+    // --- 中州：钧天悟道神碑（全六道参悟至 100 圆满圣地！）---
     if (hid === 'central_comprehend_dao') {
       if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'central_stele');
       const choices = Object.values(D.SKILL_CATS).map(c => {
@@ -1118,7 +1118,7 @@ window.GAME_DATA.EVENTS = {
           hint: cur >= 100 ? '已证道圆满' : '90灵石 +4月 · 大道+14~22',
           action: () => {
             if (cur >= 100) return showToast(`【${c.name}】已臻 100 圆满，可改修其他大道冲击满大道仙帝！`);
-            if (G.stone < 90) return showToast('太虚神碑开启护道灵阵需耗费 90 枚灵石。');
+            if (G.stone < 90) return showToast('钧天神碑开启护道灵阵需耗费 90 枚灵石。');
             G.stone -= 90; advanceTime(4);
             const g = addDaoPts(c.id, 15);
             if (g) showToast(`坐忘天碑四月，【${c.name}】本源暴涨 +${g}（当前 ${getCatMastery(c.id)}/100）！`);
@@ -1129,8 +1129,314 @@ window.GAME_DATA.EVENTS = {
       });
       choices.push({ text: '起身离碑', action: () => { setDialogue(null); renderAll(); } });
       setDialogue({
-        speaker: '中州 · 太虚悟道神碑', asset: ASSETS.elder,
+        speaker: '中钧天洲 · 钧天悟道神碑', asset: ASSETS.elder,
         text: '万丈无字天碑映照诸天法则。欲破入【合道圣君】须至少参透 1 条圆满大道（100）；若历经轮回将【六条大道全部修满 100】，即可引动混沌劫雷登临最强境界【万道仙帝】！',
+        choices
+      });
+      return true;
+    }
+
+    const passDays = (d) => {
+      if (window.WORLD_SIM) window.WORLD_SIM.advanceDays(ctx, d, { seclusion: false });
+      else advanceTime(Math.max(1, Math.round(d / 30)));
+    };
+
+    // --- 中钧天洲：大乾仙朝 & 千年世家 ---
+    if (hid === 'faction_daqian') {
+      const curYear = window.WORLD_SIM ? window.WORLD_SIM.getCal(G.totalDays).year : 1;
+      const canClaimStipend = G.realmIdx >= 3 && G.flags.lastDaqianStipendYear !== curYear;
+      setDialogue({
+        speaker: '大乾仙都 · 礼部供奉司与崔氏宗祠', asset: ASSETS.elder,
+        text: `皇都龙气浩荡，千年修仙世家门阀林立。当前世家香火恩义：${G.nobleClanBond || 0}/50（满 50 点后，下一世转生将直接投胎为中洲千年世家嫡子！）。`,
+        choices: [
+          {
+            text: canClaimStipend ? '支取本年度大乾客卿供奉俸禄（+160 灵石 · 耗2日）' : '受封客卿支俸（需筑基修为，每年限领一次）',
+            hint: canClaimStipend ? '+160 灵石' : '未达条件/已领',
+            action: () => {
+              if (G.realmIdx < 3) return showToast('需踏入筑基期方可受封大乾仙朝客卿供奉。');
+              if (!canClaimStipend) return showToast('本年度供奉俸禄已支取，请待明年再来。');
+              passDays(2);
+              G.flags.lastDaqianStipendYear = curYear;
+              G.stone += 160;
+              G.factionRep.daqian = (G.factionRep.daqian || 0) + 15;
+              showToast('支取大乾仙朝年度供奉 160 枚灵石，皇朝声望 +15！');
+              saveGame('auto', true); D.EVENTS.runWorldHotspot('faction_daqian', ctx);
+            }
+          },
+          {
+            text: '向清河崔氏宗祠供奉 180 灵石缔结跨世香火契', hint: '世家恩义 +30 (耗3日)',
+            action: () => {
+              if (G.stone < 180) return showToast('灵石不足 180 枚。');
+              G.stone -= 180; passDays(3);
+              G.nobleClanBond = (G.nobleClanBond || 0) + 30;
+              G.factionRep.daqian = (G.factionRep.daqian || 0) + 20;
+              showToast(`缔结崔氏香火契！世家恩义升至 ${G.nobleClanBond}（满50下世转生直接投胎世家嫡系）！`);
+              saveGame('auto', true); D.EVENTS.runWorldHotspot('faction_daqian', ctx);
+            }
+          },
+          {
+            text: '请皇朝【天机暗卫】全图锁定轮回盘持有者与死敌精确坐标', hint: '50 灵石 · 耗1日',
+            action: () => {
+              if (G.stone < 50) return showToast('需 50 灵石打点天机暗卫。');
+              G.stone -= 50; passDays(1);
+              if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(G);
+              const rLocObj = D.LOCATIONS.find(l => l.id === G.worldRelic?.loc);
+              let report = G.worldRelic?.holder === 'player'
+                ? '造化轮回盘已在你怀中。'
+                : (G.worldRelic?.holder === 'npc'
+                  ? `绝密卷宗：【造化轮回盘】现藏于【${G.worldRelic.npcName}】身上，此人目前正在【${rLocObj ? rLocObj.name : '未知海域'}】！`
+                  : `天机罗盘直指：【造化轮回盘】目前隐匿于【${rLocObj ? rLocObj.name : '深海'}】！`);
+              if (G.nemesis) {
+                const nLoc = D.LOCATIONS.find(l => l.id === G.nemesis.loc);
+                report += ` 前世死敌【${G.nemesis.name}】现盘踞于【${nLoc ? nLoc.name : '外域'}】！`;
+              }
+              showToast(report);
+              setDialogue({ speaker: '皇朝天机暗卫统领', asset: ASSETS.elder, text: report, choices: [{ text: '记下了', action: () => { setDialogue(null); renderAll(); } }] });
+              saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '离开皇都官署', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 南赤瘴洲：隐世丹鼎神谷（求延寿圣药 & 天工重铸法器）---
+    if (hid === 'faction_danding') {
+      const mul = (G.worldState && G.worldState.priceMul) || 1.0;
+      const peachPrice = Math.round(210 * mul);
+      const refLv = G.weaponRefineLv || 0;
+      const refCost = 140 + refLv * 90;
+      setDialogue({
+        speaker: '隐世丹鼎神谷 · 药王与天工长老', asset: ASSETS.elder,
+        text: `云雾灵谷中丹香四溢（当前五洲灵材市价倍率：${mul.toFixed(2)}x）。本源法器当前天工精炼：+${refLv} 阶（每阶额外提升全神通基础威力 +8）。`,
+        choices: [
+          {
+            text: `求购丹谷秘制【千年延寿蟠桃】(+40载寿元 · 耗5日)`, hint: `${peachPrice} 灵石`,
+            action: () => {
+              if (G.stone < peachPrice) return showToast(`灵石不足 ${peachPrice} 枚。`);
+              G.stone -= peachPrice; passDays(5);
+              addItem('longevity_peach', 1);
+              G.factionRep.danding = (G.factionRep.danding || 0) + 12;
+              showToast('购得【千年延寿蟠桃】×1，丹谷声望 +12！');
+              saveGame('auto', true); D.EVENTS.runWorldHotspot('faction_danding', ctx);
+            }
+          },
+          {
+            text: `请天工大宗师重铸淬炼随身法器（当前 +${refLv} → +${refLv + 1} · 耗15日）`, hint: `${refCost} 灵石`,
+            action: () => {
+              if (refLv >= 8) return showToast('随身法器已达八转天工极致！');
+              if (G.stone < refCost) return showToast(`灵石不足 ${refCost} 枚。`);
+              G.stone -= refCost; passDays(15);
+              G.weaponRefineLv = refLv + 1;
+              G.body += 1;
+              showToast(`天工地火重铸十五日，随身法器晋升 +${G.weaponRefineLv} 阶！`);
+              saveGame('auto', true); D.EVENTS.runWorldHotspot('faction_danding', ctx);
+            }
+          },
+          { text: '辞别神谷', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 沧溟近海：碎星散修岛 ---
+    if (hid === 'sea_free_port') {
+      setDialogue({
+        speaker: '碎星散修盟 · 盟主风不羁', asset: ASSETS.elder,
+        text: '海风咸腥的礁石自由港内，各路散修与转生重修者互通有无：“在碎星岛不问出身正邪，能从外海活着带回海妖内丹便是好汉！”',
+        choices: [
+          {
+            text: '接取近海巡猎海妖悬赏（实战 · 耗8日）', hint: '赏金丰厚',
+            action: () => {
+              passDays(8);
+              startBattle({
+                name: '近海赤甲狂鲨', asset: ASSETS.wolf_boss, bg: 'market', enemyType: 'beast',
+                hp: 460, maxHp: 460, atk: 36, expReward: 210, stoneReward: 155,
+                onWin: () => {
+                  G.seaHostility = (G.seaHostility || 0) + 10;
+                  G.factionRep.penglai = (G.factionRep.penglai || 0) + 15;
+                  showToast('完成猎鲨悬赏！获 155 灵石，海族敌意微增。');
+                }
+              });
+            }
+          },
+          {
+            text: '耗费 60 灵石洗去周身魔道【业煞】（暗港改头换面 · 耗5日）', hint: `当前业煞 ${G.karma || 0}`,
+            action: () => {
+              if ((G.karma || 0) <= 0) return showToast('你身上并无业煞缠身。');
+              if (G.stone < 60) return showToast('灵石不足 60 枚。');
+              G.stone -= 60; passDays(5);
+              G.karma = Math.max(0, (G.karma || 0) - 30);
+              showToast(`隐姓埋名化解因果，业煞降至 ${G.karma}！`);
+              saveGame('auto', true); D.EVENTS.runWorldHotspot('sea_free_port', ctx);
+            }
+          },
+          { text: '离开散修港', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 沧溟近海：丹霞灵鳌岛（人妖海陆制衡！）---
+    if (hid === 'sea_hunt_turtle') {
+      setDialogue({
+        speaker: '丹霞灵鳌岛 · 珊瑚浅滩', asset: ASSETS.wolf_boss,
+        text: `碧波之上浮现一头受伤的百年玄鳌（当前海族敌意：${G.seaHostility || 0}；敌意 ≥ 40 将引发外海兽潮封港！）。`,
+        choices: [
+          {
+            text: '出手斩杀玄鳌剖取妖丹换灵石（海族敌意+18 · 耗6日）', hint: '+190 灵石',
+            action: () => {
+              passDays(6);
+              startBattle({
+                name: '丹霞百年玄鳌', asset: ASSETS.wolf_boss, bg: 'bamboo', enemyType: 'beast',
+                hp: 540, maxHp: 540, atk: 38, expReward: 220, stoneReward: 190,
+                onWin: () => {
+                  G.seaHostility = (G.seaHostility || 0) + 18;
+                  showToast('斩获玄鳌内丹售得 190 灵石！（沧溟海族对你的敌意上升了）');
+                }
+              });
+            }
+          },
+          {
+            text: '赠予一枚回春丹救治放生灵鳌（化解海族敌意 · 结海族善缘）', hint: '消耗百草回春丹',
+            action: () => {
+              if ((G.bag.heal_pill || 0) < 1) return showToast('行囊中暂无【百草回春丹】。');
+              G.bag.heal_pill--; if (G.bag.heal_pill <= 0) delete G.bag.heal_pill;
+              passDays(3);
+              G.seaHostility = Math.max(0, (G.seaHostility || 0) - 25);
+              G.factionRep.longting = (G.factionRep.longting || 0) + 22;
+              const g = gainExp(95);
+              showToast(`灵鳌感激拜谢潜入深海！海族敌意大减，龙庭声望 +22，修为 +${g}！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '静观海潮离去', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 沧溟外海：雷鸣沉船墓 ---
+    if (hid === 'sea_explore_wreck') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'sea_wreck');
+      passDays(12);
+      const r = Math.random() + (G.sense || 10) * 0.005;
+      if (r > 0.78) {
+        addItem('tr_flying_sword', 1);
+        G.stone += 180;
+        showToast('潜入雷鸣古沉船耗十二日，寻得古修遗留【青霜子母飞剑】与 180 灵石！');
+      } else {
+        startBattle({
+          name: '沉船守宝电鳗妖王', asset: ASSETS.wolf_boss, bg: 'forest', enemyType: 'beast',
+          hp: 920, maxHp: 920, atk: 54, expReward: 420, stoneReward: 260,
+          onWin: () => showToast('击毙沉船电鳗妖王，搜得船舱秘银灵石 260 枚！')
+        });
+        return true;
+      }
+      saveGame('auto', true); renderAll();
+      return true;
+    }
+
+    // --- 沧溟深海：苍渊海族龙庭 ---
+    if (hid === 'faction_longting') {
+      const friendly = (G.seaHostility || 0) <= 15 && (G.factionRep.longting || 0) >= 20;
+      setDialogue({
+        speaker: '深海 · 苍渊水晶龙庭', asset: ASSETS.sister,
+        text: `万丈深海之下水晶宫阙辉映（你的海族声望：${G.factionRep.longting || 0} · 海族敌意：${G.seaHostility || 0}）。`,
+        choices: [
+          {
+            text: friendly ? '受龙庭礼遇，换取【通海龙珠】与【千年延寿蟠桃】(150灵石)' : '请求朝觐换取【通海龙珠】（需龙庭声望≥20且海族敌意≤15）',
+            hint: friendly ? '可获通海龙珠' : '可在灵鳌岛结善缘',
+            action: () => {
+              if (!friendly) return showToast('海族卫士冷哼：尔等人族少杀我沧溟海兽，再来谈通海龙珠！');
+              if (G.stone < 150) return showToast('需 150 灵石作为朝觐贺礼。');
+              G.stone -= 150; passDays(5);
+              G.flags.hasDragonPearl = true;
+              addItem('longevity_peach', 1);
+              showToast('获赐海族至宝【通海龙珠】（自此无视深海重水限制）与【千年延寿蟠桃】！');
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          {
+            text: '强闯苍渊水晶宝库，硬撼元婴大妖【覆海蛟王】！', hint: 'HP 1650 · 极险',
+            action: () => {
+              startBattle({
+                name: '苍渊覆海蛟王', asset: ASSETS.wolf_boss, bg: 'sect_plaza', enemyType: 'beast',
+                hp: 1650, maxHp: 1650, atk: 72, expReward: 820, stoneReward: 560,
+                onWin: () => {
+                  G.seaHostility = (G.seaHostility || 0) + 45;
+                  addItem('longevity_peach', 1);
+                  addItem('dao_tea', 1);
+                  showToast('洗劫水晶宝库！夺得【千年延寿蟠桃】与【悟道古茶树叶】，海族震怒！');
+                }
+              });
+            }
+          },
+          { text: '浮出深海', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 沧溟极渊：归墟无底海眼 ---
+    if (hid === 'sea_abyss_gaze') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'sea_abyss');
+      setDialogue({
+        speaker: '极渊 · 归墟无底海眼', asset: ASSETS.hero,
+        text: '万顷黑水在此倾泻入无尽虚空，时空法则裸露在外。在此枯坐二十日观摩归墟生灭，可随机参悟两条仙道法则！',
+        choices: [
+          {
+            text: '悬空凝视归墟漩涡（耗 20 日 · 60 灵石护体）', hint: '随机双大道精进',
+            action: () => {
+              if (G.stone < 60) return showToast('需 60 灵石维持护体灵光抵御归墟吸力。');
+              G.stone -= 60; passDays(20);
+              const keys = Object.keys(D.SKILL_CATS);
+              const k1 = keys[Math.floor(Math.random() * keys.length)];
+              const k2 = keys[(keys.indexOf(k1) + 2) % keys.length];
+              addDaoPts(k1, 10); addDaoPts(k2, 10);
+              showToast(`归墟观道二十日，【${D.SKILL_CATS[k1].name}】与【${D.SKILL_CATS[k2].name}】本源大幅精进！`);
+              setDialogue(null); saveGame('auto', true); renderAll();
+            }
+          },
+          { text: '退离海眼边缘', action: () => { setDialogue(null); renderAll(); } }
+        ]
+      });
+      return true;
+    }
+
+    // --- 第五独立孤洲：东极瀛洲 · 古神遗族与先天道果母树 ---
+    if (hid === 'yingzhou_ancient_clan') {
+      if (window.REINCARNATION) window.REINCARNATION.tryDiscoverRelicAt(ctx, 'yingzhou_tree');
+      const hasMasterDao = Object.keys(D.SKILL_CATS).some(k => getCatMastery(k) >= 60);
+      if (!hasMasterDao) {
+        setDialogue({
+          speaker: '东极瀛洲 · 古神遗族守山长老', asset: ASSETS.elder,
+          text: '身躯伟岸的古神族人横戈拦路：“四洲来的外乡修士，你连一条 60 宗师境的大道都未曾修成，尚无资格踏入【先天道果母树】圣坛！”',
+          choices: [{ text: '抱拳退去，待宗师境再来', action: () => { setDialogue(null); renderAll(); } }]
+        });
+        return true;
+      }
+      const choices = Object.values(D.SKILL_CATS).map(c => {
+        const cur = getCatMastery(c.id);
+        return {
+          text: `在先天道果母树下灌顶参悟【${c.name}】（当前 ${cur}/100）`,
+          hint: cur >= 100 ? '已臻100圆满' : '120灵石 · 耗60日 · 大道+22~30',
+          action: () => {
+            if (cur >= 100) return showToast(`【${c.name}】已达 100 圆满！`);
+            if (G.stone < 120) return showToast('献予母树灵泉需 120 灵石。');
+            G.stone -= 120; passDays(60);
+            const g = addDaoPts(c.id, 22);
+            if (g) showToast(`道果母树垂落仙辉，【${c.name}】本源暴涨 +${g}（当前 ${getCatMastery(c.id)}/100）！`);
+            saveGame('auto', true);
+            D.EVENTS.runWorldHotspot('yingzhou_ancient_clan', ctx);
+          }
+        };
+      });
+      choices.push({ text: '辞别古神圣殿', action: () => { setDialogue(null); renderAll(); } });
+      setDialogue({
+        speaker: '彼岸第五洲 · 先天道果母树', asset: ASSETS.elder,
+        text: '跨越十万里绝灵黑水洋方抵此太古孤陆！遮天蔽日的母树每一片道叶皆蕴含天地至理，在此参悟可助你早日达成【六道全满·万道仙帝】！',
         choices
       });
       return true;

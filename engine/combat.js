@@ -242,7 +242,7 @@ window.COMBAT = {
     }
     if (sk.elem && sk.elem !== 'none') S.lastElem = sk.elem;
 
-    let baseAtk = (G.body || 10) * 1.9 + (G.sense || 10) * 1.25 + (ha.atkBonus || 0) + (eq.atk || 0);
+    let baseAtk = (G.body || 10) * 1.9 + (G.sense || 10) * 1.25 + (ha.atkBonus || 0) + (eq.atk || 0) + ((G.weaponRefineLv || 0) * 8);
     let dmg = Math.round(baseAtk * sk.power * masteryMul * synerMul);
 
     // Build & Dao 60/100 milestone modifiers

@@ -1,14 +1,15 @@
 // v6.3 天地唯一【造化轮回盘】转生、1~100 灵根资质公式、个人洞府遗蜕 与 妖兽看守/仇敌搜身因果引擎
 window.REINCARNATION = (function () {
   const RELIC_LOCS = [
-    { loc: 'forest',       name: '东洲·万妖古林洞府',   rumor: '【东洲】万妖古林深处偶有紫金轮回霞光一闪而逝' },
-    { loc: 'market',       name: '东洲·鬼市黑坊暗渠',   rumor: '【东洲】鬼市地下暗渠流出一件来历不明的太古残盘' },
-    { loc: 'cliff',        name: '东洲·思过崖绝壁',     rumor: '【东洲】思过崖云海深处似有上古轮回器灵隐匿' },
-    { loc: 'south_venom',  name: '南疆·万蛊毒谷深潭',   rumor: '【南疆】十万巫山万蛊毒谷曾有轮回道音回荡' },
-    { loc: 'south_fire',   name: '南疆·焚天古火脉地心', rumor: '【南疆】焚天古火脉岩浆深处似沉浮着一方古盘' },
-    { loc: 'north_battle', name: '北冥·上古坠仙战场',   rumor: '【北冥】上古坠仙战场废墟夜半曾冲起紫金神芒' },
-    { loc: 'north_ice',    name: '北冥·玄冰宫寒渊',     rumor: '【北冥】北冥玄冰宫冰层之下封冻着一缕轮回气机' },
-    { loc: 'central_stele',name: '中州·太虚悟道神碑旁', rumor: '【中州】太虚悟道神碑之巅曾有轮回流光掠过' }
+    { loc: 'forest',       name: '东栖霞洲·苍莽妖林',   rumor: '【东栖霞洲】苍莽妖林深处偶有紫金轮回霞光一闪而逝' },
+    { loc: 'market',       name: '东栖霞洲·幽暗鬼坊',   rumor: '【东栖霞洲】地下鬼坊暗渠流出一件来历不明的太古残盘' },
+    { loc: 'south_venom',  name: '南赤瘴洲·千瘴巫蛊谷', rumor: '【南赤瘴洲】千瘴巫蛊谷深潭曾有轮回道音回荡' },
+    { loc: 'south_fire',   name: '南赤瘴洲·赤炎火山脉', rumor: '【南赤瘴洲】赤炎火山岩浆深处似沉浮着一方古盘' },
+    { loc: 'north_battle', name: '北俱寒洲·太古陨仙坑', rumor: '【北俱寒洲】太古陨仙坑夜半曾冲起紫金神芒' },
+    { loc: 'central_stele',name: '中钧天洲·钧天悟道碑', rumor: '【中钧天洲】钧天悟道神碑之巅曾有轮回流光掠过' },
+    { loc: 'sea_wreck',    name: '沧溟外海·雷鸣沉船墓', rumor: '【沧溟外海】雷鸣沉船墓海底古舟中传出轮回脉动' },
+    { loc: 'sea_abyss',    name: '沧溟极渊·归墟海眼',   rumor: '【沧溟深海】归墟无底海眼边缘悬浮着一道太古器影' },
+    { loc: 'yingzhou_tree',name: '东极瀛洲·道果母树下', rumor: '【彼岸瀛洲】十万里黑水洋彼岸的先天母树下似有轮回至宝栖息' }
   ];
 
   const BEAST_KEYWORDS = ['狼', '妖', '兽', '蟒', '龟', '鹤', '虫', '蝠', '虎', '蛟'];
@@ -49,6 +50,9 @@ window.REINCARNATION = (function () {
       G.bag.reincarnation_disc = 1; // 强制全世界最多 1 个
       G.worldRelic = { holder: 'player', loc: null, placeName: '随身怀揣', rumor: '造化轮回盘已入你手，世间再无第二件' };
       return;
+    }
+    if (G.worldRelic && G.worldRelic.holder === 'npc' && G.worldRelic.npcId) {
+      return; // 当前正被某位具名修士NPC持有！
     }
     if (!G.worldRelic || G.worldRelic.holder === 'player' || !G.worldRelic.loc) {
       relocateWorldRelic(G, null);
@@ -166,13 +170,27 @@ window.REINCARNATION = (function () {
       dropSummary = '你在荒野兵解坐化，遗物散落原地引来妖兽盘踞，须在 20 年内赶回寻取。';
     }
 
-    // 4) 世界时间不停流转！（化婴降生并长至 16 岁重踏仙途）
+    // 4) 世界时间不停流转！（化婴降生并长至 16 岁重踏仙途，同步推进沧溟历天数）
     const passYears = mode === 'calm' ? 14 : 16;
-    G.month += passYears * 12;
+    if (typeof G.totalDays === 'number') {
+      G.totalDays += passYears * 360;
+      G.birthDay = G.totalDays;
+      G.month = Math.floor((G.totalDays - 1) / 30) + 1;
+    } else {
+      G.month += passYears * 12;
+    }
     G.lifeCount = prevLife + 1;
     G.age = 16;
     G.realmIdx = 0;
     G.exp = 0;
+    G.karma = 0;
+
+    // 判定是否因前世大乾千年世家恩义深厚，今生直接投胎为【千年世家嫡子】！
+    let nobleScionNote = '';
+    const bornNoble = (G.nobleClanBond || 0) >= 50;
+    if (bornNoble) {
+      G.nobleClanBond = Math.max(0, G.nobleClanBond - 50);
+    }
 
     // 将本世通过神通兼修与碑林参悟达到的最高大道境界刻入真灵本源 G.daoBase（跨世不灭！）
     G.daoBase = G.daoBase || {};
@@ -218,9 +236,17 @@ window.REINCARNATION = (function () {
     }
     G.maxAge = 100 + (isSamsaraBody ? 50 : 0);
 
-    // 发放新世起步布衣储物戒
-    G.equipment.ring = 'eq_wood_ring';
-    G.stone = 25;
+    // 发放新世起步资粮（若投胎为大乾千年世家嫡子，直接含金汤匙出生！）
+    G.equipment.ring = bornNoble ? 'eq_qiankun_ring' : 'eq_wood_ring';
+    G.stone = bornNoble ? 320 : 25;
+    if (bornNoble) {
+      G.loc = 'central_capital';
+      G.equipment.weapon = 'eq_frost_blade';
+      Object.keys(G.elements).forEach(k => { G.elements[k] = Math.min(100, (G.elements[k] || 15) + 10); });
+      nobleScionNote = '【世家投胎】感念前世与千年世家深厚香火，你今生直接降生为中洲世家嫡子，获赠【北冥寒魄剑】、【乾坤须弥戒】与 320 灵石，全灵根额外 +10！';
+      dropSummary += ' ' + nobleScionNote;
+    }
+    if (window.WORLD_SIM) window.WORLD_SIM.pushNews(G, '轮回', `岁月流转 ${passYears} 载，一位身负宿慧的少年修士再度踏入沧溟界（第 ${G.lifeCount} 世）。`);
     recalcDerivedStats(true);
     if (SFX) SFX.play('levelup');
     saveGame('auto', true);
@@ -346,12 +372,16 @@ window.REINCARNATION = (function () {
 
     const choices = [
       {
-        text: '在聚灵阵蒲团闭关吐纳（洞府加成 +35%）', hint: '+1月 修为大增',
+        text: '在聚灵阵蒲团闭关修行（可选10日～3年 · 洞府加成 +35%）', hint: '弹性闭关',
         action: () => {
-          advanceTime(1); recalcDerivedStats(true);
-          const g = gainExp(54);
-          showToast(`仙府聚灵阵闭关一月，状态圆满，修为 +${g}！`);
-          setDialogue(null); saveGame('auto', true); renderAll();
+          if (window.WORLD_SIM) {
+            window.WORLD_SIM.openSeclusionModal(ctx, 56, '栖云洞府·聚灵阵');
+          } else {
+            advanceTime(1); recalcDerivedStats(true);
+            const g = gainExp(54);
+            showToast(`仙府聚灵阵闭关一月，状态圆满，修为 +${g}！`);
+            setDialogue(null); saveGame('auto', true); renderAll();
+          }
         }
       }
     ];
@@ -481,6 +511,58 @@ window.REINCARNATION = (function () {
         ]
       });
       return true;
+    }
+
+    // C. 检查持有唯一【造化轮回盘】的具名 NPC 是否正游历至此地！
+    if (G.worldRelic && G.worldRelic.holder === 'npc' && G.worldRelic.loc === locId) {
+      const npc = (G.simNpcs || []).find(n => n.id === G.worldRelic.npcId && n.alive);
+      if (npc) {
+        const rDef = D.REALMS[npc.realmIdx] || D.REALMS[3];
+        const hp = Math.round(rDef.maxHp * 1.45);
+        const atk = 26 + npc.realmIdx * 15;
+        setDialogue({
+          speaker: `${npc.title} · ${npc.name}（怀揣造化轮回盘）`, asset: ASSETS.elder,
+          text: `你神识微颤，感应到此人袖中隐现太古轮回霞光——天地间唯一的【造化轮回盘】竟在他手中！（对方境界：${rDef.name}）`,
+          choices: [
+            {
+              text: '献上 680 灵石与一枚延寿蟠桃，诚心换取【造化轮回盘】', hint: '和平交易',
+              action: () => {
+                if (G.stone < 680 || (G.bag.longevity_peach || 0) < 1) {
+                  return showToast('对方摇头：唯有 680 灵石外加一枚【千年延寿蟠桃】方肯割爱！');
+                }
+                G.stone -= 680;
+                G.bag.longevity_peach--;
+                if (G.bag.longevity_peach <= 0) delete G.bag.longevity_peach;
+                G.bag.reincarnation_disc = 1;
+                ensureWorldRelic(G);
+                npc.maxAge += 40;
+                showToast(`交易达成！你成功从【${npc.name}】手中换得天地唯一至宝【造化轮回盘】！`);
+                setDialogue(null); saveGame('auto', true); renderAll();
+              }
+            },
+            {
+              text: `悍然出手截杀【${npc.name}】，强夺造化轮回盘！`, hint: `生死夺宝 · HP ${hp}`,
+              action: () => {
+                startBattle({
+                  name: `${npc.title}·${npc.name}`, asset: ASSETS.elder, bg: 'world_map',
+                  enemyType: 'cultivator', hp, maxHp: hp, atk, expReward: 260 + npc.realmIdx * 90, stoneReward: 180,
+                  onWin: () => {
+                    npc.alive = false;
+                    G.bag.reincarnation_disc = 1;
+                    ensureWorldRelic(G);
+                    G.karma = (G.karma || 0) + 25;
+                    if (window.WORLD_SIM) window.WORLD_SIM.pushNews(G, '夺宝', `${npc.title}【${npc.name}】遭神秘强敌截杀陨落，其怀中太古异宝易主！`);
+                    showToast(`斩杀【${npc.name}】，成功夺取天地唯一至宝【造化轮回盘】（业煞 +25）！`);
+                    saveGame('auto', true);
+                  }
+                });
+              }
+            },
+            { text: '不动声色退开', action: () => { setDialogue(null); renderAll(); } }
+          ]
+        });
+        return true;
+      }
     }
 
     return false;

@@ -9,6 +9,7 @@
   let WORLD = null;
   let HERO = null;
   let activeTab = 'map';
+  let mapMode = '3d'; // '3d' (HD-2D Three.js 立体山海) | '2d' (SVG 战术图)
   let selectedPlateId = 'E2';
   let selectedNpcId = null;
   let activeScene = null; // 实时多步交互场景：{ type:'travel_event'|'auction'|'ruin'|'found_sect'|'free_talk', data:{} }
@@ -95,15 +96,15 @@
     st.id = 'life-ui-style';
     st.textContent = `
       #btn-open-life-sim {
-        position:fixed; right:14px; bottom:54px; z-index:900;
-        background:linear-gradient(180deg, rgba(44,82,138,0.95), rgba(22,42,78,0.98));
-        border:1px solid #d4b87a; color:#f2daa0; padding:7px 13px; border-radius:4px;
-        font-family:"Songti SC","Noto Serif SC",serif; font-size:12px; font-weight:700;
-        letter-spacing:1px; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,0.65);
+        position:fixed; right:16px; bottom:18px; z-index:9500;
+        background:linear-gradient(180deg, rgba(168,52,46,0.96), rgba(118,28,24,0.98));
+        border:1.5px solid #f2daa0; color:#fff5e0; padding:9px 15px; border-radius:5px;
+        font-family:"Songti SC","Noto Serif SC",serif; font-size:13px; font-weight:700;
+        letter-spacing:1.2px; cursor:pointer; box-shadow:0 6px 24px rgba(0,0,0,0.75);
       }
-      #btn-open-life-sim:hover { background:rgba(66,112,178,0.98); color:#fff; }
+      #btn-open-life-sim:hover { background:rgba(196,64,56,0.98); color:#fff; transform:translateY(-1px); }
       #life-sim-modal {
-        position:fixed; inset:0; z-index:999; background:rgba(5,8,12,0.88);
+        position:fixed; inset:0; z-index:9800; background:rgba(5,8,12,0.88);
         backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:10px;
         font-family:"Songti SC","Noto Serif SC",serif; color:#e6dfd3;
       }
@@ -471,10 +472,11 @@
 
   function renderModal() {
     ensureInit();
+    if (window.Map3D && activeTab !== 'map') window.Map3D.dispose();
     const body = document.getElementById('ls-body');
     const title = document.getElementById('ls-title');
     const curPlate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-    title.textContent = `沧溟修仙模拟人生 v8.7 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
+    title.textContent = `沧溟修仙模拟人生 v8.8 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
 
     document.querySelectorAll('.ls-tab').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === activeTab);
@@ -491,14 +493,21 @@
         const f = WORLD.factions.find(x => x.id === h.factionId);
         return f ? `${f.name}(${h.share}%)` : '';
       }).filter(Boolean).join(' · ') || '无主之地';
+      const use3D = mapMode === '3d' && !!window.THREE && !!window.Map3D;
 
       body.innerHTML = `
         ${sceneHtml}
         <div class="ls-map-layout">
-          <div class="ls-svg-wrap">
-            ${buildWorldMapSvg()}
-            <div style="position:absolute;left:8px;bottom:6px;font-size:9.5px;color:#938c7e;background:rgba(5,8,12,0.75);padding:3px 7px;border-radius:3px;">
-              📍你在此处 · 🗝️真实溯源遗迹 · ⚖️涌现制度 · 橙虚线=陆路咽喉关隘 · 点击任意板块交互
+          <div class="ls-svg-wrap" style="min-height:460px;">
+            <div style="position:absolute;right:8px;top:8px;z-index:10;display:flex;gap:5px;">
+              <button class="ls-btn ${use3D?'jade':''}" id="btn-mode-3d">🏔️ 2.5D 立体山海</button>
+              <button class="ls-btn ${!use3D?'jade':''}" id="btn-mode-2d">🗺️ 2D 战术图</button>
+            </div>
+            ${use3D
+              ? `<div id="ls-map3d-host" style="width:100%;height:460px;cursor:grab;"></div>`
+              : buildWorldMapSvg()}
+            <div style="position:absolute;left:8px;bottom:6px;z-index:10;font-size:9.5px;color:#d8d0c0;background:rgba(5,8,12,0.82);padding:3px 8px;border-radius:3px;">
+              ${use3D ? '左键拖拽平移 · 右键/Shift拖拽旋转 · 滚轮缩放 · 点击 3D 牌匾交互' : '📍你在此处 · 🗝️遗迹 · ⚖️制度 · 橙虚线=咽喉关隘 · 点击板块交互'}
             </div>
           </div>
           <div class="ls-card" style="display:flex;flex-direction:column;gap:6px;">
@@ -528,6 +537,20 @@
         </div>
       `;
       body.querySelectorAll('[data-pid]').forEach(el => { el.onclick = () => { selectedPlateId = el.dataset.pid; activeScene = null; renderModal(); }; });
+      const b3d = document.getElementById('btn-mode-3d');
+      const b2d = document.getElementById('btn-mode-2d');
+      if (b3d) b3d.onclick = () => { mapMode = '3d'; renderModal(); };
+      if (b2d) b2d.onclick = () => { mapMode = '2d'; if (window.Map3D) window.Map3D.dispose(); renderModal(); };
+      if (use3D) {
+        const host = document.getElementById('ls-map3d-host');
+        if (host) {
+          requestAnimationFrame(() => {
+            window.Map3D.mount(host, WORLD, HERO, selectedPlateId, pid => {
+              selectedPlateId = pid; activeScene = null; renderModal();
+            });
+          });
+        }
+      }
       const tv = document.getElementById('btn-travel-plate');
       if (tv) tv.onclick = () => {
         window.LifeSim.advanceLifeMonths(HERO, WORLD, 2, 'mortal_life');
@@ -794,7 +817,7 @@
     injectStyles();
     const btn = document.createElement('button');
     btn.id = 'btn-open-life-sim';
-    btn.textContent = '☯ 沧溟人生·地图 v8.7';
+    btn.textContent = '🏔️ 沧溟 2.5D 地图 · 人生 v8.8';
     btn.onclick = () => {
       document.getElementById('life-sim-modal').classList.add('open');
       renderModal();
@@ -806,11 +829,11 @@
     modal.innerHTML = `
       <div class="ls-box">
         <div class="ls-head">
-          <h2 id="ls-title">沧溟修仙模拟人生 v8.7</h2>
+          <h2 id="ls-title">沧溟修仙模拟人生 v8.8</h2>
           <button class="ls-btn red" id="ls-close">✕ 关闭</button>
         </div>
         <div class="ls-tabs">
-          <div class="ls-tab active" data-tab="map">🗺️ 五洲七海交互地图</div>
+          <div class="ls-tab active" data-tab="map">🏔️ 五洲七海 2.5D 地图</div>
           <div class="ls-tab" data-tab="life">🧬 人物与人生</div>
           <div class="ls-tab" data-tab="social">🤝 众生与江湖博弈</div>
           <div class="ls-tab" data-tab="beasts">🐾 妖兽与生态图鉴</div>
@@ -821,7 +844,10 @@
       </div>
     `;
     document.body.appendChild(modal);
-    document.getElementById('ls-close').onclick = () => modal.classList.remove('open');
+    document.getElementById('ls-close').onclick = () => {
+      if (window.Map3D) window.Map3D.dispose();
+      modal.classList.remove('open');
+    };
     modal.querySelectorAll('.ls-tab').forEach(t => {
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });

@@ -59,10 +59,11 @@
   <div id="combat-root"></div>
   <div id="panel-root"></div>
   <div class="title-screen" id="title-root"></div>
-  <div class="ver-badge" id="ver-badge">v8.7.0</div>
+  <div class="ver-badge" id="ver-badge">v8.8.0</div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
 <script src="engine/icons.js"></script>
 <script src="data/skills_items.js"></script>
 <script src="data/beasts.js"></script>
@@ -72,9 +73,10 @@
 <script src="engine/audio_fx.js"></script>
 <script src="engine/achievements.js"></script>
 <script src="engine/appearance.js"></script>
-<script src="engine/sociology.js"></script>
-<script src="engine/world_core.js"></script>
-<script src="engine/life_sim.js"></script>
+<script src="engine/sociology.js?v=8.8.0"></script>
+<script src="engine/world_core.js?v=8.8.0"></script>
+<script src="engine/life_sim.js?v=8.8.0"></script>
+<script src="engine/map3d.js?v=8.8.0"></script>
 <script src="engine/genesis.js"></script>
 <script src="engine/world_sim.js"></script>
 <script src="engine/encounters.js"></script>
@@ -82,6 +84,7 @@
 <script src="engine/combat.js"></script>
 <script src="engine/minigames.js"></script>
 <script src="engine/app.js"></script>
-<script src="engine/life_ui.js"></script>
+<script src="engine/life_ui.js?v=8.8.0"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.update()));}</script>
 </body>
 </html>

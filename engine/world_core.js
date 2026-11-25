@@ -179,6 +179,8 @@
       factions: [],
       people: [],
       createdArts: [],
+      ruins: [],
+      institutions: [],
       chronicles: [{ year: 1, tag: '创世', text: '混元第1年：20,000 单位灵能封存于星核地底，24 块原始地貌无灵无宗门，三大陆路咽喉待争。' }],
       eraSnapshots: [],
       usedNames: [],
@@ -386,6 +388,13 @@
           });
           const msg = `第${w.year}年：【${fac.name}】灵矿灵药库藏耗尽、道统崩解，原祖地化作古宗遗址！`;
           w.chronicles.unshift({ year: w.year, tag: '矿竭崩解', text: msg });
+          if (root.Sociology) {
+            root.Sociology.createProvenanceRuin(w, {
+              plateId: fac.homePlate, originType: 'sect_ruin',
+              name: `${fac.name}古宗遗址`, ownerName: fac.name, realmIdx: 3,
+              vault: [`《${fac.name}镇宗残卷》`, '古宗藏经玉简', '封存灵石库']
+            });
+          }
           if (eventsOut) eventsOut.push(msg);
         }
       } else {
@@ -425,6 +434,14 @@
       if (c.age > c.maxAge) {
         c.alive = false;
         c.memories.push(`第${w.year}年：寿元耗尽(${Math.round(c.age)}/${c.maxAge}岁)，坐化于【${nd?.name || c.plateId}】。`);
+        // 金丹及以上大能坐化，严格溯源生成未发现古洞府遗迹！
+        if (c.realmIdx >= 3 && root.Sociology) {
+          root.Sociology.createProvenanceRuin(w, {
+            plateId: c.plateId, originType: 'master_tomb',
+            name: `${c.name}(${c.realm})古洞府`, ownerName: c.name, realmIdx: c.realmIdx,
+            vault: [`《${c.name}毕生道统残篇》`, `${c.realm}本命法宝残器`, '聚灵秘丹']
+          });
+        }
         // 自动推举同势力在世继任者
         const fac = w.factions.find(f => f.alive && f.leaderId === c.id);
         if (fac) {
@@ -587,6 +604,13 @@
         nd.pop = Math.round(nd.pop * 0.8);
         const msg = `第${w.year}年：【天外陨星】星辰坠落【${nd.name}】，砸出稀世高纯灵矿(+35)，引发四方觊觎！`;
         w.chronicles.unshift({ year: w.year, tag: '大劫', text: msg });
+        if (root.Sociology) {
+          root.Sociology.createProvenanceRuin(w, {
+            plateId: nd.id, originType: 'meteor_crater',
+            name: `${nd.name}天外陨坑`, ownerName: '天外星辰', realmIdx: 4, sealStrength: 38,
+            vault: ['太古星核碎片', '稀世陨金灵矿']
+          });
+        }
         if (eventsOut) eventsOut.push(msg);
       } else if (roll < 0.65) {
         const hyb = spawnPerson(w, rng, nd, {
@@ -615,6 +639,7 @@
       w.year += step;
       stepWorldPhysics(w, rng, step, null);
       stepFactionAgents(w, rng, step, null);
+      if (root.Sociology) root.Sociology.stepSociology(w, rng, step);
       if (w.year % 200 === 1 || w.year === targetYear) {
         w.eraSnapshots.push({
           year: w.year, eraName: w.eraName, seaTechUnlocked: w.seaTechUnlocked,
@@ -639,6 +664,7 @@
     stepWorldPhysics(w, rng, yearsDelta, eventsOut);
     if (yearsDelta >= 0.5 || w.year > prevYear) {
       stepFactionAgents(w, rng, yearsDelta, eventsOut);
+      if (root.Sociology) root.Sociology.stepSociology(w, rng, yearsDelta);
     }
     w.rngState = rng.state();
     return { year: w.year, month: w.month, worldEvents: eventsOut };

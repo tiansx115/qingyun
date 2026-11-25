@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>《沧溟界》天道演化实验室 v6.0 · 真零起点 · 全透明法则 · DeepSeek 亲自主导推演</title>
+<title>《沧溟界》天道因果推演引擎 v7.0 · 因果律契约 × DeepSeek 真主导 × 物理裁判所</title>
 <style>
   :root {
-    --bg:#080b0f; --panel:rgba(14,18,24,0.92); --card:rgba(20,25,34,0.86);
+    --bg:#080b0f; --panel:rgba(14,18,24,0.94); --card:rgba(20,25,34,0.88);
     --gold:#d4b87a; --gold-hi:#f2daa0; --jade:#6fd3a8; --red:#e06258;
-    --blue:#70b8f0; --purple:#c28ef2; --text:#e6dfd3; --muted:#938c7e;
+    --blue:#70b8f0; --purple:#c28ef2; --amber:#f0a850; --text:#e6dfd3; --muted:#938c7e;
     --border:rgba(212,184,122,0.28);
   }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -19,10 +19,10 @@
   }
   header {
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:8px 14px; background:rgba(10,13,18,0.96); border-bottom:1px solid var(--border); flex-shrink:0;
+    padding:8px 14px; background:rgba(10,13,18,0.97); border-bottom:1px solid var(--border); flex-shrink:0;
   }
-  .brand { display:flex; align-items:baseline; gap:10px; }
-  .brand h1 { font-size:15.5px; color:var(--gold-hi); letter-spacing:2px; font-weight:700; }
+  .brand { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .brand h1 { font-size:15.5px; color:var(--gold-hi); letter-spacing:1.5px; font-weight:700; }
   .brand span { font-size:10px; color:var(--muted); }
   .top-controls { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
   button {
@@ -30,27 +30,28 @@
     background:rgba(212,184,122,0.08); color:var(--gold-hi);
     padding:5px 9px; font-size:11px; transition:0.14s; border-radius:3px;
   }
-  button:hover { background:rgba(212,184,122,0.22); border-color:var(--gold-hi); }
-  button.primary { background:linear-gradient(180deg, rgba(168,52,46,0.86), rgba(118,30,26,0.92)); border-color:#e89c8a; color:#fff5e8; }
+  button:hover:not(:disabled) { background:rgba(212,184,122,0.22); border-color:var(--gold-hi); }
+  button:disabled { opacity:0.45; cursor:not-allowed; }
+  button.primary { background:linear-gradient(180deg, rgba(168,52,46,0.88), rgba(118,30,26,0.94)); border-color:#e89c8a; color:#fff5e8; }
   button.jade { background:rgba(111,211,168,0.16); border-color:var(--jade); color:var(--jade); }
-  button.ai-btn { background:linear-gradient(180deg, rgba(58,96,158,0.85), rgba(32,58,108,0.92)); border-color:#8cc0ff; color:#eef6ff; }
+  button.ai-btn { background:linear-gradient(180deg, rgba(48,92,162,0.9), rgba(26,52,102,0.95)); border-color:#8cc0ff; color:#eef6ff; font-weight:600; }
 
-  .workspace { flex:1; min-height:0; display:grid; grid-template-columns:295px 1fr 435px; gap:8px; padding:8px; }
+  .workspace { flex:1; min-height:0; display:grid; grid-template-columns:305px 1fr 455px; gap:8px; padding:8px; }
   .col { background:var(--panel); border:1px solid var(--border); border-radius:4px; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
   .col-head {
     padding:7px 11px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;
-    background:rgba(8,10,14,0.76); font-size:12px; color:var(--gold-hi); font-weight:600; flex-shrink:0;
+    background:rgba(8,10,14,0.78); font-size:12px; color:var(--gold-hi); font-weight:600; flex-shrink:0;
   }
   .col-body { flex:1; min-height:0; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:7px; }
   .col-body::-webkit-scrollbar { width:4px; }
   .col-body::-webkit-scrollbar-thumb { background:rgba(212,184,122,0.35); }
 
   .ctrl-group { background:var(--card); border:1px solid rgba(212,184,122,0.16); padding:7px 9px; border-radius:3px; display:flex; flex-direction:column; gap:5px; }
-  .ctrl-title { font-size:10.5px; color:var(--gold); letter-spacing:1px; border-bottom:1px solid rgba(212,184,122,0.14); padding-bottom:3px; }
+  .ctrl-title { font-size:10.5px; color:var(--gold); letter-spacing:1px; border-bottom:1px solid rgba(212,184,122,0.14); padding-bottom:3px; display:flex; justify-content:space-between; }
   .row-inline { display:flex; gap:6px; align-items:center; }
   .row-inline label { font-size:10px; color:var(--muted); white-space:nowrap; }
-  input[type="text"], input[type="password"], input[type="number"], select {
-    width:100%; background:rgba(6,8,12,0.9); border:1px solid rgba(212,184,122,0.3);
+  input[type="text"], input[type="password"], input[type="number"], select, textarea {
+    width:100%; background:rgba(6,8,12,0.92); border:1px solid rgba(212,184,122,0.3);
     color:var(--text); padding:4px 7px; font-size:10.5px; border-radius:3px; font-family:monospace;
   }
   .slider-row { display:flex; flex-direction:column; gap:1px; }
@@ -59,26 +60,27 @@
   input[type="range"] { width:100%; accent-color:var(--gold); cursor:pointer; }
 
   .prog-bar { height:7px; background:rgba(255,255,255,0.08); border:1px solid var(--border); border-radius:2px; overflow:hidden; }
-  .prog-fill { height:100%; background:linear-gradient(90deg, #6b7280, #d4b87a, #6fd3a8, #c28ef2); transition:width 0.12s; }
+  .prog-fill { height:100%; background:linear-gradient(90deg, #6b7280, #70b8f0, #6fd3a8, #d4b87a, #c28ef2); transition:width 0.25s; }
   .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
   .kpi { background:var(--card); border:1px solid rgba(212,184,122,0.18); padding:5px 7px; border-radius:3px; }
   .kpi span { display:block; font-size:9px; color:var(--muted); }
   .kpi b { font-size:11.5px; color:var(--gold-hi); font-family:sans-serif; }
   .energy-bar {
     display:grid; grid-template-columns:repeat(4,1fr); gap:5px;
-    background:rgba(8,12,18,0.82); border:1px solid rgba(112,184,240,0.3); padding:5px 7px; border-radius:3px; font-size:9.5px;
+    background:rgba(8,12,18,0.84); border:1px solid rgba(112,184,240,0.32); padding:5px 7px; border-radius:3px; font-size:9.5px;
   }
   .energy-bar div span { color:var(--muted); font-size:8.5px; display:block; }
   .energy-bar div b { color:var(--blue); font-family:sans-serif; }
   .health-box {
-    padding:5px 9px; border-radius:3px; font-size:10.5px; line-height:1.45;
+    padding:6px 9px; border-radius:3px; font-size:10.5px; line-height:1.5;
     border:1px solid rgba(111,211,168,0.45); background:rgba(111,211,168,0.1); color:#bff2dc;
   }
   .health-box.era0 { border-color:rgba(160,165,175,0.45); background:rgba(90,95,105,0.16); color:#d8dce3; }
+  .health-box.busy { border-color:rgba(112,184,240,0.65); background:rgba(36,72,126,0.28); color:#d8ecff; }
 
   .map-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; }
   .node-tile {
-    background:rgba(12,16,22,0.9); border:1px solid rgba(212,184,122,0.18);
+    background:rgba(12,16,22,0.92); border:1px solid rgba(212,184,122,0.18);
     border-left:3px solid #6b7280; padding:4px 6px; border-radius:3px; cursor:pointer; transition:0.12s;
   }
   .node-tile:hover, .node-tile.selected { border-color:var(--gold-hi); background:rgba(212,184,122,0.15); }
@@ -95,31 +97,33 @@
   .nt-owner { font-size:8.5px; color:var(--jade); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .nt-stats { font-size:7.5px; color:var(--muted); margin-top:2px; font-family:sans-serif; }
 
-  .node-inspector { background:rgba(8,10,14,0.94); border:1px solid var(--gold); padding:7px 9px; border-radius:3px; font-size:10.5px; }
+  .node-inspector { background:rgba(8,10,14,0.95); border:1px solid var(--gold); padding:7px 9px; border-radius:3px; font-size:10.5px; }
   .node-inspector h4 { color:var(--gold-hi); margin-bottom:3px; font-size:11.5px; }
   .node-inspector ul { margin-left:14px; margin-top:3px; color:var(--text); line-height:1.45; font-size:10px; }
 
-  .tabs { display:flex; border-bottom:1px solid var(--border); background:rgba(8,10,14,0.82); flex-shrink:0; }
-  .tab { flex:1; padding:7px 2px; font-size:10px; text-align:center; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:0.14s; }
+  .tabs { display:flex; border-bottom:1px solid var(--border); background:rgba(8,10,14,0.85); flex-shrink:0; }
+  .tab { flex:1; padding:7px 2px; font-size:9.8px; text-align:center; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:0.14s; }
   .tab.active { color:var(--gold-hi); border-bottom-color:var(--gold-hi); background:rgba(212,184,122,0.08); font-weight:600; }
-  .filter-bar { display:flex; gap:3px; flex-wrap:wrap; }
-  .pill { font-size:9px; padding:2px 5px; border-radius:2px; background:rgba(255,255,255,0.05); border:1px solid rgba(212,184,122,0.22); color:var(--muted); cursor:pointer; }
-  .pill.active { background:rgba(212,184,122,0.2); color:var(--gold-hi); border-color:var(--gold-hi); }
 
   .log-item { background:var(--card); border:1px solid rgba(212,184,122,0.14); padding:5px 8px; border-radius:3px; font-size:10.5px; line-height:1.48; display:flex; gap:6px; align-items:flex-start; }
   .tag { font-size:8.5px; padding:1px 4px; border-radius:2px; background:rgba(212,184,122,0.16); color:var(--gold-hi); flex-shrink:0; margin-top:2px; }
-  .tag.t-灭门, .tag.t-大劫, .tag.t-血祭, .tag.t-弑师, .tag.t-受骗, .tag.t-矿竭崩解 { background:rgba(224,98,88,0.26); color:#ffaaa3; }
-  .tag.t-秘宝, .tag.t-创法, .tag.t-考古, .tag.t-混血, .tag.t-凡人奇才, .tag.t-煞变, .tag.t-AI推演 { background:rgba(194,142,242,0.24); color:#e2c2ff; }
-  .tag.t-灵气复苏, .tag.t-建族, .tag.t-开宗, .tag.t-妖庭, .tag.t-飞升, .tag.t-大航海, .tag.t-命名 { background:rgba(111,211,168,0.24); color:#9ff2cf; }
+  .tag.t-红牌, .tag.t-灭门, .tag.t-大劫, .tag.t-矿竭崩解 { background:rgba(224,98,88,0.28); color:#ffaaa3; }
+  .tag.t-黄牌 { background:rgba(240,168,80,0.28); color:#ffd299; }
+  .tag.t-绿牌, .tag.t-灵气复苏, .tag.t-开宗, .tag.t-建族, .tag.t-大航海, .tag.t-命名 { background:rgba(111,211,168,0.24); color:#9ff2cf; }
+  .tag.t-AI推演, .tag.t-创法, .tag.t-混血, .tag.t-煞变, .tag.t-妖庭, .tag.t-飞升 { background:rgba(194,142,242,0.24); color:#e2c2ff; }
 
   .fac-card { background:var(--card); border:1px solid rgba(212,184,122,0.2); padding:6px 8px; border-radius:3px; font-size:10px; }
   .fac-card.dead { opacity:0.48; border-style:dashed; }
   .fac-card h4 { color:var(--gold-hi); font-size:11px; display:flex; justify-content:space-between; gap:6px; }
   .fac-card p { color:var(--muted); margin-top:2px; line-height:1.45; }
 
-  .rule-card { background:rgba(10,14,20,0.9); border:1px solid rgba(212,184,122,0.22); padding:7px 9px; border-radius:3px; font-size:10.5px; line-height:1.6; }
+  .rule-card { background:rgba(10,14,20,0.92); border:1px solid rgba(212,184,122,0.22); padding:7px 9px; border-radius:3px; font-size:10.5px; line-height:1.58; }
   .rule-card b { color:var(--gold-hi); }
-  .ai-output { background:rgba(6,9,13,0.92); border:1px solid rgba(111,211,168,0.35); padding:8px 10px; border-radius:3px; font-size:11px; line-height:1.65; white-space:pre-wrap; color:#e8f5ef; }
+  .code-box {
+    background:rgba(5,7,11,0.95); border:1px solid rgba(112,184,240,0.3); padding:7px 9px; border-radius:3px;
+    font-family:monospace; font-size:9.5px; line-height:1.5; white-space:pre-wrap; word-break:break-all; color:#cde3ff;
+    max-height:260px; overflow-y:auto;
+  }
   .chart-wrap { background:var(--card); border:1px solid rgba(212,184,122,0.18); padding:5px 7px; border-radius:3px; }
   .chart-head { display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-bottom:3px; }
   .toast { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); background:rgba(16,22,30,0.96); border:1px solid var(--jade); color:var(--jade); padding:6px 14px; border-radius:3px; font-size:11.5px; display:none; z-index:99; }
@@ -128,31 +132,36 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道演化实验室 v6.0（零黑箱·全修复）</h1>
-    <span>真零起点纯自然地理(无预设地名/宗门) · 拔掉刷人外挂 · 地理邻接+大航海 · 灵煞能量守恒 · DeepSeek 亲自主导推演</span>
+    <h1>沧溟天道因果推演引擎 v7.0</h1>
+    <span>零本地假剧情脚本 · 明文因果方向契约 · DeepSeek 唯一推演大脑 · 本地物理裁判所红黄牌校验</span>
   </div>
   <div class="top-controls">
     <button id="btn-reset">重置混元第1年</button>
-    <button id="btn-step10">+10年</button>
-    <button id="btn-step100">+100年</button>
-    <button id="btn-ai-step" class="ai-btn">🤖 DeepSeek 主导推演 +100年</button>
-    <button id="btn-play" class="jade">▶ 连续推演</button>
-    <button id="btn-run-all" class="primary">⚡ 跑满1200年</button>
+    <button id="btn-ds-step" class="ai-btn">🤖 DeepSeek 推演 +100年</button>
+    <button id="btn-ds-auto" class="jade">▶ 连续调用 DeepSeek 至目标年</button>
+    <button id="btn-ds-stop" class="primary" style="display:none;">⏹ 停止连续推演</button>
+    <button id="btn-export">💾 导出世界JSON</button>
     <button id="btn-copy">📋 复制快照</button>
   </div>
 </header>
 
 <div class="workspace">
-  <!-- LEFT: TRANSPARENT RULES & DEEPSEEK -->
+  <!-- LEFT: DEEPSEEK & CAUSAL CONTRACT PARAMETERS -->
   <div class="col">
-    <div class="col-head"><span>天道元规则 & DeepSeek 主导</span></div>
+    <div class="col-head"><span>DeepSeek 引擎 & 初始基础值</span></div>
     <div class="col-body">
-      <div class="ctrl-group">
-        <div class="ctrl-title">纪元初始参数（零预设地名/宗门）</div>
+      <div class="ctrl-group" style="border-color:rgba(112,184,240,0.45);">
+        <div class="ctrl-title"><span>DeepSeek 唯一推演大脑（必填）</span><span style="color:var(--blue);font-size:9px;">本地不编剧情</span></div>
+        <div class="row-inline"><label>API Key</label><input type="password" id="ds-key" placeholder="sk-... (仅存本机浏览器)" /></div>
+        <div class="row-inline"><label>模型名</label><input type="text" id="ds-model" value="deepseek-chat" /></div>
+        <div class="row-inline"><label>接口地址</label><input type="text" id="ds-url" value="https://api.deepseek.com/chat/completions" /></div>
         <div class="row-inline">
-          <label>随机种子</label>
-          <input type="number" id="inp-seed" value="88469" />
-          <button id="btn-rand-seed" style="flex-shrink:0;">🎲</button>
+          <label>单步跨度</label>
+          <select id="inp-step">
+            <option value="50">50 年 / 次（精细）</option>
+            <option value="100" selected>100 年 / 次（推荐·12次满1200年）</option>
+            <option value="200">200 年 / 次（宏观·6次满1200年）</option>
+          </select>
         </div>
         <div class="row-inline">
           <label>目标年数</label>
@@ -163,105 +172,102 @@
             <option value="2000">2000 年</option>
           </select>
         </div>
-      </div>
-
-      <div class="ctrl-group">
-        <div class="ctrl-title">已修复 8 大漏洞的公开物理参数</div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>地核灵气破封年份</span><b id="val-awake">第 51 年</b></div>
-          <input type="range" id="sl-awake" min="20" max="150" step="10" value="50" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>凡人十年增长(受承载软顶)</span><b id="val-pop">8%</b></div>
-          <input type="range" id="sl-pop" min="3" max="14" value="8" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>真实入道漏斗率(万分比)</span><b id="val-root">8‱ (0.08%)</b></div>
-          <input type="range" id="sl-root" min="2" max="25" value="8" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>宗门采矿与高层维持消耗</span><b id="val-consume">7</b></div>
-          <input type="range" id="sl-consume" min="3" max="13" value="7" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>地质板块/火山百年补矿</span><b id="val-regen">9</b></div>
-          <input type="range" id="sl-regen" min="3" max="18" value="9" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>煞气自然还原灵气率</span><b id="val-heal">5%</b></div>
-          <input type="range" id="sl-heal" min="1" max="14" value="5" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>宗门内爆分裂概率</span><b id="val-schism">20%</b></div>
-          <input type="range" id="sl-schism" min="4" max="45" value="20" />
-        </div>
-        <div class="slider-row">
-          <div class="slider-meta"><span>大劫雷暴与杀戮积煞率</span><b id="val-cata">30%</b></div>
-          <input type="range" id="sl-cata" min="10" max="65" value="30" />
-        </div>
-      </div>
-
-      <div class="ctrl-group">
-        <div class="ctrl-title">DeepSeek 亲自主导推演配置（本地直连）</div>
-        <div class="row-inline"><label>API Key</label><input type="password" id="ds-key" placeholder="sk-... (仅存本地浏览器)" /></div>
-        <div class="row-inline"><label>模型名</label><input type="text" id="ds-model" value="deepseek-chat" /></div>
-        <div class="row-inline"><label>接口地址</label><input type="text" id="ds-url" value="https://api.deepseek.com/chat/completions" /></div>
         <div class="row-inline" style="margin-top:2px;">
           <button id="btn-ds-test" style="flex:1;">测试连通</button>
-          <button id="btn-ds-audit" class="primary" style="flex:1;">审计当前规则</button>
+          <button id="btn-ds-audit" class="primary" style="flex:1;">请 DeepSeek 审查当前世界</button>
         </div>
-        <div id="ds-status" style="font-size:9.5px;color:var(--muted);">填入 Key 后点顶部蓝色「🤖 DeepSeek 主导推演 +100年」即可让 DeepSeek 亲自改写世界！</div>
+        <div id="ds-status" style="font-size:9.5px;color:var(--muted);line-height:1.45;">v7.0 已彻底删除本地剧情脚本。填入 Key 后点击顶部「🤖 DeepSeek 推演 +100年」启动真实因果推演！</div>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-title"><span>创世基础值（直接写入因果契约）</span></div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>地核灵气破封年份</span><b id="val-awake">第 51 年</b></div>
+          <input type="range" id="sl-awake" min="20" max="200" step="10" value="50" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>首波灵潮喷涌烈度</span><b id="val-surge">70% (释放14,000)</b></div>
+          <input type="range" id="sl-surge" min="30" max="90" step="5" value="70" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>凡人灵根入道漏斗(万分比)</span><b id="val-root">8‱ (0.08%)</b></div>
+          <input type="range" id="sl-root" min="1" max="30" value="8" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>修仙界灵矿消耗烈度</span><b id="val-consume">中等 (7/10)</b></div>
+          <input type="range" id="sl-consume" min="2" max="10" value="7" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>草木阵法净煞还灵速度</span><b id="val-heal">偏慢 (3/10)</b></div>
+          <input type="range" id="sl-heal" min="1" max="10" value="3" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>妖族/海族开智先发优势</span><b id="val-yao">偏高 (7/10)</b></div>
+          <input type="range" id="sl-yao" min="1" max="10" value="7" />
+        </div>
+        <div class="slider-row">
+          <div class="slider-meta"><span>天道杀劫与人心争斗烈度</span><b id="val-chaos">中等 (6/10)</b></div>
+          <input type="range" id="sl-chaos" min="1" max="10" value="6" />
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-title"><span>附加天道倾向（可选，注入给 DeepSeek）</span></div>
+        <textarea id="inp-custom-law" rows="3" placeholder="例：北陆进入冰河纪、或者南陆火山大爆发导致妖族先于人族建立皇庭…留空则完全按自然因果自由演化。"></textarea>
       </div>
     </div>
   </div>
 
-  <!-- CENTER: ZERO-PRESET GEOGRAPHY & STRICT CONSERVATION -->
+  <!-- CENTER: LIVE LEDGER & 24 RAW PLATES -->
   <div class="col">
     <div class="col-head">
       <span id="hdr-year">混元第 1 年 / 1200 年</span>
-      <span id="hdr-tide" style="font-size:10.5px;color:var(--muted);">第一纪·混元凡尘（大洲物理隔绝）</span>
+      <span id="hdr-tide" style="font-size:10.5px;color:var(--muted);">第一纪·混元凡尘 · 五洲物理隔绝</span>
     </div>
     <div class="col-body">
       <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
       <div class="kpi-grid">
-        <div class="kpi"><span>凡人人口 / 动态承载</span><b id="kpi-pop">-</b></div>
-        <div class="kpi"><span>真实存活修士(无刷人外挂!)</span><b id="kpi-cult">0 人</b></div>
-        <div class="kpi"><span>势力(世家/宗门/妖庭/灭)</span><b id="kpi-fac">0/0/0/0</b></div>
-        <div class="kpi"><span>均脉/均矿/均药/均煞</span><b id="kpi-res">0/0/0/0</b></div>
+        <div class="kpi"><span>凡人人口 / 承载上限</span><b id="kpi-pop">-</b></div>
+        <div class="kpi"><span>在世入册关键人物</span><b id="kpi-cult">0 人</b></div>
+        <div class="kpi"><span>在世势力 (已灭)</span><b id="kpi-fac">0 (灭0)</b></div>
+        <div class="kpi"><span>均脉 / 均矿 / 均药 / 均煞</span><b id="kpi-res">0/0/0/0</b></div>
       </div>
       <div class="energy-bar">
         <div><span>总灵能守恒(恒定 20,000)</span><b id="en-total">20,000</b></div>
         <div><span>地核沉睡池</span><b id="en-core">20,000</b></div>
-        <div><span>地表灵脉+生物锁定</span><b id="en-surf">0 + 0</b></div>
-        <div><span>怨煞污染池 / 跨海状态</span><b id="en-sha">0 · 隔绝</b></div>
+        <div><span>地表灵脉 + 生物锁存</span><b id="en-surf">0 + 0</b></div>
+        <div><span>怨煞池 · 裁判红/黄牌</span><b id="en-sha">0 · 0红/0黄</b></div>
       </div>
-      <div class="health-box era0" id="health-box">混元第 1 年：24 块未命名原始自然地理板块。无宗门、无世家、无修仙地名、无灵气、无煞气——所有地名与文明将在演化中自然诞生！</div>
+      <div class="health-box era0" id="health-box">
+        <b>混元第 1 年（零预设起点）</b> · 24 块原始自然板块，零宗门、零仙侠地名、零灵气、零煞气。本地代码<strong>绝不私自推进剧情</strong>，所有演化均由 DeepSeek 依据《因果方向契约》亲自推演，并经本地物理裁判所红线校验入账！
+      </div>
 
       <div class="chart-wrap">
         <div class="chart-head">
-          <span>能量与生态曲线（<b style="color:var(--blue)">■ 均脉</b> · <b style="color:var(--gold-hi)">■ 均矿</b> · <b style="color:var(--jade)">■ 人口负载%</b> · <b style="color:var(--purple)">■ 均煞</b>）</span>
-          <span id="chart-span">1 → 1200年</span>
+          <span>世界演进曲线（<b style="color:var(--blue)">■ 均脉</b> · <b style="color:var(--gold-hi)">■ 均矿</b> · <b style="color:var(--jade)">■ 人口负载%</b> · <b style="color:var(--purple)">■ 均煞</b>）</span>
+          <span id="chart-span">1 → 1 年</span>
         </div>
-        <svg id="trend-svg" viewBox="0 0 600 72" style="width:100%;height:66px;display:block;"></svg>
+        <svg id="trend-svg" viewBox="0 0 600 68" style="width:100%;height:62px;display:block;"></svg>
       </div>
 
       <div style="font-size:10px;color:var(--gold);display:flex;justify-content:space-between;">
-        <span>24 处原始地理板块（演化出城池/宗门/大劫后才会获得真实地名！）</span>
-        <span style="color:var(--muted);">绿=仙城 · 金=宗门 · 灰金=古宗遗址 · 红=焦土 · 紫=妖域</span>
+        <span>24 处原始地理板块（DeepSeek 推演出真实事件后动态定名）</span>
+        <span style="color:var(--muted);">绿=仙城 · 金=宗门 · 灰金=遗址 · 红=焦土 · 紫=妖域 · 蓝=海</span>
       </div>
       <div class="map-grid" id="map-grid"></div>
-      <div class="node-inspector" id="node-inspector">点击上方任意原始地理板块，查看其气候、邻接板块、五元数值与演变碑文。</div>
+      <div class="node-inspector" id="node-inspector">点击上方任意板块，查看其气候、五行、物理邻接关系、数值与演变碑文。</div>
     </div>
   </div>
 
-  <!-- RIGHT: 5 TABS INCLUDING TRANSPARENT LAWS -->
+  <!-- RIGHT: 6 TRANSPARENT TABS -->
   <div class="col">
     <div class="tabs" id="right-tabs">
       <div class="tab active" data-tab="chronicle">编年史</div>
-      <div class="tab" data-tab="rules">📜明文法则</div>
-      <div class="tab" data-tab="factions">世家宗门</div>
-      <div class="tab" data-tab="people">真实众生</div>
-      <div class="tab" data-tab="ai">DeepSeek</div>
+      <div class="tab" data-tab="contract">📜因果契约</div>
+      <div class="tab" data-tab="referee">⚖️裁判所</div>
+      <div class="tab" data-tab="factions">势力</div>
+      <div class="tab" data-tab="people">众生</div>
+      <div class="tab" data-tab="wire">🔍透视</div>
     </div>
     <div class="col-body" id="right-body"></div>
   </div>
@@ -269,250 +275,171 @@
 <div class="toast" id="toast"></div>
 
 <script>
-function makeRng(seed) {
-  let a = (Number(seed) || 88469) >>> 0;
-  return {
-    next() {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      let t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    },
-    int(lo, hi) { return lo + Math.floor(this.next() * (hi - lo + 1)); },
-    pick(arr) { return arr[Math.floor(this.next() * arr.length)]; }
-  };
-}
-
-const SURNAMES = ['苏','叶','顾','裴','崔','卢','姬','萧','宁','楚','洛','沈','温','燕','钟离','司空','澹台','独孤','公孙','慕容','敖','白','谢','秦'];
-const GIVEN_A  = ['玄','清','云','寒','星','长','无','千','苍','惊','忘','明','孤','流','断','焚','归','太','紫','青'];
-const GIVEN_B  = ['尘','歌','霜','舟','渊','河','涯','鸿','月','风','雪','鹤','松','竹','澜','冥','霄','离','微','玉'];
-
-// 严格按地形气候五行绑定的命名定律（彻底杜绝“火山建寒宫”“海族建青丘”穿帮！）
-const GEO_SECT_LAWS = {
-  fire:  [['赤炎','焚天','地火','祝融','丹鼎','玄火'], ['丹谷','火宗','炼体殿','药王山']],
-  ice:   [['凛冬','玄冰','北冥','寒霜','飞雪','太阴'], ['剑冢','寒宫','冰渊阁','雪原宗']],
-  wood:  [['青木','百草','青冥','苍梧','云梦','碧海'], ['剑宗','药阁','道门','合欢宫']],
-  earth: [['玄黄','钧天','镇岳','太初','玉虚','天枢'], ['圣宗','道庭','剑阁','仙门']],
-  ocean: [['沧溟','深渊','定海','东海','覆海','鲸吞'], ['海族龙庭','水府','沧海盟','玄鳌宫']],
-  sha:   [['九幽','血煞','黄泉','森罗','冥渊','天魔'], ['魔宫','鬼宗','圣教','冥殿']]
-};
-
-const POLICIES = [
-  { id:'expand', name:'强硬扩土' }, { id:'trade', name:'务实通商' },
-  { id:'turtle', name:'韬光养晦' }, { id:'charm', name:'纵情合纵' }, { id:'purge', name:'铁血肃清' }
-];
 const STAGE_CN = {
   raw_nature:'原始荒野', village:'凡人村落', town:'聚落坊镇', immortal_city:'仙凡巨城',
   sect_peak:'开山祖地', sect_ruin:'古宗遗址', beast_lair:'妖兽领地', wasteland:'劫雷焦土',
   ghost_domain:'怨煞鬼域', ocean_raw:'无名海域', ocean_port:'海族/商港'
 };
-const REALMS = [
-  { idx:0, name:'炼气', maxAge:95,   need:90,   lockE:2,   fert:0.55 },
-  { idx:1, name:'筑基', maxAge:150,  need:200,  lockE:8,   fert:0.35 },
-  { idx:2, name:'金丹', maxAge:260,  need:420,  lockE:30,  fert:0.15 },
-  { idx:3, name:'元婴', maxAge:420,  need:820,  lockE:110, fert:0.04 },
-  { idx:4, name:'化神', maxAge:680,  need:1600, lockE:320, fert:0.01 },
-  { idx:5, name:'合道', maxAge:1100, need:3200, lockE:900, fert:0.002 }
-];
-const ORIGINS = [
-  { name:'寒门孤儿', mod:{ yi:10, ren:-10, ao:-25, cheng:-20 }, iqB:8, eqB:4, daoB:0 },
-  { name:'凡俗商贾', mod:{ yi:-30, kuang:-20, cheng:-25 }, iqB:14, eqB:18, daoB:-8 },
-  { name:'部落猎户', mod:{ kuang:15, cheng:25, pan:15 }, iqB:0, eqB:-10, daoB:10 },
-  { name:'书香寒士', mod:{ yi:25, ren:20, cheng:20, dao:15 }, iqB:16, eqB:6, daoB:10 },
-  { name:'世家子弟', mod:{ ao:28, dao:-12, pan:-15 }, iqB:6, eqB:12, daoB:8 },
-  { name:'海岛渔民', mod:{ kuang:10, yi:10, cheng:10 }, iqB:4, eqB:6, daoB:6 }
-];
+const VALID_STAGES = new Set(Object.keys(STAGE_CN));
 
-// 真·零起点纯自然地理板块（无任何修仙地名！附带严格地理邻接 neighbors[]）
+const REALM_LIFESPAN = {
+  '凡人': { maxAge:75, lockE:0 },
+  '炼气': { maxAge:100, lockE:3 },
+  '筑基': { maxAge:160, lockE:12 },
+  '金丹': { maxAge:280, lockE:45 },
+  '元婴': { maxAge:450, lockE:150 },
+  '化神': { maxAge:720, lockE:420 },
+  '合道': { maxAge:1150, lockE:1100 },
+  '飞升': { maxAge:9999, lockE:0 }
+};
+
+// 24 块真·零起点原始自然地理板块（无任何修仙地名！附带严格地理邻接 neighbors[]）
 // [id, rawGeoName, region, climate, elem, arable, initPop, isSea, neighbors]
 const RAW_PLATES = [
-  // 东陆 (4)
   ['E1','东陆·山地①','east','温润','wood',52,6000,false,['E2','E3']],
   ['E2','东陆·河谷②','east','温润','wood',86,18000,false,['E1','E3','E4']],
   ['E3','东陆·密林③','east','温润','wood',38,2000,false,['E1','E2','E4']],
   ['E4','东陆·海岸④','east','温润','wood',74,16000,false,['E2','E3','O1']],
-  // 南陆 (4)
+
   ['S1','南陆·暖谷①','south','湿热','fire',68,8000,false,['S2','S3']],
   ['S2','南陆·火山②','south','炽热','fire',18,1200,false,['S1','S3','S4']],
   ['S3','南陆·沃野③','south','湿热','earth',84,20000,false,['S1','S2','S4']],
   ['S4','南陆·南湾④','south','湿热','fire',66,15000,false,['S2','S3','O2']],
-  // 北陆 (4)
+
   ['N1','北陆·雪峰①','north','极寒','ice',16,1500,false,['N2','N3']],
   ['N2','北陆·冻原②','north','极寒','ice',24,3000,false,['N1','N3','N4']],
   ['N3','北陆·冰渊③','north','极寒','ice',12,800,false,['N1','N2','N4']],
   ['N4','北陆·寒原④','north','苦寒','ice',46,12000,false,['N2','N3','O3']],
-  // 中陆 (4)
+
   ['C1','中陆·大平原①','central','温润','earth',92,42000,false,['C2','C3','C4']],
   ['C2','中陆·河网②','central','温润','earth',88,36000,false,['C1','C3','C4']],
   ['C3','中陆·高岭③','central','温润','earth',52,9000,false,['C1','C2','C4']],
   ['C4','中陆·矿丘④','central','干冷','earth',42,11000,false,['C1','C2','C3','O1']],
-  // 72% 沧溟大洋 (6)
+
   ['O1','沧溟·东浅海①','ocean','海风','ocean',48,8000,true,['E4','C4','O2','O4']],
   ['O2','沧溟·南暖海②','ocean','暖海','ocean',42,6000,true,['S4','O1','O5']],
   ['O3','沧溟·北寒海③','ocean','寒海','ocean',22,2000,true,['N4','O4','O5']],
   ['O4','沧溟·外海礁④','ocean','暴海','ocean',10,0,true,['O1','O3','O5','O6']],
   ['O5','沧溟·深海沟⑤','ocean','深海','ocean',4,0,true,['O2','O3','O4','O6']],
   ['O6','沧溟·极深渊⑥','ocean','极渊','ocean',2,0,true,['O4','O5','Y1']],
-  // 黑水洋彼岸孤洲 (2)
+
   ['Y1','彼岸·孤岛林①','yingzhou','温润','wood',70,3000,false,['O6','Y2']],
   ['Y2','彼岸·孤岛峰②','yingzhou','雷暴','earth',14,0,false,['Y1']]
 ];
 
+// 明文因果方向契约（同时渲染给用户看 + 原文注入给 DeepSeek！）
+const CAUSAL_LAWS = [
+  {
+    id:'L1', title:'能量绝对守恒律（总灵能恒定 20,000）',
+    rule:'世界总灵能恒定为 20,000 = 地核沉睡池 + 地表灵脉池 + 生物锁存灵能 + 怨煞池。地核破封年份前，地核池不得提前释放，地表灵脉/灵矿/灵药/煞气均为 0；破封后，灵脉增长只能来自地核释放或煞气净化还灵，绝不可凭空暴涨。'
+  },
+  {
+    id:'L2', title:'气候水土 → 人口与物产方向',
+    rule:'温润沃野承载高、凡人繁衍快，但灵脉易被争夺；极寒/火山/深海凡人稀少，但破封后更易孕育单属性高纯度灵矿（火/冰/水）与强悍妖兽。严寒/天灾/战乱会直接导致凡人锐减。'
+  },
+  {
+    id:'L3', title:'灵脉涌现 → 物种开智与修士漏斗',
+    rule:'灵气破封后，草木生灵、山海野兽最先感灵开智化妖（尤以海洋与荒野为甚）；凡人仅按极低漏斗率诞生灵根者，从散修→修真世家→开宗立派需经历漫长积累。允许妖族/海族/魔道先于人族称霸，绝不强行偏袒人族。'
+  },
+  {
+    id:'L4', title:'资源消耗 → 枯竭崩解与扩张冲动',
+    rule:'宗门与高阶修士聚集会持续消耗所在板块的灵矿与灵药。若某板块矿/药趋近枯竭（<10），势力必陷入衰落、内斗分裂、向邻接板块发起抢矿战争，或彻底崩解化作【古宗遗址】。'
+  },
+  {
+    id:'L5', title:'物理邻接隔离 & 大航海科技锁',
+    rule:'在诞生元婴级御空大能或跨洋灵舟正式解锁【大航海】前，五洲七海严格物理隔绝！任何势力扩张、征伐、通商、迁徙只能发生在 neighbors[] 邻接板块之间，严禁跨洲隔空打仗（违者会被物理裁判所直接驳回）。'
+  },
+  {
+    id:'L6', title:'杀戮积煞 → 生态魔化与人格演化',
+    rule:'战争、屠城、妖兽食人会将纯净灵气转化为怨煞（sha↑）；当板块煞气 ≥ 55 时，凡人锐减、灵草异变为毒瘴魔花、野兽化凶妖、催生鬼魔邪修；低煞环境下草木与阵法会按净煞速度缓慢还灵。关键人物的 8 维人格、智商/情商/悟性与既往记忆将真实左右其历史抉择。'
+  }
+];
+
 let SIM = null;
-let playTimer = null;
 let selectedNodeId = 'C1';
 let activeTab = 'chronicle';
-let logFilter = 'ALL';
-let aiLogs = [];
+let autoRunning = false;
+let isBusy = false;
 
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.display = 'block';
-  setTimeout(() => { t.style.display = 'none'; }, 2400);
-}
-function getLaws() {
-  return {
-    awakeYear: Number(document.getElementById('sl-awake').value) + 1,
-    popGrowth: Number(document.getElementById('sl-pop').value) / 100,
-    entryRate: Number(document.getElementById('sl-root').value) / 10000, // 万分比真实入道漏斗！
-    consume: Number(document.getElementById('sl-consume').value),
-    regenSurge: Number(document.getElementById('sl-regen').value),
-    shaPurify: Number(document.getElementById('sl-heal').value) / 100,
-    schism: Number(document.getElementById('sl-schism').value) / 100,
-    cata: Number(document.getElementById('sl-cata').value) / 100
-  };
-}
-function genName(rng, forceS) { return (forceS || rng.pick(SURNAMES)) + rng.pick(GIVEN_A) + (rng.next() < 0.78 ? rng.pick(GIVEN_B) : ''); }
-function genGeoSectName(rng, elemKey, used) {
-  const [preL, sufL] = GEO_SECT_LAWS[elemKey] || GEO_SECT_LAWS.earth;
-  for (let i = 0; i < 35; i++) {
-    const pre = rng.pick(preL);
-    const good = sufL.filter(s => ![...pre].some(ch => s.includes(ch)));
-    const cand = pre + rng.pick(good.length ? good : sufL);
-    if (!used.has(cand)) { used.add(cand); return cand; }
-  }
-  return rng.pick(preL) + '新宗';
-}
-function genPersonality(rng, m = {}) {
-  const cl = v => Math.max(-100, Math.min(100, v));
-  return {
-    yi:cl(rng.int(-80,80)+(m.yi||0)), kuang:cl(rng.int(-80,80)+(m.kuang||0)),
-    ren:cl(rng.int(-80,80)+(m.ren||0)), chi:cl(rng.int(-80,80)+(m.chi||0)),
-    ao:cl(rng.int(-80,80)+(m.ao||0)), dao:cl(rng.int(-80,80)+(m.dao||0)),
-    cheng:cl(rng.int(-80,80)+(m.cheng||0)), pan:cl(rng.int(-80,80)+(m.pan||0))
-  };
-}
-function describePers(p) {
-  return [
-    p.yi>=25?'重义':(p.yi<=-25?'功利':'中庸'),
-    p.kuang>=25?'狂进':(p.kuang<=-25?'苟道':'稳健'),
-    p.ren>=25?'仁慈':(p.ren<=-25?'狠辣':'冷峻'),
-    p.ao>=25?'刚烈':(p.ao<=-25?'隐忍':'沉静'),
-    p.cheng>=25?'赤诚':(p.cheng<=-25?'多疑':'审慎')
-  ].join('·');
-}
-function addMemory(c, year, text, mut = {}) {
-  c.memories = c.memories || [];
-  c.memories.unshift(`第${year}年：${text}`);
-  if (c.memories.length > 6) c.memories.length = 6;
-  Object.entries(mut).forEach(([k, d]) => { if (c.p && typeof c.p[k] === 'number') c.p[k] = Math.max(-100, Math.min(100, c.p[k] + d)); });
-  c.persLabel = describePers(c.p);
+  setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
 
-function spawnPerson(rng, seq, nd, opts = {}) {
-  const orig = opts.origin || rng.pick(ORIGINS);
-  const cl = v => Math.max(8, Math.min(100, v));
-  const iq = cl(rng.int(22, 92) + (orig.iqB || 0));
-  const eq = cl(rng.int(18, 92) + (orig.eqB || 0));
-  const daoWit = cl(rng.int(18, 95) + (orig.daoB || 0));
-  const species = opts.species || '人族';
-  const isMortal = opts.isMortal !== undefined ? opts.isMortal : true;
-  const rootScore = isMortal ? 0 : (opts.rootScore || rng.int(20, 96));
-  const talentRank = isMortal ? -1 : (rootScore >= 86 ? 2 : (rootScore >= 55 ? 1 : 0));
-  const speed = isMortal ? 0 : (opts.speed || +((talentRank === 2 ? 1.85 : (talentRank === 1 ? 1.1 : 0.6)) * (0.6 + daoWit / 110)).toFixed(2));
-  const rIdx = isMortal ? -1 : (opts.realmIdx !== undefined ? opts.realmIdx : 0);
-  const rDef = rIdx >= 0 ? REALMS[rIdx] : { name:'凡人', maxAge:70, need:9999, lockE:0, fert:0.85 };
-  const p = opts.pers || genPersonality(rng, orig.mod);
-  const name = opts.name || genName(rng, opts.surname);
+function getParams() {
   return {
-    id:'c_'+seq, name, surname:name[0], species, origin:orig.name, isMortal, iq, eq, daoWit,
-    rootScore, talentRank, speed,
-    factionId:opts.factionId || null, factionName:opts.factionName || (isMortal ? '凡尘部落' : `${species}散修`),
-    patronFaction:null, locId:nd.id, realmIdx:rIdx, exp:0, wealth:rng.int(10, 60),
-    age:opts.age !== undefined ? opts.age : rng.int(16, 30),
-    maxAge:Math.round(rDef.maxAge * ((species==='陆妖'||species==='海族') ? 1.6 : (species==='半妖异胎' ? 1.5 : 1.0))),
-    p, persLabel:describePers(p), isEvil:false, spouseId:null, spouseName:null,
-    masterId:null, masterName:null, disciples:0, children:0, rootChildren:0, artBonus:1.0, ownedArt:null,
-    memories:opts.memories || [`初入世：${orig.name}出身，生于【${nd.name}】`],
-    alive:true, motive:isMortal ? '凡尘营生' : '初感应灵气', hybridTrait:opts.hybridTrait || null
+    awakeYear: Number(document.getElementById('sl-awake').value) + 1,
+    surgePct: Number(document.getElementById('sl-surge').value),
+    entryBp: Number(document.getElementById('sl-root').value),
+    consumeLv: Number(document.getElementById('sl-consume').value),
+    healLv: Number(document.getElementById('sl-heal').value),
+    yaoLv: Number(document.getElementById('sl-yao').value),
+    chaosLv: Number(document.getElementById('sl-chaos').value),
+    stepYears: Number(document.getElementById('inp-step').value) || 100,
+    maxYears: Number(document.getElementById('inp-years').value) || 1200,
+    customLaw: (document.getElementById('inp-custom-law').value || '').trim()
   };
+}
+
+function getNodeCap(nd) {
+  const mul = nd.stage === 'immortal_city' ? 2.4 : (nd.stage === 'town' ? 1.35 : 1.0);
+  return Math.max(5000, Math.round((nd.arable / 100) * 190000 * mul));
+}
+
+function calcConservation() {
+  const locked = SIM.people.filter(c => c.alive).reduce((s, c) => s + ((REALM_LIFESPAN[c.realm]?.lockE) || 0), 0);
+  const shaE = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 3.5);
+  const rawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
+  const availableSurf = Math.max(0, SIM.totalEnergy - SIM.coreEnergy - locked - shaE);
+  return { total: SIM.totalEnergy, core: SIM.coreEnergy, surf: availableSurf, rawSurf, locked, shaE };
 }
 
 function initSim() {
-  stopPlay();
-  const seed = Number(document.getElementById('inp-seed').value) || 88469;
-  const maxYears = Number(document.getElementById('inp-years').value) || 1200;
-  const rng = makeRng(seed);
-
-  // 第 1 年：纯未命名原始地理板块！所有灵能(20,000)封存于地核沉睡池！
+  autoRunning = false;
+  updateAutoBtns();
+  const p = getParams();
   const nodes = RAW_PLATES.map(b => ({
     id:b[0], rawName:b[1], name:b[1], named:false, region:b[2], climate:b[3], elem:b[4],
     leyline:0, arable:b[5], mineral:0, herb:0, sha:0,
     flora:b[7] ? '普通海藻' : '普通草木', fauna:b[7] ? '普通深海鱼群' : '普通山林野兽',
     pop:b[6], isSea:b[7], neighbors:b[8],
     stage:b[7] ? 'ocean_raw' : (b[6] > 0 ? 'village' : 'raw_nature'),
-    owner:null, ruinAge:0, mortalRespect:10, vault:[],
-    history:[`第1年：原始无灵板块（气候:${b[3]} · 水土${b[5]} · 凡人${b[6].toLocaleString()}）`]
+    owner:null,
+    history:[`第1年：混元无灵原始板块（气候:${b[3]} · 五行:${b[4]} · 水土${b[5]} · 凡人${b[6].toLocaleString()}）`]
   }));
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-  // 初始仅生成 12 名真实凡人（无刷人外挂！）
-  const people = [];
-  const popNodes = nodes.filter(n => n.pop > 0);
-  for (let i = 1; i <= 12; i++) people.push(spawnPerson(rng, i, rng.pick(popNodes), { species:'人族', isMortal:true }));
-
   SIM = {
-    seed, maxYears, year:1, rng, used:new Set(),
-    awakened:false, seaTechUnlocked:false, eraName:'第一纪·混元凡尘',
-    totalEnergy:20000, coreEnergy:20000, // 绝对守恒总灵能池！
-    nodes, nodeMap, factions:[], dip:{}, people, seq:13,
-    relicDisc:{ locId:null, holderId:null, heldYears:0, idleYears:0 },
-    relics:[], createdArts:[],
-    stats:{ marriages:0, births:0, rootBirths:0, hybrids:0, mentors:0, betrayals:0, archaeo:0, ascensions:0, clansBorn:0, sectsBorn:0, yaoCourtsBorn:0 },
-    chronicles:[{ year:1, tag:'创世', text:'混元第1年：20,000 单位太古灵能全数封存于星核地底；地表无灵无煞无宗门，五洲七海物理隔绝。' }],
+    version:'7.0',
+    year:1, maxYears:p.maxYears,
+    awakened:false, seaTechUnlocked:false,
+    eraName:'第一纪·混元凡尘',
+    totalEnergy:20000, coreEnergy:20000,
+    nodes, nodeMap,
+    factions:[], people:[], createdArts:[],
+    chronicles:[{ year:1, tag:'创世', text:'混元第1年：20,000 单位太古灵能全数封存于星核地底；地表 24 块自然地理板块无灵、无煞、无宗门、无仙侠地名，五洲七海物理隔绝。等待 DeepSeek 依据《因果方向契约》启动真实推演。' }],
+    refereeLogs:[],
+    redCards:0, yellowCards:0,
+    wireLogs:[],
     historyMetrics:[]
   };
   recordMetric();
   renderAll();
 }
 
-function getNodeCap(nd) {
-  return Math.max(6000, Math.round((nd.arable / 100) * 190000 * (nd.stage === 'immortal_city' ? 2.4 : (nd.stage === 'town' ? 1.35 : 1.0))));
-}
-
-function calcConservation() {
-  const locked = SIM.people.filter(c => c.alive && c.realmIdx >= 0).reduce((s,c) => s + (REALMS[c.realmIdx]?.lockE || 1), 0);
-  const shaE = Math.round(SIM.nodes.reduce((s,n) => s + n.sha, 0) * 3.5);
-  const surfE = Math.max(0, SIM.totalEnergy - SIM.coreEnergy - locked - shaE);
-  return { total:SIM.totalEnergy, core:SIM.coreEnergy, surf:surfE, locked, shaE };
-}
-
 function recordMetric() {
   const n = SIM.nodes;
   const totalPop = n.reduce((s,x)=>s+x.pop, 0);
   const totalCap = n.reduce((s,x)=>s+getNodeCap(x), 0);
-  const aliveP = SIM.people.filter(c=>c.alive);
-  const aliveCult = aliveP.filter(c=>!c.isMortal);
   const aliveF = SIM.factions.filter(f=>f.alive);
+  const aliveP = SIM.people.filter(c=>c.alive);
   const en = calcConservation();
-
   SIM.historyMetrics.push({
-    year:SIM.year, pop:totalPop, cap:totalCap, popLoadPct:Math.min(100, Math.round((totalPop / Math.max(1, totalCap)) * 100)),
-    cultCount:aliveCult.length,
-    clans:aliveF.filter(f=>f.kind==='clan').length,
-    sects:aliveF.filter(f=>f.kind==='sect').length,
-    yaoCourts:aliveF.filter(f=>f.kind==='yao_court').length,
-    deadFac:SIM.factions.length - aliveF.length,
+    year:SIM.year, pop:totalPop, cap:totalCap,
+    popLoadPct:Math.min(100, Math.round((totalPop / Math.max(1, totalCap)) * 100)),
+    cultCount:aliveP.length,
+    aliveFac:aliveF.length, deadFac:SIM.factions.length - aliveF.length,
     avgLey:+(n.reduce((s,x)=>s+x.leyline, 0) / n.length).toFixed(1),
     avgMin:+(n.reduce((s,x)=>s+x.mineral, 0) / n.length).toFixed(1),
     avgHerb:+(n.reduce((s,x)=>s+x.herb, 0) / n.length).toFixed(1),
@@ -521,428 +448,533 @@ function recordMetric() {
   });
 }
 
-// 动态命名未命名板块（只在真实发生聚落/开宗/大劫事件时才命名！）
-function namePlateIfRaw(nd, newName, yr, reason) {
-  if (nd.named) return;
-  nd.name = newName; nd.named = true;
-  nd.history.push(`第${yr}年：因【${reason}】，原「${nd.rawName}」正式得名【${newName}】！`);
+// ===== 构建发给 DeepSeek 的完整《因果契约 + 全量 24 板块账本》Prompt =====
+function buildEpochPrompt(startY, endY, p) {
+  const en = calcConservation();
+  const plateLines = SIM.nodes.map(n =>
+    `${n.id}|${n.name}(${n.region}/${n.climate}/${n.elem})|形态:${n.stage}|归属:${n.owner||'无主'}|凡人:${n.pop}/${getNodeCap(n)}|脉:${n.leyline} 矿:${n.mineral} 药:${n.herb} 煞:${n.sha}|生态:${n.flora}/${n.fauna}|邻接:[${n.neighbors.join(',')}]`
+  ).join('\n');
+
+  const facLines = SIM.factions.filter(f=>f.alive).map(f => {
+    const owned = SIM.nodes.filter(n=>n.owner===f.name).map(n=>n.id).join(',') || '无固定板块';
+    return `- ${f.name} [${f.kind}] 掌舵:${f.leader} 国策:${f.policy} 控地:[${owned}] (建于第${f.born}年)`;
+  }).join('\n') || '（当前尚无任何修真世家、宗门、妖庭或魔道势力）';
+
+  const peopleLines = SIM.people.filter(c=>c.alive).slice(0, 18).map(c =>
+    `- ${c.name} [${c.species}·${c.realm}] 龄:${c.age}/${c.maxAge} 居:${c.plateId} 属:${c.faction} IQ:${c.iq}/EQ:${c.eq}/悟:${c.daoWit} 性格:${c.persLabel} 记忆:${(c.memories||[]).slice(-2).join('；')}`
+  ).join('\n') || '（当前尚无载入史册的修仙关键人物）';
+
+  const recentHist = SIM.chronicles.slice(0, 10).map(c => `[第${c.year}年·${c.tag}] ${c.text}`).join('\n');
+  const lawsText = CAUSAL_LAWS.map(l => `${l.id}. ${l.title}：${l.rule}`).join('\n');
+
+  const awakeHint = (!SIM.awakened && endY >= p.awakeYear)
+    ? `【本轮核心节点】：本时段（第 ${startY}~${endY} 年）跨过了设定的地核破封年份（第 ${p.awakeYear} 年）！请将 core_release 设为约 ${Math.round(20000 * p.surgePct / 100)}，并在 plate_updates 中为各地块合理分配破封后的灵脉、灵矿、灵药及万物开智变化！`
+    : (!SIM.awakened
+      ? `【本轮红线】：尚未到达地核破封年份（第 ${p.awakeYear} 年）！core_release 必须为 0，所有板块的 leyline/mineral/herb/sha 必须保持 0，只允许凡人自然繁衍、迁徙、聚落成镇、严寒饥荒等纯凡俗演化！`
+      : `【本轮状态】：灵气已破封，剩余地核池 ${SIM.coreEnergy}。请严格根据当前矿/药/煞/邻接关系推演势力兴衰、资源枯竭、生态异变、人物生老病死与跨物种演化。`);
+
+  return `你是《沧溟界》唯一的天道推演引擎。本地代码不会编造任何剧情，只充当“物理裁判所”校验你的输出是否违背因果与红线。
+请严格根据下方【创世基础参数】、【明文因果方向契约】与【当前全量 24 板块客观账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的真实世界演化！
+
+【一、创世基础参数（玩家设定）】
+- 地核灵气破封年份：第 ${p.awakeYear} 年 | 首波喷涌烈度：${p.surgePct}%
+- 凡人入道漏斗率：${p.entryBp}‱ (${(p.entryBp/100).toFixed(2)}%)
+- 灵矿消耗烈度：${p.consumeLv}/10 | 草木净煞还灵速度：${p.healLv}/10
+- 妖族/海族开智先发优势：${p.yaoLv}/10 | 天道杀劫与争斗烈度：${p.chaosLv}/10
+${p.customLaw ? `- 玩家附加天道倾向：${p.customLaw}` : ''}
+
+【二、明文因果方向契约（什么影响什么，必须遵守）】
+${lawsText}
+
+【三、当前世界客观状态（第 ${startY} 年）】
+- 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海连通：${SIM.seaTechUnlocked ? '已连通（允许跨洲）' : '未解锁（严格仅限 neighbors 邻接交互！）'}
+- 能量账本：总灵能 ${en.total} = 地核池 ${en.core} + 地表灵脉池 ${en.surf} + 生物锁存 ${en.locked} + 怨煞池 ${en.shaE}
+- ${awakeHint}
+
+【四、全量 24 处地理板块账本】
+${plateLines}
+
+【五、当前在世势力】
+${facLines}
+
+【六、当前在世关键人物】
+${peopleLines}
+
+【七、近期编年史】
+${recentHist}
+
+【输出要求】
+1. 允许演化出极端世界（如妖族/海族称霸、魔道煞土、宗门垄断或全界末法矿竭），完全尊重因果，不要强行写成套路化“正邪平衡”。
+2. 仅输出**严格合法的纯 JSON 对象**（不要 markdown 代码块，不要额外解释），字段结构如下：
+{
+  "era_name": "当前纪元名称（如第二纪·灵潮初涌妖海崛起）",
+  "core_release": 0,
+  "sea_tech_unlocked": false,
+  "sea_tech_reason": "若本百年首次解锁大航海则写明缘由，否则留空",
+  "epic_summary": "180字以内客观古风史书综述，交代核心因果链",
+  "plate_updates": [
+    {
+      "id": "板块ID(如E2/S2/O1)",
+      "new_name": "可选：仅当发生建镇/开宗/大劫等真实事件时定名，否则省略",
+      "stage": "raw_nature|village|town|immortal_city|sect_peak|sect_ruin|beast_lair|wasteland|ghost_domain|ocean_raw|ocean_port",
+      "pop_delta": 5000,
+      "leyline_delta": 0,
+      "mineral_delta": 0,
+      "herb_delta": 0,
+      "sha_delta": 0,
+      "flora": "可选：若生态变化则填",
+      "fauna": "可选：若野兽变化则填",
+      "owner_faction": "可选：归属势力名，无主填null",
+      "event_note": "该板块这百年的简短碑文"
+    }
+  ],
+  "faction_ops": [
+    {
+      "op": "create|update|destroy|schism",
+      "name": "势力名（须严守所在地气候五行）",
+      "kind": "clan|sect|yao_court|demon_cult",
+      "home_plate": "发源/主基地板块ID",
+      "leader": "掌舵者名",
+      "policy": "当前国策（如扩土/通商/韬光/血祭/海禁）",
+      "reason": "因果缘由"
+    }
+  ],
+  "people_ops": [
+    {
+      "op": "birth|update|die|ascend",
+      "name": "人物名",
+      "species": "人族|陆妖|海族|鬼魔|半妖异胎",
+      "plate_id": "板块ID",
+      "realm": "凡人|炼气|筑基|金丹|元婴|化神|合道|飞升",
+      "age": 35,
+      "iq": 82, "eq": 65, "dao_wit": 88,
+      "personality_label": "如：重义·狂进·狠辣·隐忍·多疑",
+      "faction": "所属势力名或散修",
+      "memory": "这百年塑造其心性的重大事件"
+    }
+  ],
+  "new_arts": [
+    { "name": "《功法名》", "creator": "创法者", "origin": "创法因果" }
+  ],
+  "chronicle_events": [
+    { "year_offset": 40, "tag": "灵气复苏|建族|开宗|妖庭|邻接征伐|矿竭崩解|煞变|大航海|混血|凡人奇才|飞升|创法|大劫", "text": "具体因果事件" }
+  ]
+}`;
 }
 
-function stepDecade() {
-  if (!SIM || SIM.year >= SIM.maxYears) { stopPlay(); return; }
-  SIM.year = Math.min(SIM.maxYears, SIM.year + 10);
-  const yr = SIM.year;
-  const rng = SIM.rng;
-  const laws = getLaws();
-  const log = (tag, text) => SIM.chronicles.unshift({ year:yr, tag, text });
+// ===== 本地物理裁判所：零编剧情，只校验红线、守恒、邻接与寿元！ =====
+function applyAndValidatePatch(patch, startY, endY, p) {
+  const stepSpan = endY - startY;
+  const ref = [];
+  const addRef = (level, text) => {
+    if (level === '红牌') SIM.redCards++;
+    if (level === '黄牌') SIM.yellowCards++;
+    const item = { year:endY, level, text };
+    ref.push(item);
+    SIM.refereeLogs.unshift(item);
+  };
 
-  // ===== 1. 地核破封喷涌（严格守恒：从 coreEnergy 释放到地表！） =====
-  if (!SIM.awakened && yr >= laws.awakeYear) {
+  SIM.year = endY;
+  if (patch.era_name) SIM.eraName = String(patch.era_name).slice(0, 24);
+
+  // 1. 校验地核破封红线
+  let reqRelease = Math.max(0, Math.round(Number(patch.core_release) || 0));
+  if (!SIM.awakened && endY < p.awakeYear) {
+    if (reqRelease > 0) {
+      addRef('红牌', `第${endY}年未到破封年份(第${p.awakeYear}年)，驳回 DeepSeek 提前释放地核灵能(${reqRelease})！`);
+      reqRelease = 0;
+    }
+  } else if (!SIM.awakened && endY >= p.awakeYear) {
     SIM.awakened = true;
-    SIM.eraName = '第二纪·地核破封万物觉醒';
-    const release = 14000;
-    SIM.coreEnergy -= release;
-    SIM.nodes.forEach(nd => {
-      const burst = rng.int(35, 88);
-      nd.leyline = burst;
-      nd.mineral = rng.int(40, 92);
-      nd.herb = nd.arable > 20 ? rng.int(35, 88) : rng.int(15, 50);
-      nd.flora = nd.isSea ? '初生海灵草' : '初生灵草灵木';
-      nd.fauna = nd.isSea ? '觉醒海妖群' : '觉醒山林妖兽';
-      nd.history.push(`第${yr}年：地核灵气破封涌出（灵脉${nd.leyline}/矿${nd.mineral}），草木生灵、野兽开智！`);
-    });
-    // 天地唯一【造化轮回盘】随地核裂变首次现世
-    const discNd = rng.pick(SIM.nodes);
-    SIM.relicDisc = { locId:discNd.id, holderId:null, heldYears:0, idleYears:0 };
-    log('灵气复苏', `【地核破封】沧溟第${yr}年！星核封存的 14,000 单位太古灵能涌入地表，草木生灵、山海野兽开智，凡人按 ${(laws.entryRate*100).toFixed(2)}% 真实入道漏斗诞生首批散修！`);
+    const minRelease = Math.round(20000 * p.surgePct / 100);
+    if (reqRelease < minRelease * 0.5) {
+      addRef('黄牌', `跨过破封年份(第${p.awakeYear}年)但 DeepSeek 仅释放 ${reqRelease}，裁判所按设定烈度补足地核释放至 ${minRelease}。`);
+      reqRelease = minRelease;
+    }
+    reqRelease = Math.min(SIM.coreEnergy, reqRelease);
+    SIM.coreEnergy -= reqRelease;
+    addRef('绿牌', `地核正式破封，从星核池释放 ${reqRelease} 单位灵能至地表（剩余地核池 ${SIM.coreEnergy}）。`);
+  } else if (reqRelease > 0) {
+    reqRelease = Math.min(SIM.coreEnergy, reqRelease);
+    SIM.coreEnergy -= reqRelease;
+    addRef('绿牌', `地核二次微泄，释放 ${reqRelease} 单位灵能（剩余地核池 ${SIM.coreEnergy}）。`);
   }
 
-  // ===== 2. 地格物理演化：冷暖饥寒 + Logistic 承载 + 双向灵煞循环 + 地质补矿 =====
-  const en = calcConservation();
-  SIM.nodes.forEach(nd => {
-    const cap = getNodeCap(nd);
-    const ownerF = nd.owner ? SIM.factions.find(f => f.id === nd.owner && f.alive) : null;
-
-    if (nd.pop > 0) {
-      if (!SIM.awakened && (nd.climate === '极寒' || nd.climate === '苦寒') && rng.next() < 0.20) {
-        const lost = Math.round(nd.pop * 0.14);
-        nd.pop -= lost; nd.history.push(`第${yr}年：严寒冻灾折损凡人 ${lost.toLocaleString()} 口。`);
-      } else if (nd.sha >= 55) {
-        nd.pop = Math.max(0, Math.round(nd.pop * (1 - (nd.sha - 45) * 0.008)));
-        nd.mortalRespect = Math.max(-100, nd.mortalRespect - 10);
-      } else {
-        const load = nd.pop / Math.max(1, cap);
-        nd.pop = Math.max(0, Math.round(nd.pop * (1 + laws.popGrowth * (1 - load))));
-        if (ownerF && nd.sha < 25) {
-          nd.arable = Math.min(98, nd.arable + 1);
-          nd.mortalRespect = Math.min(100, nd.mortalRespect + (ownerF.p.ren >= 0 ? 4 : -2));
-        }
-      }
-      if (nd.stage === 'village' && nd.pop >= 32000) {
-        nd.stage = 'town';
-        namePlateIfRaw(nd, rng.pick(['青禾','云帆','洛水','南离','霜雪','长乐']) + '镇', yr, '凡人繁衍成镇');
-      } else if (nd.stage === 'town' && nd.pop >= 120000 && nd.arable >= 52) {
-        nd.stage = 'immortal_city';
-        namePlateIfRaw(nd, rng.pick(['钧天','万川','太安','临海','天都']) + '城', yr, '人口破十二万升格巨城');
-      }
-    }
-
-    if (!SIM.awakened) return;
-
-    // 灵矿开采与百年地质/火山补矿（彻底解决千年矿归零！）
-    const geoRegen = (yr % 100 === 0 && rng.next() < 0.55) ? rng.int(12, 24) : rng.int(1, Math.max(2, Math.floor(laws.regenSurge * 0.35)));
-    if (ownerF) {
-      const disc = (ownerF.policyId==='turtle'||ownerF.policyId==='trade') ? 2 : 0;
-      nd.mineral = Math.max(0, Math.min(98, nd.mineral - Math.max(2, laws.consume - disc) + geoRegen));
-      nd.herb = Math.max(2, Math.min(98, nd.herb - rng.int(2, 4) + (nd.sha < 38 ? rng.int(2, 5) : 0)));
+  // 2. 校验大航海解锁红线
+  if (patch.sea_tech_unlocked && !SIM.seaTechUnlocked) {
+    if (!SIM.awakened) {
+      addRef('红牌', `混元无灵纪尚未破封，驳回过早解锁跨洋大航海！`);
     } else {
-      nd.mineral = Math.min(98, nd.mineral + geoRegen + 1);
-      nd.herb = nd.sha < 40 ? Math.min(98, nd.herb + rng.int(2, 5)) : Math.max(0, nd.herb - 4);
-    }
-
-    // 灵煞双向守恒循环：煞气按 shaPurify 缓慢还原为纯净地脉灵气！
-    if (nd.sha > 0) {
-      const purified = Math.max(1, Math.round(nd.sha * laws.shaPurify * 2.2));
-      nd.sha = Math.max(0, nd.sha - purified);
-      nd.leyline = Math.min(98, nd.leyline + Math.floor(purified * 0.3));
-    }
-
-    // 煞气二次异变草木与野兽
-    if (nd.sha >= 55 && nd.flora !== '毒瘴魔花') {
-      nd.flora = '毒瘴魔花'; nd.fauna = nd.isSea ? '嗜血海魔' : '吸煞凶妖';
-      nd.history.push(`第${yr}年：怨煞(${nd.sha})侵蚀，灵草化魔花、野兽化凶妖！`);
-    } else if (nd.sha < 20 && nd.flora === '毒瘴魔花') {
-      nd.flora = '复苏灵草'; nd.fauna = nd.isSea ? '觉醒海妖群' : '觉醒灵兽';
-    }
-
-    // 妖兽吃人抢地（真实物种食物链生存博弈！）
-    if (nd.stage === 'beast_lair' && nd.pop > 1500 && !ownerF) {
-      const eaten = Math.round(nd.pop * 0.15);
-      nd.pop = Math.max(0, nd.pop - eaten);
-      nd.sha = Math.min(96, nd.sha + 4);
-    }
-    // 遗址 50 年生态共生
-    if (nd.stage === 'sect_ruin') {
-      nd.ruinAge = (nd.ruinAge || 0) + 10;
-      if (nd.ruinAge >= 50 && rng.next() < 0.26) nd.stage = nd.sha >= 45 ? 'ghost_domain' : 'beast_lair';
-    }
-  });
-
-  // ===== 3. 拔掉“无限刷人外挂”！真实由凡人人口 × 入道漏斗率 + 修士婚恋遗传诞生新修士！ =====
-  const newPeople = [];
-  if (SIM.awakened) {
-    // A) 凡人真实入道漏斗（无外挂！若凡人绝种，新修士产出立刻归零！）
-    const totalMortalPop = SIM.nodes.reduce((s,n)=>s+n.pop, 0);
-    const decadeBirths = totalMortalPop * 0.22; // 10年约出生人口基数的 22%
-    const avgSha = SIM.nodes.reduce((s,n)=>s+n.sha, 0) / SIM.nodes.length;
-    const rawNewCult = Math.round(decadeBirths * laws.entryRate * Math.max(0.2, 1.15 - avgSha / 95));
-    // 为保持浏览器流畅，以每 1 名代表个体象征一批同代修士（最多每十年新增 10 名入册天骄/散修，绝不强行补齐！）
-    const spawnCap = Math.min(10, Math.floor(rawNewCult / 45));
-    const popNodes = SIM.nodes.filter(n => n.pop >= 2000 && !n.isSea);
-    for (let i = 0; i < spawnCap && popNodes.length && SIM.people.length + newPeople.length < 110; i++) {
-      const nd = rng.pick(popNodes);
-      const rs = rng.next() < 0.72 ? rng.int(18, 54) : (rng.next() < 0.88 ? rng.int(55, 85) : rng.int(86, 100));
-      const aliveHumanF = SIM.factions.filter(f => f.alive && f.kind !== 'yao_court' && f.region === nd.region);
-      const joinF = aliveHumanF.length && rs >= 55 && rng.next() < 0.6 ? rng.pick(aliveHumanF) : null;
-      newPeople.push(spawnPerson(rng, SIM.seq++, nd, { species:'人族', isMortal:false, rootScore:rs, factionId:joinF?.id, factionName:joinF?.name }));
-    }
-    // B) 山海自然开智妖族 & 高煞自然孕育鬼魔（同样无硬刷外挂！）
-    const wildSea = SIM.nodes.filter(n => n.isSea && n.leyline >= 40);
-    if (wildSea.length && rng.next() < 0.55 && SIM.people.length + newPeople.length < 110) {
-      newPeople.push(spawnPerson(rng, SIM.seq++, rng.pick(wildSea), { species:'海族', isMortal:false, rootScore:rng.int(45,94) }));
-    }
-    const wildLand = SIM.nodes.filter(n => !n.isSea && n.leyline >= 45 && !n.owner);
-    if (wildLand.length && rng.next() < 0.45 && SIM.people.length + newPeople.length < 110) {
-      newPeople.push(spawnPerson(rng, SIM.seq++, rng.pick(wildLand), { species:'陆妖', isMortal:false, rootScore:rng.int(45,94) }));
-    }
-    const highShaN = SIM.nodes.filter(n => n.sha >= 55);
-    if (highShaN.length && rng.next() < 0.40 && SIM.people.length + newPeople.length < 110) {
-      newPeople.push(spawnPerson(rng, SIM.seq++, rng.pick(highShaN), { species:'鬼魔', isMortal:false, rootScore:rng.int(48,92) }));
+      SIM.seaTechUnlocked = true;
+      SIM.chronicles.unshift({ year:endY, tag:'大航海', text:`【大航海解锁】${patch.sea_tech_reason || '跨洋灵舟与高阶御空之术传开，五洲七海正式打破物理隔绝！'}` });
+      addRef('绿牌', `校验通过：正式解锁跨洲大航海！`);
     }
   }
 
-  // ===== 4. 活人个体演化：修行、大航海解锁、建族/开宗/立妖庭（严格按地理五行命名！）、婚恋遗传、轮回盘怀璧其罪 =====
-  const surfRatio = en.surf / Math.max(1, SIM.totalEnergy - SIM.coreEnergy);
-  SIM.people.forEach(c => {
-    if (!c.alive) return;
-    c.age += 10;
-    const nd = SIM.nodeMap[c.locId] || SIM.nodes[0];
-
-    if (c.isMortal) {
-      // 无灵根凡人奇才：必须依附当地在世宗门/世家充当大掌柜/军师，以利益绑定保命！
-      if ((c.iq >= 78 || c.eq >= 78) && !c.mortalFame) {
-        const localF = SIM.factions.find(f => f.alive && f.id === nd.owner);
-        if (localF) {
-          c.patronFaction = localF.name; c.mortalFame = true;
-          addMemory(c, yr, `以凡人鬼才(IQ:${c.iq})替【${localF.name}】掌管凡俗财赋与药材商路`, { ao:15 });
-          log('凡人奇才', `无灵根凡人【${c.name}】(IQ:${c.iq}/EQ:${c.eq})成为【${localF.name}】大管家，凭利益绑定获金丹护持，掌控一域商路！`);
-        }
-      }
-      if (c.age >= c.maxAge) c.alive = false;
-      return;
-    }
-
-    // 真实修行（受守恒公共灵能池比例 surfRatio 制约！）
-    const envMul = (c.isEvil || c.species === '鬼魔') ? (1 + nd.sha / 120) : (0.45 + (nd.leyline / 100) * (0.6 + surfRatio * 0.6));
-    c.exp += Math.round(52 * c.speed * envMul * (c.masterId ? 1.25 : 1.0) * c.artBonus);
-    if (c.age / c.maxAge >= 0.80 && c.p.ren < 5 && rng.next() < 0.30) c.isEvil = true;
-
-    // 破境（严格陡峭淘汰率！）
-    const curR = REALMS[c.realmIdx], nextR = REALMS[c.realmIdx + 1];
-    if (nextR && c.exp >= curR.need && (nd.leyline >= 30 || c.realmIdx < 1)) {
-      c.exp -= curR.need;
-      const basePass = c.realmIdx === 0 ? 0.38 : (c.realmIdx === 1 ? 0.30 : (c.realmIdx === 2 ? 0.22 : 0.16));
-      const passProb = Math.min(0.82, basePass * (c.talentRank === 2 ? 2.2 : (c.talentRank === 1 ? 1.35 : 0.75)));
-      if (rng.next() < passProb) {
-        c.realmIdx++;
-        c.maxAge = Math.round(nextR.maxAge * ((c.species==='陆妖'||c.species==='海族') ? 1.6 : (c.species==='半妖异胎' ? 1.5 : 1.0)));
-        // 首次诞生元婴大能 → 解锁【跨海大连通纪元】！
-        if (c.realmIdx >= 3 && !SIM.seaTechUnlocked) {
-          SIM.seaTechUnlocked = true;
-          log('大航海', `【五洲大连通】第${yr}年，【${c.name}】首破元婴御空渡海，跨洋灵舟术随之传开，孤立百年的五洲七海正式连通碰撞！`);
-        }
-      } else if (c.realmIdx >= 2 && rng.next() < 0.40) c.alive = false;
-    } else if (!nextR && c.exp >= curR.need && rng.next() < 0.22) {
-      // 【天道紫霄驱逐律】：超载者必被驱逐飞升或劈死化道，绝不炸档！
-      c.alive = false; SIM.stats.ascensions++;
-      nd.leyline = Math.min(98, nd.leyline + 12);
-      log('飞升', `【紫霄驱逐·白日飞升】合道圣君【${c.name}】证道【万道真仙】触及界域上限，天道降雷强开界壁，其撕裂虚空飞升仙界！`);
-    }
-
-    // 婚恋与 6 档遗传生育
-    if (!c.spouseId && c.age >= 20 && c.species !== '鬼魔' && rng.next() < 0.10) {
-      const pt = SIM.people.find(x => x.alive && !x.spouseId && x.id !== c.id && x.age >= 20 && x.species !== '鬼魔' && x.locId === c.locId);
-      if (pt) { c.spouseId = pt.id; c.spouseName = pt.name; pt.spouseId = c.id; pt.spouseName = c.name; SIM.stats.marriages++; }
-    }
-    if (c.spouseId && c.children < 3 && nd.sha < 50) {
-      const sp = SIM.people.find(x => x.id === c.spouseId && x.alive);
-      if (sp) {
-        const cross = c.species !== sp.species;
-        const prob = cross ? 0.005 : (Math.min(REALMS[c.realmIdx]?.fert??0.8, REALMS[sp.realmIdx]?.fert??0.8) * 0.35);
-        if (rng.next() < prob && newPeople.length < 14) {
-          c.children++; sp.children++; SIM.stats.births++;
-          if (cross) {
-            SIM.stats.hybrids++; c.rootChildren++;
-            const trait = rng.pick(['青丘魅骨','龙裔战体','玄幽冥瞳']);
-            const bName = genName(rng, c.surname);
-            newPeople.push(spawnPerson(rng, SIM.seq++, nd, { name:bName, species:'半妖异胎', isMortal:false, rootScore:99, speed:2.85, realmIdx:1, age:16, hybridTrait:trait }));
-            log('混血', `【0.5%彩蛋·混血异胎】${c.species}【${c.name}】与${sp.species}【${sp.name}】诞下【${bName}】(${trait})！`);
-          } else {
-            const pRoot = (c.talentRank >= 2 && sp.talentRank >= 2) ? 0.82 : ((c.talentRank >= 1 && sp.talentRank >= 1) ? 0.65 : 0.42);
-            const hasRoot = rng.next() < pRoot;
-            if (hasRoot) { c.rootChildren++; sp.rootChildren++; SIM.stats.rootBirths++; }
-            newPeople.push(spawnPerson(rng, SIM.seq++, nd, { surname:c.surname, species:c.species, isMortal:!hasRoot, rootScore:hasRoot?rng.int(25,98):0, realmIdx:hasRoot?0:-1, age:16, factionId:c.factionId, factionName:c.factionName }));
-          }
-        }
-      }
-    }
-
-    // 从零诞生世家/宗门/妖庭（严格绑定当前板块气候与五行命名，彻底杜绝穿帮！）
-    if (!c.factionId && SIM.factions.filter(f=>f.alive).length < 14 && !nd.owner && nd.leyline >= 40) {
-      const geoKey = c.isEvil ? 'sha' : (nd.isSea ? 'ocean' : nd.elem);
-      if ((c.species === '海族' || c.species === '陆妖') && c.realmIdx >= 2 && rng.next() < 0.45) {
-        const yName = genGeoSectName(rng, nd.isSea ? 'ocean' : nd.elem, SIM.used);
-        const fid = `f_y_${yr}_${c.id}`;
-        SIM.factions.push({ id:fid, kind:'yao_court', elem:geoKey, region:nd.region, name:yName, homeId:nd.id, alive:true, born:yr, fallen:null, leader:c.name, age:c.age, maxAge:c.maxAge, p:{...c.p}, persLabel:c.persLabel, policyId:'expand', policyName:'强硬扩土', gen:1, power:66, dryDecades:0, arts:[] });
-        nd.owner = fid; nd.stage = nd.isSea ? 'ocean_port' : 'beast_lair';
-        namePlateIfRaw(nd, yName.slice(0,2) + (nd.isSea ? '海域' : '妖域'), yr, `${yName}立庭`);
-        c.factionId = fid; c.factionName = yName; SIM.stats.yaoCourtsBorn++;
-        log('妖庭', `【万妖立庭】${c.species}【${c.name}】在【${nd.name}】(${nd.climate})建立【${yName}】！`);
-      } else if (c.species === '人族' && c.realmIdx >= 1 && c.rootChildren >= 1 && rng.next() < 0.42) {
-        const cName = `${c.surname}氏修真世家`;
-        if (!SIM.used.has(cName)) {
-          SIM.used.add(cName);
-          const fid = `f_c_${yr}_${c.id}`;
-          SIM.factions.push({ id:fid, kind:'clan', elem:geoKey, region:nd.region, name:cName, homeId:nd.id, alive:true, born:yr, fallen:null, leader:c.name, age:c.age, maxAge:c.maxAge, p:{...c.p}, persLabel:c.persLabel, policyId:'turtle', policyName:'韬光养晦', gen:1, power:58, dryDecades:0, arts:[] });
-          nd.owner = fid; nd.stage = 'sect_peak';
-          namePlateIfRaw(nd, `${c.surname}氏祖山`, yr, `${cName}建祠`);
-          c.factionId = fid; c.factionName = cName; SIM.stats.clansBorn++;
-          log('建族', `【世家诞生】${c.name}见子嗣灵根频现，于【${nd.name}】聚族创立【${cName}】！`);
-        }
-      } else if (c.species === '人族' && c.realmIdx >= 2 && rng.next() < 0.42) {
-        const sName = genGeoSectName(rng, geoKey, SIM.used);
-        const fid = `f_s_${yr}_${c.id}`;
-        SIM.factions.push({ id:fid, kind:'sect', elem:geoKey, region:nd.region, name:sName, homeId:nd.id, alive:true, born:yr, fallen:null, leader:c.name, age:c.age, maxAge:c.maxAge, p:{...c.p}, persLabel:c.persLabel, policyId:rng.pick(POLICIES).id, policyName:'务实通商', gen:1, power:62, dryDecades:0, arts:[] });
-        nd.owner = fid; nd.stage = 'sect_peak';
-        namePlateIfRaw(nd, sName.slice(0,2) + '灵峰', yr, `${sName}开山`);
-        c.factionId = fid; c.factionName = sName; SIM.stats.sectsBorn++;
-        log('开宗', `【开山立派】${c.name}依【${nd.name}】(${nd.climate}/${nd.elem})灵脉创立【${sName}】！`);
-      }
-    }
-
-    if (c.age >= c.maxAge) c.alive = false;
-  });
-
-  SIM.people = SIM.people.filter(c => c.alive).concat(newPeople);
-
-  // ===== 5. 势力邻接扩张（严格地理邻接！）+ 矿竭连续20年硬崩解！ =====
-  if (SIM.awakened && SIM.factions.length) {
-    SIM.eraName = SIM.seaTechUnlocked ? '第四纪·五洲大连通征伐' : '第三纪·各大洲独立演化';
-    SIM.factions.filter(f => f.alive).forEach(fac => {
-      fac.age += 10;
-      const owned = SIM.nodes.filter(n => n.owner === fac.id);
-      const avgMin = owned.length ? owned.reduce((s,n)=>s+n.mineral, 0) / owned.length : 0;
-      const avgHerb = owned.length ? owned.reduce((s,n)=>s+n.herb, 0) / owned.length : 0;
-
-      // 【硬因果修复】连续 20 年缺矿缺药 → 弟子叛逃、大阵停摆、宗门真实崩解！
-      if (owned.length && avgMin < 6 && avgHerb < 8) {
-        fac.dryDecades = (fac.dryDecades || 0) + 1;
-        fac.power = Math.max(0, fac.power - 24);
-      } else {
-        fac.dryDecades = 0;
-      }
-
-      if ((!owned.length && fac.power <= 25) || fac.dryDecades >= 2) {
-        fac.alive = false; fac.fallen = yr;
-        const hNd = SIM.nodeMap[fac.homeId];
-        if (hNd) {
-          hNd.stage = 'sect_ruin'; hNd.ruinAge = 0; hNd.owner = null; hNd.sha = Math.min(96, hNd.sha + 25);
-          hNd.vault.push(`《${fac.name.slice(0,2)}遗脉残经》`);
-          namePlateIfRaw(hNd, `${fac.name.slice(0,2)}古墟`, yr, '宗门灭门化墟');
-        }
-        log(fac.dryDecades >= 2 ? '矿竭崩解' : '灭门', `【${fac.name}】${fac.dryDecades>=2?'因连续廿载无矿无药、弟子散尽而真实崩解':'失尽灵脉灭门'}，原址化为【古宗遗址】！`);
+  // 3. 处理势力操作（严禁已灭势力无故复活）
+  const facOps = Array.isArray(patch.faction_ops) ? patch.faction_ops : [];
+  facOps.forEach(op => {
+    if (!op || !op.name) return;
+    const name = String(op.name).trim();
+    const existing = SIM.factions.find(f => f.name === name);
+    if (op.op === 'create' || op.op === 'schism') {
+      if (existing && !existing.alive) {
+        addRef('红牌', `驳回已覆灭势力【${name}】无故复活！`);
         return;
       }
+      if (!existing) {
+        const home = SIM.nodeMap[op.home_plate];
+        if (!SIM.awakened && op.kind !== 'clan') {
+          addRef('红牌', `第${endY}年尚未灵气破封，驳回提前建立修仙势力【${name}】！`);
+          return;
+        }
+        SIM.factions.push({
+          name, kind:op.kind || 'sect', homePlate:home ? home.id : null,
+          leader:op.leader || '无名先祖', policy:op.policy || '初立',
+          born:endY, fallen:null, alive:true, reason:op.reason || ''
+        });
+        if (home && !home.owner) home.owner = name;
+        addRef('绿牌', `登记新势力【${name}】(${op.kind || 'sect'}) 于 ${home ? home.name : '未知域'}。`);
+      }
+    } else if (op.op === 'update' && existing && existing.alive) {
+      if (op.leader) existing.leader = op.leader;
+      if (op.policy) existing.policy = op.policy;
+      if (op.reason) existing.reason = op.reason;
+    } else if (op.op === 'destroy' && existing && existing.alive) {
+      existing.alive = false; existing.fallen = endY;
+      SIM.nodes.forEach(n => {
+        if (n.owner === name) {
+          n.owner = null;
+          if (n.stage === 'sect_peak') n.stage = 'sect_ruin';
+        }
+      });
+      addRef('绿牌', `核销覆灭势力【${name}】，其原有祖地转为古宗遗址/无主状态。`);
+    }
+  });
 
-      // 地理邻接扩张（大航海前严禁跨洲跨海乱打！）
-      if (owned.length && rng.next() < 0.25) {
-        const adjIds = new Set();
-        owned.forEach(n => n.neighbors.forEach(nb => adjIds.add(nb)));
-        const cands = [...adjIds].map(id => SIM.nodeMap[id]).filter(t => t && t.owner !== fac.id && (SIM.seaTechUnlocked || t.region === fac.region));
-        if (cands.length) {
-          const tgt = rng.pick(cands);
-          const defn = SIM.factions.find(f => f.id === tgt.owner && f.alive);
-          if (fac.power + rng.int(0, 25) > (defn ? defn.power : 32) + rng.int(0, 25)) {
-            tgt.owner = fac.id; tgt.sha = Math.min(96, tgt.sha + 12);
-            log('邻接征伐', `【${fac.name}】循陆/海邻接通道攻占【${tgt.name}】${defn?`，击退【${defn.name}】`:''}！`);
+  // 4. 校验并应用 24 板块变更（含地理邻接红线 + 人口承载红线 + 无灵纪红线）
+  const usedNames = new Set(SIM.nodes.map(n => n.name));
+  const updates = Array.isArray(patch.plate_updates) ? patch.plate_updates : [];
+  updates.forEach(u => {
+    const nd = SIM.nodeMap[u.id];
+    if (!nd) return;
+
+    // 4a. 无灵纪禁止凭空长灵脉/灵矿/灵药/煞气
+    let dLey = Math.round(Number(u.leyline_delta) || 0);
+    let dMin = Math.round(Number(u.mineral_delta) || 0);
+    let dHerb = Math.round(Number(u.herb_delta) || 0);
+    let dSha = Math.round(Number(u.sha_delta) || 0);
+    if (!SIM.awakened && (dLey > 0 || dMin > 0 || dHerb > 0 || dSha > 0)) {
+      addRef('红牌', `未破封前驳回板块【${nd.id}】出现灵脉/矿/药/煞数值增长！`);
+      dLey = dMin = dHerb = dSha = 0;
+    }
+    nd.leyline = Math.max(0, Math.min(98, nd.leyline + dLey));
+    nd.mineral = Math.max(0, Math.min(98, nd.mineral + dMin));
+    nd.herb = Math.max(0, Math.min(98, nd.herb + dHerb));
+    nd.sha = Math.max(0, Math.min(98, nd.sha + dSha));
+
+    // 4b. 人口承载与高煞致死红线
+    let dPop = Math.round(Number(u.pop_delta) || 0);
+    if (nd.sha >= 60 && dPop > 0) {
+      const penalty = -Math.round(nd.pop * 0.22);
+      addRef('黄牌', `【${nd.name}】怨煞高达 ${nd.sha}，驳回凡人正增长(+${dPop})，按煞灾纠偏为 ${penalty}。`);
+      dPop = penalty;
+    }
+    const cap = getNodeCap(nd);
+    const nextPop = nd.pop + dPop;
+    if (nextPop > cap) {
+      addRef('黄牌', `【${nd.name}】人口(${nextPop.toLocaleString()})超过水土承载上限(${cap.toLocaleString()})，截断至承载顶。`);
+      nd.pop = cap;
+    } else {
+      nd.pop = Math.max(0, nextPop);
+    }
+
+    // 4c. 板块动态定名（自动去重）
+    if (u.new_name && String(u.new_name).trim() && u.new_name !== nd.name) {
+      const cand = String(u.new_name).trim().slice(0, 12);
+      if (usedNames.has(cand)) {
+        addRef('黄牌', `板块定名【${cand}】与既有地名重名，保留原名【${nd.name}】。`);
+      } else {
+        usedNames.add(cand);
+        nd.name = cand; nd.named = true;
+      }
+    }
+
+    // 4d. 形态与生态更新
+    if (u.stage && VALID_STAGES.has(u.stage)) nd.stage = u.stage;
+    if (u.flora) nd.flora = String(u.flora).slice(0, 16);
+    if (u.fauna) nd.fauna = String(u.fauna).slice(0, 16);
+
+    // 4e. 归属变更 —— 严格校验地理邻接红线！
+    if (u.owner_faction !== undefined) {
+      const newOwn = u.owner_faction === null || u.owner_faction === 'null' || u.owner_faction === '' ? null : String(u.owner_faction).trim();
+      if (newOwn && newOwn !== nd.owner) {
+        const fac = SIM.factions.find(f => f.name === newOwn && f.alive);
+        if (!fac) {
+          addRef('黄牌', `板块【${nd.id}】试图归属未登记/已灭势力【${newOwn}】，已忽略。`);
+        } else {
+          const facNodes = SIM.nodes.filter(x => x.owner === newOwn);
+          const isAdjacent = facNodes.length === 0 || facNodes.some(x => x.neighbors.includes(nd.id));
+          if (!SIM.seaTechUnlocked && !isAdjacent) {
+            addRef('红牌', `【地理隔离红线】大航海未解锁前，驳回【${newOwn}】跨洲/跨海非邻接占领【${nd.id}:${nd.name}】！`);
+          } else {
+            nd.owner = newOwn;
           }
         }
+      } else if (newOwn === null) {
+        nd.owner = null;
       }
+    }
+
+    if (u.event_note) {
+      nd.history.push(`第${endY}年：${String(u.event_note).slice(0, 80)}`);
+      if (nd.history.length > 10) nd.history = nd.history.slice(-10);
+    }
+  });
+
+  // 5. 处理人物自然老化 + DeepSeek 人物操作（严格寿元红线）
+  SIM.people.forEach(c => {
+    if (!c.alive) return;
+    c.age += stepSpan;
+  });
+
+  const pOps = Array.isArray(patch.people_ops) ? patch.people_ops : [];
+  pOps.forEach(op => {
+    if (!op || !op.name) return;
+    const name = String(op.name).trim();
+    const existing = SIM.people.find(c => c.name === name);
+    const realm = REALM_LIFESPAN[op.realm] ? op.realm : '炼气';
+    const spMul = (op.species === '陆妖' || op.species === '海族') ? 1.6 : (op.species === '半妖异胎' ? 1.5 : 1.0);
+    const maxAge = Math.round(REALM_LIFESPAN[realm].maxAge * spMul);
+
+    if (op.op === 'birth' || (!existing && op.op === 'update')) {
+      if (existing && !existing.alive) {
+        addRef('红牌', `驳回已故人物【${name}】违背生死律复活！`);
+        return;
+      }
+      if (!existing) {
+        SIM.people.push({
+          name, species:op.species || '人族', plateId:op.plate_id || 'C1',
+          realm, age:Math.max(12, Math.min(maxAge - 5, Number(op.age) || 28)), maxAge,
+          iq:Math.max(10, Math.min(100, Number(op.iq) || 65)),
+          eq:Math.max(10, Math.min(100, Number(op.eq) || 60)),
+          daoWit:Math.max(10, Math.min(100, Number(op.dao_wit) || 70)),
+          persLabel:op.personality_label || '审慎·稳健',
+          faction:op.faction || '散修',
+          memories:op.memory ? [`第${endY}年：${op.memory}`] : [],
+          alive:true
+        });
+      }
+    } else if (existing && existing.alive) {
+      if (op.op === 'die') {
+        existing.alive = false;
+        if (op.memory) existing.memories.push(`第${endY}年陨落：${op.memory}`);
+      } else if (op.op === 'ascend') {
+        existing.realm = '飞升'; existing.alive = false;
+        existing.memories.push(`第${endY}年白日飞升：${op.memory || '破界飞升'}`);
+      } else {
+        existing.realm = realm;
+        existing.maxAge = maxAge;
+        if (op.plate_id && SIM.nodeMap[op.plate_id]) existing.plateId = op.plate_id;
+        if (op.faction) existing.faction = op.faction;
+        if (op.personality_label) existing.persLabel = op.personality_label;
+        if (op.memory) existing.memories.push(`第${endY}年：${op.memory}`);
+      }
+    }
+  });
+
+  // 寿元超限硬核销
+  SIM.people.forEach(c => {
+    if (c.alive && c.age > c.maxAge) {
+      c.alive = false;
+      c.memories.push(`第${endY}年：寿元耗尽(${c.age}/${c.maxAge}岁)，坐化于【${SIM.nodeMap[c.plateId]?.name || c.plateId}】。`);
+      addRef('黄牌', `【寿元硬红线】${c.name}(${c.realm}) 达 ${c.age} 岁超出寿限 ${c.maxAge}，裁判所自动核销坐化。`);
+    }
+  });
+
+  // 6. 总灵能绝对守恒校验（防止 DeepSeek 凭空多给地表灵脉）
+  const enCheck = calcConservation();
+  if (enCheck.rawSurf > enCheck.surf && enCheck.rawSurf > 0) {
+    const ratio = enCheck.surf / enCheck.rawSurf;
+    SIM.nodes.forEach(n => { n.leyline = Math.floor(n.leyline * ratio); });
+    addRef('黄牌', `【能量守恒纠偏】DeepSeek 推演地表总灵能(${enCheck.rawSurf})超出守恒配额(${enCheck.surf})，已按比例(${(ratio*100).toFixed(1)}%)归一化守恒至 20,000！`);
+  }
+
+  // 7. 录入功法与编年史
+  if (Array.isArray(patch.new_arts)) {
+    patch.new_arts.forEach(a => {
+      if (a && a.name) SIM.createdArts.push({ year:endY, name:a.name, creator:a.creator || '无名先贤', origin:a.origin || '' });
     });
   }
+  if (Array.isArray(patch.chronicle_events)) {
+    patch.chronicle_events.forEach(ev => {
+      if (!ev || !ev.text) return;
+      const evYear = Math.max(startY + 1, Math.min(endY, startY + (Number(ev.year_offset) || Math.round(stepSpan / 2))));
+      SIM.chronicles.unshift({ year:evYear, tag:ev.tag || 'AI推演', text:ev.text });
+    });
+  }
+  if (patch.epic_summary) {
+    SIM.chronicles.unshift({ year:endY, tag:'AI推演', text:`【第${startY}~${endY}年·天道综述】${patch.epic_summary}` });
+  }
+  SIM.chronicles.sort((a,b) => b.year - a.year);
 
   recordMetric();
   renderAll();
+  return ref;
 }
 
-// ===== 🤖 DeepSeek 亲自主导推演 +100 年（结构化 JSON 真正改写世界账本！） =====
-async function runDeepSeekEpochStep() {
+// ===== 单轮 DeepSeek 真推演 =====
+async function runOneDeepSeekEpoch() {
+  if (isBusy) return false;
   const key = document.getElementById('ds-key').value.trim();
   const model = document.getElementById('ds-model').value.trim() || 'deepseek-chat';
   const url = document.getElementById('ds-url').value.trim() || 'https://api.deepseek.com/chat/completions';
   const st = document.getElementById('ds-status');
-  if (!key) { st.style.color = '#ff9d95'; st.textContent = '请先在左侧填入你的 DeepSeek API Key！'; return; }
-  localStorage.setItem('cangming_ds_key', key); localStorage.setItem('cangming_ds_model', model); localStorage.setItem('cangming_ds_url', url);
+  const p = getParams();
 
-  // 先用公开物理账本推进 100 年的基础算术（人口、灵能守恒、老化死亡）
+  if (!key) {
+    st.style.color = '#ff9d95';
+    st.textContent = '请先填入你的 DeepSeek API Key！v7.0 已彻底移除假本地剧情脚本。';
+    toast('请先在左侧填入 DeepSeek API Key！');
+    return false;
+  }
+  if (SIM.year >= p.maxYears) {
+    toast(`已推演至目标第 ${p.maxYears} 年！`);
+    return false;
+  }
+
+  localStorage.setItem('cangming_ds_key', key);
+  localStorage.setItem('cangming_ds_model', model);
+  localStorage.setItem('cangming_ds_url', url);
+
   const startY = SIM.year;
-  for (let i = 0; i < 10 && SIM.year < SIM.maxYears; i++) stepDecade();
-  const endY = SIM.year;
+  const endY = Math.min(p.maxYears, startY + p.stepYears);
+  const prompt = buildEpochPrompt(startY, endY, p);
 
-  st.style.color = '#f2daa0'; st.textContent = `DeepSeek 正在亲自推演第 ${startY}~${endY} 年因果大变局……`;
-  const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
-  const plateSnap = SIM.nodes.slice(0, 14).map(n => `${n.id}:${n.name}(${n.climate}/${n.elem},脉${n.leyline},矿${n.mineral},煞${n.sha},凡人${n.pop})`).join('; ');
-  const facSnap = SIM.factions.filter(f=>f.alive).map(f => `${f.name}(${f.kind},掌舵${f.leader},控地${SIM.nodes.filter(n=>n.owner===f.id).length})`).join('; ') || '尚无宗门世家';
-
-  const prompt = `你是《沧溟界》客观天道推演引擎。现在已推演至第 ${endY} 年（${SIM.eraName}，大航海连通：${SIM.seaTechUnlocked?'已连通':'各大洲物理隔绝'}，总灵能守恒 20,000，当前地核池 ${m.en.core}、地表池 ${m.en.surf}、煞气池 ${m.en.shaE}）。
-当前部分板块：${plateSnap}
-当前在世势力：${facSnap}
-
-请严格基于客观因果律（不可违背气候五行、不可在大航海前跨洲乱打），推演这 100 年（第 ${startY}~${endY} 年）最关键的历史变局，并且 **严格只输出合法 JSON**（不要 markdown 代码块）：
-{
-  "epic_summary": "180字以内古风客观编年史",
-  "rename_plate": { "id": "从上面板块ID里选一个最值得因事件命名的ID如E1/C1/S2", "new_name": "贴合气候五行的新地名", "reason": "为何得此名" },
-  "sha_event": { "id": "受战争或大劫影响的板块ID", "sha_delta": 18, "desc": "发生的大事件" },
-  "new_art": { "name": "《某部贴合该时代与地理的新创功法》", "creator": "创法者名", "desc": "创法缘由" }
-}`;
+  isBusy = true;
+  updateAutoBtns();
+  const hb = document.getElementById('health-box');
+  hb.className = 'health-box busy';
+  hb.innerHTML = `<b>🤖 DeepSeek 正在亲自推演第 ${startY} → ${endY} 年……</b> 已发送全量 24 板块账本 + 6 条明文因果契约，等待返回结构化 State Patch JSON 并送交物理裁判所校验…`;
+  st.style.color = '#f2daa0';
+  st.textContent = `DeepSeek 推演中：第 ${startY} → ${endY} 年…`;
 
   try {
     const resp = await fetch(url, {
-      method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
-      body:JSON.stringify({ model, temperature:0.75, messages:[{role:'system',content:'你是严格遵守世界物理学与因果律的沙盒推演核心，只返回纯 JSON。'},{role:'user',content:prompt}] })
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      body:JSON.stringify({
+        model,
+        temperature:0.7,
+        response_format: model.includes('reasoner') ? undefined : { type:'json_object' },
+        messages:[
+          { role:'system', content:'你是严格遵守世界物理学与因果方向契约的沙盒推演核心。只返回合法纯 JSON，不输出 markdown 围栏。' },
+          { role:'user', content:prompt }
+        ]
+      })
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    let raw = data.choices[0].message.content.trim().replace(/^```json\s*|\s*```$/g, '');
-    const obj = JSON.parse(raw);
+    const rawContent = (data.choices?.[0]?.message?.content || '').trim();
+    const cleaned = rawContent.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+    const jsonStart = cleaned.indexOf('{');
+    const jsonEnd = cleaned.lastIndexOf('}');
+    const jsonStr = (jsonStart >= 0 && jsonEnd > jsonStart) ? cleaned.slice(jsonStart, jsonEnd + 1) : cleaned;
+    const patch = JSON.parse(jsonStr);
 
-    // 将 DeepSeek 的推演结果校验后真实写入世界账本！
-    if (obj.rename_plate && SIM.nodeMap[obj.rename_plate.id]) {
-      const tNd = SIM.nodeMap[obj.rename_plate.id];
-      tNd.name = obj.rename_plate.new_name; tNd.named = true;
-      tNd.history.push(`第${endY}年[AI推演命名]：${obj.rename_plate.reason}，定名【${tNd.name}】！`);
-      SIM.chronicles.unshift({ year:endY, tag:'命名', text:`【DeepSeek 推演定名】因「${obj.rename_plate.reason}」，【${tNd.rawName}】正式载入史册定名【${tNd.name}】！` });
-    }
-    if (obj.sha_event && SIM.nodeMap[obj.sha_event.id]) {
-      const sNd = SIM.nodeMap[obj.sha_event.id];
-      sNd.sha = Math.min(96, sNd.sha + Math.min(30, Number(obj.sha_event.sha_delta) || 15));
-      sNd.history.push(`第${endY}年[AI因果事件]：${obj.sha_event.desc}`);
-      SIM.chronicles.unshift({ year:endY, tag:'AI推演', text:`${obj.sha_event.desc}（【${sNd.name}】煞气升至 ${sNd.sha}）` });
-    }
-    if (obj.new_art && obj.new_art.name) {
-      SIM.createdArts.push({ year:endY, name:obj.new_art.name, creator:obj.new_art.creator || '无名先驱', story:`第${endY}年[AI推演]：${obj.new_art.creator}创出${obj.new_art.name}——${obj.new_art.desc}` });
-      SIM.chronicles.unshift({ year:endY, tag:'创法', text:`【DeepSeek 推演创法】${obj.new_art.creator}创出${obj.new_art.name}：${obj.new_art.desc}` });
-    }
-    aiLogs.unshift({ title:`【DeepSeek 主导推演 · 第 ${startY}~${endY} 年】`, content: obj.epic_summary || raw });
-    st.style.color = '#6fd3a8'; st.textContent = `✔ DeepSeek 已完成第 ${startY}~${endY} 年推演并写入地图！`;
-    recordMetric(); renderAll();
-    document.querySelector('[data-tab="ai"]').click();
+    SIM.wireLogs.unshift({ span:`第${startY}~${endY}年`, prompt, rawJson:jsonStr });
+    if (SIM.wireLogs.length > 6) SIM.wireLogs.length = 6;
+
+    const refResults = applyAndValidatePatch(patch, startY, endY, p);
+    const reds = refResults.filter(r=>r.level==='红牌').length;
+    const yellows = refResults.filter(r=>r.level==='黄牌').length;
+    st.style.color = '#6fd3a8';
+    st.textContent = `✔ 第 ${startY}~${endY} 年推演入账！裁判所：${reds}红 / ${yellows}黄`;
+    isBusy = false;
+    updateAutoBtns();
+    return true;
   } catch (err) {
-    st.style.color = '#ff9d95'; st.textContent = `DeepSeek 推演失败：${err.message}`;
+    st.style.color = '#ff9d95';
+    st.textContent = `推演失败（第${startY}~${endY}年）：${err.message}`;
+    SIM.wireLogs.unshift({ span:`第${startY}~${endY}年[失败]`, prompt, rawJson:`ERROR: ${err.message}` });
+    isBusy = false;
+    autoRunning = false;
+    updateAutoBtns();
+    renderAll();
+    return false;
   }
+}
+
+async function runAutoLoop() {
+  if (autoRunning) return;
+  autoRunning = true;
+  updateAutoBtns();
+  while (autoRunning && SIM.year < getParams().maxYears) {
+    const ok = await runOneDeepSeekEpoch();
+    if (!ok) break;
+    await new Promise(r => setTimeout(r, 350));
+  }
+  autoRunning = false;
+  updateAutoBtns();
+}
+
+function updateAutoBtns() {
+  document.getElementById('btn-ds-step').disabled = isBusy || autoRunning;
+  document.getElementById('btn-reset').disabled = isBusy || autoRunning;
+  document.getElementById('btn-ds-auto').style.display = autoRunning ? 'none' : '';
+  document.getElementById('btn-ds-stop').style.display = autoRunning ? '' : 'none';
 }
 
 function renderTrendChart() {
   const svg = document.getElementById('trend-svg');
   const data = SIM.historyMetrics;
-  document.getElementById('chart-span').textContent = `1 → ${SIM.year} 年`;
+  document.getElementById('chart-span').textContent = `1 → ${SIM.year} 年 (${data.length - 1} 轮 DeepSeek 推演)`;
   if (data.length < 2) { svg.innerHTML = ''; return; }
-  const W = 600, H = 68;
-  const poly = (fn, color) => `<polyline fill="none" stroke="${color}" stroke-width="1.8" points="${data.map((d,i)=>`${((i/Math.max(1,data.length-1))*(W-16)+8).toFixed(1)},${(H-5-Math.max(0,Math.min(100,fn(d)))/100*(H-12)).toFixed(1)}`).join(' ')}" />`;
+  const W = 600, H = 64;
+  const poly = (fn, color) => `<polyline fill="none" stroke="${color}" stroke-width="1.9" points="${data.map((d,i)=>`${((i/Math.max(1,data.length-1))*(W-16)+8).toFixed(1)},${(H-5-Math.max(0,Math.min(100,fn(d)))/100*(H-12)).toFixed(1)}`).join(' ')}" />`;
   svg.innerHTML = poly(d=>d.avgLey,'#70b8f0') + poly(d=>d.avgMin,'#f2daa0') + poly(d=>d.popLoadPct,'#6fd3a8') + poly(d=>d.avgSha,'#c28ef2');
 }
 
 function renderAll() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
-  document.getElementById('hdr-year').textContent = `沧溟第 ${SIM.year} 年 / ${SIM.maxYears} 年`;
+  const p = getParams();
+  document.getElementById('hdr-year').textContent = `沧溟第 ${SIM.year} 年 / ${p.maxYears} 年`;
   document.getElementById('hdr-tide').textContent = `${SIM.eraName} · ${SIM.seaTechUnlocked ? '五洲大连通' : '各大洲物理隔绝'}`;
-  document.getElementById('prog-fill').style.width = `${Math.min(100, (SIM.year / SIM.maxYears) * 100)}%`;
+  document.getElementById('prog-fill').style.width = `${Math.min(100, (SIM.year / p.maxYears) * 100)}%`;
 
   document.getElementById('kpi-pop').textContent = `${(m.pop/10000).toFixed(1)}万 / ${(m.cap/10000).toFixed(0)}万 (${m.popLoadPct}%)`;
-  document.getElementById('kpi-cult').textContent = `${m.cultCount} 位真实在册`;
-  document.getElementById('kpi-fac').textContent = `${m.clans}家/${m.sects}宗/${m.yaoCourts}妖 (灭${m.deadFac})`;
+  document.getElementById('kpi-cult').textContent = `${m.cultCount} 位在世`;
+  document.getElementById('kpi-fac').textContent = `${m.aliveFac} 存续 (灭${m.deadFac})`;
   document.getElementById('kpi-res').textContent = `${m.avgLey}/${m.avgMin}/${m.avgHerb}/${m.avgSha}`;
 
   document.getElementById('en-total').textContent = m.en.total.toLocaleString();
   document.getElementById('en-core').textContent = m.en.core.toLocaleString();
   document.getElementById('en-surf').textContent = `${m.en.surf.toLocaleString()} + ${m.en.locked}`;
-  document.getElementById('en-sha').textContent = `${m.en.shaE} · ${SIM.seaTechUnlocked ? '已渡海' : '隔绝'}`;
+  document.getElementById('en-sha').textContent = `${m.en.shaE} · ${SIM.redCards}红/${SIM.yellowCards}黄`;
 
-  const hb = document.getElementById('health-box');
-  hb.className = SIM.awakened ? 'health-box' : 'health-box era0';
-  hb.innerHTML = SIM.awakened
-    ? `<b>${SIM.eraName}</b> · 严格能量守恒（总计 ${m.en.total} = 核${m.en.core} + 表${m.en.surf} + 锁${m.en.locked} + 煞${m.en.shaE}）· 零刷人外挂，真实存活修士 ${m.cultCount} 人！`
-    : `<b>混元第 ${SIM.year} 年（无灵凡尘）</b> · 24 块原始自然板块无预设宗门与地名，第 ${getLaws().awakeYear} 年将发生地核灵气破封！`;
+  if (!isBusy) {
+    const hb = document.getElementById('health-box');
+    hb.className = SIM.awakened ? 'health-box' : 'health-box era0';
+    hb.innerHTML = SIM.awakened
+      ? `<b>${SIM.eraName}（第 ${SIM.year} 年）</b> · 全程由 DeepSeek 按因果契约推演，物理裁判所累计拦截 <b>${SIM.redCards} 红牌 / ${SIM.yellowCards} 黄牌</b>，总灵能严格守恒 20,000！`
+      : `<b>混元第 ${SIM.year} 年（无灵凡尘）</b> · 24 块原始自然板块，零预置宗门与仙侠地名。点击顶部蓝色「🤖 DeepSeek 推演 +100年」启动真实因果推演！`;
+  }
 
   renderTrendChart();
 
   const mg = document.getElementById('map-grid');
-  mg.innerHTML = SIM.nodes.map(nd => {
-    const own = SIM.factions.find(f => f.id === nd.owner && f.alive);
-    return `
-      <div class="node-tile st-${nd.stage} ${selectedNodeId===nd.id?'selected':''}" data-nid="${nd.id}">
-        <div class="nt-top"><span class="nt-name">${nd.name}${nd.vault.length?'✦':''}</span><span class="nt-stage">${STAGE_CN[nd.stage]}</span></div>
-        <div class="nt-owner">${own ? own.name : nd.flora}</div>
-        <div class="nt-stats">脉${nd.leyline} 矿${nd.mineral} 煞${nd.sha}</div>
-      </div>
-    `;
-  }).join('');
+  mg.innerHTML = SIM.nodes.map(nd => `
+    <div class="node-tile st-${nd.stage} ${selectedNodeId===nd.id?'selected':''}" data-nid="${nd.id}">
+      <div class="nt-top"><span class="nt-name">${nd.name}</span><span class="nt-stage">${STAGE_CN[nd.stage]||nd.stage}</span></div>
+      <div class="nt-owner">${nd.owner || nd.flora}</div>
+      <div class="nt-stats">脉${nd.leyline} 矿${nd.mineral} 药${nd.herb} 煞${nd.sha}</div>
+    </div>
+  `).join('');
   mg.querySelectorAll('[data-nid]').forEach(el => { el.onclick = () => { selectedNodeId = el.dataset.nid; renderAll(); }; });
 
   const sn = SIM.nodeMap[selectedNodeId] || SIM.nodes[0];
-  const own = SIM.factions.find(f => f.id === sn.owner && f.alive);
   document.getElementById('node-inspector').innerHTML = `
-    <h4>${sn.name}（原:${sn.rawName} · ${sn.climate}/${sn.elem} · 邻接:${sn.neighbors.join(',')} · 归属:${own?own.name:'无主'}）</h4>
+    <h4>${sn.name}（原:${sn.rawName} · ${sn.climate}/${sn.elem} · 邻接:[${sn.neighbors.join(',')}] · 归属:${sn.owner||'无主'}）</h4>
     <div style="color:var(--muted);font-size:9.5px;">脉${sn.leyline} · 矿${sn.mineral} · 药${sn.herb} · 煞${sn.sha} · 生态:${sn.flora}/${sn.fauna} · 凡人 ${sn.pop.toLocaleString()} / 承载 ${getNodeCap(sn).toLocaleString()}</div>
     <ul>${sn.history.slice(-5).reverse().map(h => `<li>${h}</li>`).join('')}</ul>
   `;
@@ -951,93 +983,119 @@ function renderAll() {
 
 function renderRightTab() {
   const rb = document.getElementById('right-body');
-  if (activeTab === 'rules') {
-    const l = getLaws();
-    rb.innerHTML = `
-      <div class="rule-card"><b>① 真·零起点（无预设地名/宗门）</b><br/>第 1 年只有 24 块未命名原始自然地理板块（冷暖气候 + 五行地质 + 真实邻接图）。所有城池名、宗门名、遗址名均在演化中因事件实时诞生，且宗门名严格锁定所在地气候五行（火山出火丹宗、冰原出寒剑宗、深海出龙庭）。</div>
-      <div class="rule-card"><b>② 总灵能绝对守恒（20,000 恒定）</b><br/>总灵能 = 地核沉睡池 + 地表灵脉池 + 生物锁定灵能 + 怨煞污染池。第 ${l.awakeYear} 年地核裂变将 14,000 灵能释放到地表；杀戮使 灵气→煞气；草木与阵法按 ${(l.shaPurify*100).toFixed(0)}%/十年将 煞气→还原为纯净灵气！</div>
-      <div class="rule-card"><b>③ 拔掉“刷人外挂” · 三道真实灵根漏斗</b><br/>彻底删除强制补人代码！新修士严格来自：凡人十年出生人口 × 真实入道漏斗率 ${(l.entryRate*100).toFixed(2)}% × 低煞系数 + 修士婚恋 6 档遗传矩阵（天骄×天骄 82% / 良×良 65% / 杂×杂 42% / 跨物种彩蛋 0.5%）。</div>
-      <div class="rule-card"><b>④ 地理邻接隔离 & 大航海解锁</b><br/>在诞生首位元婴大能御空渡海并传开跨洋灵舟前，五洲七海物理隔绝，严禁跨洲跨海隔空乱打！</div>
-      <div class="rule-card"><b>⑤ 矿竭硬崩解 & 紫霄驱逐飞升</b><br/>宗门连续 20 年均矿<6且均药<8，弟子散尽真实崩解化作【古宗遗址】；合道证道【万道真仙】超载界域后，天道降雷强行驱逐白日飞升并反哺灵脉。</div>
-      <div class="rule-card"><b>⑥ 双核透明模式（物理账本 + DeepSeek 亲自主导）</b><br/>点击顶部蓝色 <b>「🤖 DeepSeek 主导推演 +100年」</b>，DeepSeek 将读取客观物理账本并亲自推演百年因果变局、命名新地标与新功法，真实写入地图与编年史！</div>
-    `;
-  } else if (activeTab === 'chronicle') {
-    const tags = ['ALL','AI推演','命名','灵气复苏','大航海','建族','开宗','妖庭','矿竭崩解','邻接征伐','灭门','凡人奇才','混血','飞升','创法'];
-    const list = logFilter === 'ALL' ? SIM.chronicles : SIM.chronicles.filter(c => c.tag === logFilter);
-    rb.innerHTML = `<div class="filter-bar">${tags.map(t=>`<span class="pill ${logFilter===t?'active':''}" data-lf="${t}">${t==='ALL'?'全部':t}</span>`).join('')}</div>`
-      + list.slice(0, 80).map(c => `<div class="log-item"><span class="tag t-${c.tag}">${c.tag}</span><div><b style="color:var(--gold-hi);">第${c.year}年</b> · ${c.text}</div></div>`).join('');
-    rb.querySelectorAll('[data-lf]').forEach(p => p.onclick = () => { logFilter = p.dataset.lf; renderRightTab(); });
+  if (activeTab === 'chronicle') {
+    rb.innerHTML = SIM.chronicles.slice(0, 80).map(c =>
+      `<div class="log-item"><span class="tag t-${c.tag}">${c.tag}</span><div><b style="color:var(--gold-hi);">第${c.year}年</b> · ${c.text}</div></div>`
+    ).join('');
+  } else if (activeTab === 'contract') {
+    rb.innerHTML = `<div class="rule-card" style="border-color:rgba(112,184,240,0.45);"><b>v7.0 核心机制声明（零本地假推演）</b><br/>本地代码不再编写任何战争/建宗/突破概率脚本！每推演一个纪元，下方 6 条因果契约 + 左侧 7 项基础参数 + 全量 24 板块账本将原封不动发给 DeepSeek，由 DeepSeek 亲自推演 State Patch JSON，再由本地物理裁判所做红线校验。</div>`
+      + CAUSAL_LAWS.map(l => `<div class="rule-card"><b>${l.id}. ${l.title}</b><br/>${l.rule}</div>`).join('');
+  } else if (activeTab === 'referee') {
+    rb.innerHTML = SIM.refereeLogs.length
+      ? SIM.refereeLogs.slice(0, 80).map(r => `<div class="log-item"><span class="tag t-${r.level}">${r.level}</span><div><b style="color:var(--gold-hi);">第${r.year}年</b> · ${r.text}</div></div>`).join('')
+      : `<div style="font-size:11px;color:var(--muted);line-height:1.6;">裁判所尚无记录。每次 DeepSeek 返回推演 Patch 后，此处将透明展示每一条红牌驳回、黄牌纠偏与绿牌放行记录。</div>`;
   } else if (activeTab === 'factions') {
-    const kCn = { clan:'修真世家', sect:'修仙宗门', yao_court:'妖海大庭' };
-    rb.innerHTML = SIM.factions.length ? SIM.factions.map(f => {
-      const cnt = SIM.nodes.filter(n => n.owner === f.id).length;
-      return `<div class="fac-card ${f.alive?'':'dead'}"><h4><span>${f.name} <em style="font-style:normal;color:var(--blue);font-size:9px;">[${kCn[f.kind]}]</em> ${f.alive?'':'[已灭]'}</span><span style="color:var(--jade);font-size:9.5px;">控地 ${cnt} · ${f.policyName}</span></h4><p>第${f.gen}代掌舵：<b>${f.leader}</b>（${f.persLabel}） · 存续第${f.born}年~${f.fallen?`第${f.fallen}年`:'今'}</p></div>`;
-    }).join('') : '<div style="font-size:11px;color:var(--muted);">混元凡尘纪，尚无任何宗门、世家或妖庭。</div>';
+    const kCn = { clan:'修真世家', sect:'修仙宗门', yao_court:'妖海大庭', demon_cult:'魔道/鬼宗' };
+    rb.innerHTML = SIM.factions.length
+      ? SIM.factions.map(f => {
+          const cnt = SIM.nodes.filter(n => n.owner === f.name).length;
+          return `<div class="fac-card ${f.alive?'':'dead'}"><h4><span>${f.name} <em style="font-style:normal;color:var(--blue);font-size:9px;">[${kCn[f.kind]||f.kind}]</em> ${f.alive?'':'[已灭]'}</span><span style="color:var(--jade);font-size:9.5px;">控地 ${cnt} · ${f.policy}</span></h4><p>掌舵：<b>${f.leader}</b> · 存续第${f.born}年~${f.fallen?`第${f.fallen}年`:'今'}<br/>${f.reason||''}</p></div>`;
+        }).join('')
+      : `<div style="font-size:11px;color:var(--muted);">尚无势力诞生。</div>`;
   } else if (activeTab === 'people') {
-    const topC = [...SIM.people].filter(c=>c.alive).sort((a,b)=>(b.realmIdx-a.realmIdx)||((b.iq+b.daoWit)-(a.iq+a.daoWit))).slice(0, 32);
-    rb.innerHTML = topC.map(c => `<div class="fac-card"><h4><span>${c.name} <em style="font-style:normal;color:var(--jade);font-size:9.5px;">[${c.species}·${c.isMortal?'凡人':REALMS[c.realmIdx].name}]</em>${c.hybridTrait?` <span class="tag t-混血">${c.hybridTrait}</span>`:''}</span><span style="color:var(--gold-hi);font-size:9px;">IQ:${c.iq} EQ:${c.eq} 悟:${c.daoWit}</span></h4><p>${c.origin} · ${c.factionName}${c.patronFaction?`(依附:${c.patronFaction})`:''} · 寿 ${c.age}/${c.maxAge}岁 · ${c.persLabel}<br/><span style="color:#b8b0a0;">记忆：${(c.memories||[]).slice(0,2).join(' ｜ ')}</span></p></div>`).join('');
+    rb.innerHTML = SIM.people.length
+      ? SIM.people.slice().reverse().slice(0, 40).map(c =>
+          `<div class="fac-card ${c.alive?'':'dead'}"><h4><span>${c.name} <em style="font-style:normal;color:var(--jade);font-size:9.5px;">[${c.species}·${c.realm}]</em> ${c.alive?'':'[已故]'}</span><span style="color:var(--gold-hi);font-size:9px;">IQ:${c.iq} EQ:${c.eq} 悟:${c.daoWit}</span></h4><p>居:${SIM.nodeMap[c.plateId]?.name||c.plateId} · 属:${c.faction} · 寿 ${c.age}/${c.maxAge}岁 · ${c.persLabel}<br/><span style="color:#b8b0a0;">记忆：${(c.memories||[]).slice(-2).join(' ｜ ')}</span></p></div>`
+        ).join('')
+      : `<div style="font-size:11px;color:var(--muted);">尚无载入史册的关键人物。</div>`;
   } else {
-    rb.innerHTML = aiLogs.length
-      ? aiLogs.map(a => `<div class="ctrl-title">${a.title}</div><div class="ai-output">${a.content}</div>`).join('')
-      : `<div style="font-size:11px;color:var(--muted);line-height:1.7;">填入 DeepSeek Key 后，点击顶部蓝色 <b>「🤖 DeepSeek 主导推演 +100年」</b>，DeepSeek 将亲自读取客观物理账本并主导百年历史变局（真实命名板块、引发因果事件与自创功法）！</div>`;
+    rb.innerHTML = SIM.wireLogs.length
+      ? SIM.wireLogs.map(w => `
+          <div class="ctrl-title"><span>${w.span} · 发给 DeepSeek 的完整 Prompt</span></div>
+          <div class="code-box">${w.prompt.replace(/</g,'&lt;')}</div>
+          <div class="ctrl-title" style="margin-top:4px;"><span>${w.span} · DeepSeek 返回的原始 State Patch JSON</span></div>
+          <div class="code-box" style="color:#bff2dc;">${w.rawJson.replace(/</g,'&lt;')}</div>
+        `).join('')
+      : `<div style="font-size:11px;color:var(--muted);line-height:1.6;">尚未发起 DeepSeek 调用。调用后此处将 100% 透明展示发给 DeepSeek 的完整 Prompt 与返回的原始 JSON，绝无黑箱！</div>`;
   }
 }
 
 function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
-  return `# 《沧溟天道演化实验室 v6.0》第 ${SIM.year} 年报告 (Seed:${SIM.seed})\n- 时代：${SIM.eraName} | 大航海连通：${SIM.seaTechUnlocked}\n- 能量守恒：总${m.en.total} = 核${m.en.core} + 表${m.en.surf} + 锁${m.en.locked} + 煞${m.en.shaE}\n- 人口/承载：${m.pop.toLocaleString()}/${m.cap.toLocaleString()} (${m.popLoadPct}%) | 真实存活修士(无外挂)：${m.cultCount}\n- 势力：${m.clans}世家/${m.sects}宗门/${m.yaoCourts}妖庭 (已灭${m.deadFac}) | 均脉${m.avgLey}/矿${m.avgMin}/药${m.avgHerb}/煞${m.avgSha}\n- 社会统计：${JSON.stringify(SIM.stats)}\n\n## 近期编年史\n` + SIM.chronicles.slice(0, 35).map(c=>`- [第${c.year}年·${c.tag}] ${c.text}`).join('\n');
+  return `# 《沧溟天道因果推演 v7.0》第 ${SIM.year} 年报告\n- 时代：${SIM.eraName} | 大航海：${SIM.seaTechUnlocked}\n- 能量守恒：总${m.en.total} = 核${m.en.core} + 表${m.en.surf} + 锁${m.en.locked} + 煞${m.en.shaE}\n- 人口/承载：${m.pop.toLocaleString()}/${m.cap.toLocaleString()} (${m.popLoadPct}%) | 在世势力：${m.aliveFac} (灭${m.deadFac}) | 均脉${m.avgLey}/矿${m.avgMin}/药${m.avgHerb}/煞${m.avgSha}\n- 物理裁判所：${SIM.redCards} 红牌 / ${SIM.yellowCards} 黄牌\n\n## 近期编年史\n` + SIM.chronicles.slice(0, 30).map(c=>`- [第${c.year}年·${c.tag}] ${c.text}`).join('\n');
 }
 
-function stopPlay() { if (playTimer) { clearInterval(playTimer); playTimer = null; } document.getElementById('btn-play').textContent = '▶ 连续推演'; }
+// Slider bindings
+const lvText = v => v <= 3 ? `偏低 (${v}/10)` : (v <= 7 ? `中等 (${v}/10)` : `极高 (${v}/10)`);
+document.getElementById('sl-awake').oninput = e => { document.getElementById('val-awake').textContent = `第 ${Number(e.target.value)+1} 年`; };
+document.getElementById('sl-surge').oninput = e => { const v=Number(e.target.value); document.getElementById('val-surge').textContent = `${v}% (释放${Math.round(20000*v/100).toLocaleString()})`; };
+document.getElementById('sl-root').oninput = e => { const v=Number(e.target.value); document.getElementById('val-root').textContent = `${v}‱ (${(v/100).toFixed(2)}%)`; };
+document.getElementById('sl-consume').oninput = e => { document.getElementById('val-consume').textContent = lvText(Number(e.target.value)); };
+document.getElementById('sl-heal').oninput = e => { document.getElementById('val-heal').textContent = lvText(Number(e.target.value)); };
+document.getElementById('sl-yao').oninput = e => { document.getElementById('val-yao').textContent = lvText(Number(e.target.value)); };
+document.getElementById('sl-chaos').oninput = e => { document.getElementById('val-chaos').textContent = lvText(Number(e.target.value)); };
 
-['awake','pop','root','consume','regen','heal','schism','cata'].forEach(k => {
-  const el = document.getElementById('sl-' + k);
-  el.oninput = () => {
-    const v = el.value;
-    document.getElementById('val-' + k).textContent = k==='awake' ? `第 ${Number(v)+1} 年` : (k==='root' ? `${v}‱ (${(v/100).toFixed(2)}%)` : (['pop','heal','schism','cata'].includes(k) ? v+'%' : v));
+document.getElementById('btn-reset').onclick = initSim;
+document.getElementById('inp-years').onchange = () => { if (SIM) { SIM.maxYears = getParams().maxYears; renderAll(); } };
+document.getElementById('btn-ds-step').onclick = runOneDeepSeekEpoch;
+document.getElementById('btn-ds-auto').onclick = runAutoLoop;
+document.getElementById('btn-ds-stop').onclick = () => { autoRunning = false; updateAutoBtns(); toast('本轮返回后将停止连续推演'); };
+
+document.getElementById('btn-export').onclick = () => {
+  const blob = new Blob([JSON.stringify(SIM, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cangming_world_y${SIM.year}_v7.json`;
+  a.click();
+  toast('✔ 已导出完整世界账本 JSON！');
+};
+document.getElementById('btn-copy').onclick = async () => { try { await navigator.clipboard.writeText(buildSnapshot()); toast('✔ 已复制 v7.0 世界快照！'); } catch {} };
+document.querySelectorAll('#right-tabs .tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('#right-tabs .tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active'); activeTab = t.dataset.tab; renderRightTab();
   };
 });
-
-document.getElementById('btn-rand-seed').onclick = () => { document.getElementById('inp-seed').value = Math.floor(Math.random()*99999); initSim(); };
-document.getElementById('btn-reset').onclick = initSim;
-document.getElementById('inp-years').onchange = initSim;
-document.getElementById('btn-step10').onclick = stepDecade;
-document.getElementById('btn-step100').onclick = () => { for (let i = 0; i < 10 && SIM.year < SIM.maxYears; i++) stepDecade(); };
-document.getElementById('btn-ai-step').onclick = runDeepSeekEpochStep;
-document.getElementById('btn-play').onclick = () => {
-  if (playTimer) { stopPlay(); return; }
-  if (SIM.year >= SIM.maxYears) initSim();
-  document.getElementById('btn-play').textContent = '⏸ 暂停';
-  playTimer = setInterval(stepDecade, 120);
-};
-document.getElementById('btn-run-all').onclick = () => { stopPlay(); if (SIM.year >= SIM.maxYears) initSim(); while (SIM.year < SIM.maxYears) stepDecade(); };
-document.getElementById('btn-copy').onclick = async () => { try { await navigator.clipboard.writeText(buildSnapshot()); toast('✔ 已复制 v6.0 完整客观快照！'); } catch {} };
-document.querySelectorAll('#right-tabs .tab').forEach(t => { t.onclick = () => { document.querySelectorAll('#right-tabs .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); activeTab = t.dataset.tab; renderRightTab(); }; });
 
 document.getElementById('btn-ds-test').onclick = async () => {
   const key = document.getElementById('ds-key').value.trim();
   const st = document.getElementById('ds-status');
-  if (!key) return (st.textContent = '请先填 Key！');
+  if (!key) return (st.textContent = '请先填入 Key！');
   localStorage.setItem('cangming_ds_key', key);
   st.textContent = '测试连通中…';
   try {
-    const r = await fetch(document.getElementById('ds-url').value.trim(), { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`}, body:JSON.stringify({model:document.getElementById('ds-model').value.trim(),messages:[{role:'user',content:'回复：天道连通'}]}) });
+    const r = await fetch(document.getElementById('ds-url').value.trim(), {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      body:JSON.stringify({ model:document.getElementById('ds-model').value.trim(), messages:[{role:'user',content:'只回复：天道连通'}] })
+    });
     const d = await r.json();
-    st.style.color = '#6fd3a8'; st.textContent = '✔ 连通成功：' + d.choices[0].message.content.trim();
+    st.style.color = '#6fd3a8'; st.textContent = '✔ 连通成功：' + (d.choices?.[0]?.message?.content || '').trim();
   } catch (e) { st.style.color = '#ff9d95'; st.textContent = '失败：' + e.message; }
 };
+
 document.getElementById('btn-ds-audit').onclick = async () => {
   const key = document.getElementById('ds-key').value.trim();
-  if (!key) return toast('请先填入 DeepSeek Key！');
   const st = document.getElementById('ds-status');
-  st.textContent = '正在呼叫 DeepSeek 审查 v6.0 规则…';
+  if (!key) return toast('请先填入 DeepSeek Key！');
+  st.style.color = '#f2daa0'; st.textContent = '正在呼叫 DeepSeek 客观审查当前世界…';
   try {
-    const r = await fetch(document.getElementById('ds-url').value.trim(), { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`}, body:JSON.stringify({model:document.getElementById('ds-model').value.trim(),messages:[{role:'system',content:'你是冷酷客观的沙盒首席审查官。'},{role:'user',content:`请严苛审查《沧溟界 v6.0》推演结果（已修复8大漏洞：零预设地名、无刷人外挂、能量绝对守恒、地理邻接+大航海、矿竭硬崩解、灵煞双向循环）：\n${buildSnapshot()}`}]}) });
+    const r = await fetch(document.getElementById('ds-url').value.trim(), {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${key}` },
+      body:JSON.stringify({
+        model:document.getElementById('ds-model').value.trim(),
+        messages:[
+          { role:'system', content:'你是冷酷客观的沙盒世界观首席审查官。' },
+          { role:'user', content:`请客观审查这份由 DeepSeek 按因果契约推演、本地物理裁判所校验后的世界现状，指出任何不合理之处：\n${buildSnapshot()}` }
+        ]
+      })
+    });
     const d = await r.json();
-    aiLogs.unshift({ title:`【DeepSeek 审查官 · v6.0 审计】第 ${SIM.year} 年`, content:d.choices[0].message.content.trim() });
-    st.style.color = '#6fd3a8'; st.textContent = '✔ 审计完成！';
-    document.querySelector('[data-tab="ai"]').click();
-  } catch (e) { st.style.color = '#ff9d95'; st.textContent = '失败：' + e.message; }
+    const txt = (d.choices?.[0]?.message?.content || '').trim();
+    SIM.chronicles.unshift({ year:SIM.year, tag:'AI推演', text:`【DeepSeek 审查报告】${txt}` });
+    st.style.color = '#6fd3a8'; st.textContent = '✔ 审查报告已写入编年史！';
+    renderAll();
+    document.querySelector('[data-tab="chronicle"]').click();
+  } catch (e) { st.style.color = '#ff9d95'; st.textContent = '审查失败：' + e.message; }
 };
 
 if (localStorage.getItem('cangming_ds_key')) document.getElementById('ds-key').value = localStorage.getItem('cangming_ds_key');

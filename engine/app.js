@@ -1986,11 +1986,12 @@ function renderSplitPanel() {
     const npcs = G.simNpcs || [];
     const newsList = G.worldNews || [];
     const letters = G.letters || [];
+    const openRifts = (G.randomRifts || []).filter(rf => rf.expireDay > G.totalDays);
 
     main.innerHTML = `
       <div class="dual-left">
         <div class="sec-head">
-          <span>九大势力风云 · 沧溟天骄榜</span>
+          <span>众生百态 · 限时秘境 · 九大势力</span>
           <span style="font-size:10px;color:var(--jade);">物价 ${(G.worldState?.priceMul || 1).toFixed(2)}x · 业煞 ${G.karma || 0}</span>
         </div>
         <div class="gp-body">
@@ -2000,6 +2001,16 @@ function renderSplitPanel() {
               <p>${G.worldState?.warDesc || '五洲四海风平浪静'}</p>
             </div>
           </div>
+          ${openRifts.length ? `<div class="sub-cap gold">天降随机秘境（手慢将被其他修士搬空！）</div>` : ''}
+          ${openRifts.map(rf => `
+            <div class="glass-card active" style="padding:6px 10px;">
+              <div style="flex:1;min-width:0;">
+                <h4>${rf.name} <span class="mini-set">余 ${rf.expireDay - G.totalDays} 日</span></h4>
+                <p>现世于【${rf.locName}】 · 内蕴机缘：${D.ITEMS[rf.rewardItem]?.name || '古宝'}</p>
+              </div>
+              <button class="sleek-btn jade" data-goto="${rf.loc}" style="padding:4px 10px;font-size:10.5px;flex-shrink:0;">赶往夺宝</button>
+            </div>
+          `).join('')}
           ${letters.length ? `<div class="sub-cap gold">万里飞剑传书（${letters.length} 封）</div>` : ''}
           ${letters.map(lt => `
             <div class="glass-card" style="padding:6px 10px;">
@@ -2010,17 +2021,19 @@ function renderSplitPanel() {
               ${lt.locId ? `<button class="sleek-btn" data-goto="${lt.locId}" style="padding:4px 10px;font-size:10.5px;flex-shrink:0;">动身前往</button>` : ''}
             </div>
           `).join('')}
-          <div class="sub-cap gold">五洲活跃修士实时动态（生老病死与夺宝同步演化）</div>
+          <div class="sub-cap gold">随机众生名录（共 ${npcs.filter(x=>x.alive).length} 人在世 · 每日真实赶路与更替）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            ${npcs.map(n => {
+            ${npcs.slice(0, 26).map(n => {
               const rName = D.REALMS[n.realmIdx]?.name || '炼气';
               const lName = D.LOCATIONS.find(l => l.id === n.loc)?.name || '未知海域';
+              const dName = n.destLoc && D.LOCATIONS.find(l => l.id === n.destLoc)?.name;
+              const moveTxt = (n.travelDaysLeft > 0 && dName) ? `正赶往【${dName}】(余${n.travelDaysLeft}日)` : `驻留【${lName}】`;
               const holdsRelic = G.worldRelic?.holder === 'npc' && G.worldRelic?.npcId === n.id;
               return `
-                <div class="glass-card ${holdsRelic ? 'active' : ''}" style="padding:6px 10px;opacity:${n.alive ? 1 : 0.48};">
+                <div class="glass-card ${holdsRelic ? 'active' : ''}" style="padding:6px 10px;opacity:${n.alive ? 1 : 0.45};">
                   <div style="flex:1;min-width:0;">
-                    <h4>${n.name} <span style="font-size:10px;color:var(--muted);">(${n.title})</span> ${holdsRelic ? '<span class="mini-seal">怀揣轮回盘!</span>' : ''}</h4>
-                    <p>${n.alive ? `${rName} · 寿元 ${n.age}/${n.maxAge}岁 · 现处【${lName}】` : '已于大劫或寿尽中陨落化道'}</p>
+                    <h4>${n.name} <span style="font-size:10px;color:var(--muted);">(${n.title} · ${n.persName || '散修'})</span> ${holdsRelic ? '<span class="mini-seal">怀揣轮回盘!</span>' : ''}</h4>
+                    <p>${n.alive ? `${rName} · ${n.age}/${n.maxAge}岁 · ${moveTxt}` : '已于雷劫或寿尽中陨落'}</p>
                   </div>
                 </div>
               `;
@@ -2261,12 +2274,14 @@ function renderAll() {
         const regBar = document.createElement('div');
         regBar.className = 'map-region-bar';
         D.REGIONS.forEach(r => {
-          const hasMark = (G.worldRemains && D.LOCATIONS.find(l => l.id === G.worldRemains.loc)?.region === r.id)
+          const hasRift = (G.randomRifts || []).some(rf => rf.expireDay > G.totalDays && D.LOCATIONS.find(l => l.id === rf.loc)?.region === r.id);
+          const hasMark = hasRift
+            || (G.worldRemains && D.LOCATIONS.find(l => l.id === G.worldRemains.loc)?.region === r.id)
             || (G.nemesis && D.LOCATIONS.find(l => l.id === G.nemesis.loc)?.region === r.id)
             || (G.worldRelic?.holder === 'npc' && D.LOCATIONS.find(l => l.id === G.worldRelic.loc)?.region === r.id);
           const rb = document.createElement('button');
           rb.className = 'reg-tab' + (r.id === curReg.id ? ' active' : '') + (hasMark ? ' alert' : '');
-          rb.textContent = r.name.split('(')[0] + (hasMark ? ' · 异动' : '');
+          rb.textContent = r.name.split('(')[0] + (hasRift ? ' · 秘境' : (hasMark ? ' · 异动' : ''));
           rb.onclick = () => { SFX.play('click'); currentMapRegion = r.id; renderAll(); };
           regBar.appendChild(rb);
         });
@@ -2284,6 +2299,7 @@ function renderAll() {
       if (G.worldRemains?.loc) activeLocs.add(G.worldRemains.loc);
       if (G.nemesis?.loc) activeLocs.add(G.nemesis.loc);
       if (G.worldRelic?.holder === 'npc' && G.worldRelic.loc) activeLocs.add(G.worldRelic.loc);
+      (G.randomRifts || []).forEach(rf => { if (rf.expireDay > G.totalDays) activeLocs.add(rf.loc); });
 
       const playerCurLoc = G.loc === 'map' ? 'sect' : (G.loc || 'sect');
       regLocs.forEach(loc => {
@@ -2311,6 +2327,24 @@ function renderAll() {
         b.onclick = () => handleHotspot(h.id);
         bl.appendChild(b);
       });
+      // 动态展示当前正驻留在此地的随机游历修士！
+      const localNpcs = window.WORLD_SIM ? window.WORLD_SIM.getLocalNpcs(G, locObj.id) : [];
+      if (localNpcs.length > 0) {
+        const nb = document.createElement('button');
+        nb.className = 'sleek-btn';
+        nb.textContent = `在场修士 (${localNpcs.length}人 · 探查/交易/夺宝)`;
+        nb.onclick = () => window.WORLD_SIM.openLocalNpcsModal(getEventCtx(), locObj.id, null);
+        bl.appendChild(nb);
+      }
+      // 动态展示当前地点刷出的限时天降随机秘境！
+      const localRift = (G.randomRifts || []).find(rf => rf.loc === locObj.id && rf.expireDay > G.totalDays);
+      if (localRift) {
+        const rfb = document.createElement('button');
+        rfb.className = 'sleek-btn jade';
+        rfb.textContent = `【限时秘境】${localRift.name}（余${localRift.expireDay - G.totalDays}日）`;
+        rfb.onclick = () => window.WORLD_SIM.enterLocalRandomRift(getEventCtx(), locObj.id);
+        bl.appendChild(rfb);
+      }
       // 若当前地点留有前世妖兽盘踞遗骸、搜身宿敌 或 怀揣造化轮回盘的具名NPC，动态显示按钮！
       const hasRemainsHere = G.worldRemains && G.worldRemains.loc === locObj.id;
       const hasNemesisHere = G.nemesis && G.nemesis.loc === locObj.id;

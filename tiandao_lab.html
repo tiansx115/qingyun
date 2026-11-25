@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>《沧溟界》天道因果推演引擎 v7.3（终极打磨版）· 动态契约 × 黑天鹅异数 × 陆路咽喉 × 物理裁判所</title>
+<title>《沧溟界》天道因果推演引擎 v7.4（终极封板版）· 自动铺灵 × 硬崩解 × 飞升红线</title>
 <style>
   :root {
     --bg:#080b0f; --panel:rgba(14,18,24,0.94); --card:rgba(20,25,34,0.88);
@@ -132,7 +132,7 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道因果推演引擎 v7.3（终极打磨版）</h1>
+    <h1>沧溟天道因果推演引擎 v7.4（终极封板版）</h1>
     <span>零本地假剧情脚本 · 明文因果方向契约 · DeepSeek 唯一推演大脑 · 本地物理裁判所红黄牌校验</span>
   </div>
   <div class="top-controls">
@@ -432,7 +432,7 @@ function initSim() {
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
   SIM = {
-    version:'7.3',
+    version:'7.4',
     year:1, maxYears:p.maxYears,
     awakened:false, seaTechUnlocked:false,
     eraName:'第一纪·混元凡尘',
@@ -478,7 +478,30 @@ function runPhysicsPreTick(startY, endY, p) {
   const stepSpan = endY - startY;
   const spanMul = stepSpan / 50;
   const notes = [];
-  let popNet = 0, healedPlates = 0, agedOut = [];
+  let popNet = 0, healedPlates = 0, agedOut = [], collapsedFacs = [];
+
+  // 0. 地核破封物理铺灵（彻底解决 55% 灵能悬空在游离池！破封瞬间将 75% 喷涌灵能按地貌物理铺洒至 24 板块）
+  if (!SIM.awakened && endY >= p.awakeYear) {
+    SIM.awakened = true;
+    const release = Math.min(SIM.coreEnergy, Math.round(20000 * p.surgePct / 100));
+    SIM.coreEnergy -= release;
+    const targetSurfE = release * 0.75;
+    const targetTotalLey = targetSurfE / LEY_ENERGY_UNIT;
+    const weights = SIM.nodes.map(nd => {
+      let w = 0.8 + (nd.arable / 120);
+      if (nd.elem === 'fire' || nd.elem === 'ice' || nd.id === 'O5' || nd.id === 'O6') w += 0.35;
+      return w;
+    });
+    const wSum = weights.reduce((a, b) => a + b, 0);
+    SIM.nodes.forEach((nd, i) => {
+      nd.leyline = Math.max(22, Math.min(92, Math.round((weights[i] / wSum) * targetTotalLey)));
+      nd.mineral = Math.max(28, Math.min(90, Math.round(nd.leyline * (nd.elem === 'fire' || nd.elem === 'ice' || nd.elem === 'earth' ? 1.15 : 0.85))));
+      nd.herb = nd.isSea && nd.arable < 15 ? Math.round(nd.leyline * 0.45) : Math.max(20, Math.min(90, Math.round(nd.arable * 0.7 + nd.leyline * 0.35)));
+      nd.flora = nd.isSea ? '初生海灵藻' : '初生灵草灵木';
+      nd.fauna = nd.isSea ? '感灵海兽群' : '感灵山林野兽';
+    });
+    notes.push(`地核破封释放 ${release} 灵能（75% 已物理铺洒至 24 板块，均脉跃升至 ${(SIM.nodes.reduce((s,n)=>s+n.leyline,0)/24).toFixed(1)}）`);
+  }
 
   SIM.nodes.forEach(nd => {
     const cap = getNodeCap(nd);
@@ -539,9 +562,31 @@ function runPhysicsPreTick(startY, endY, p) {
     }
   });
 
+  // 5. 连续枯竭硬崩解压力（彻底消除“1200 年零势力灭门”！）
+  if (SIM.awakened) {
+    SIM.factions.forEach(f => {
+      if (!f.alive) return;
+      const owned = SIM.nodes.filter(n => n.owner === f.name);
+      const avgMin = owned.length ? owned.reduce((s, n) => s + n.mineral, 0) / owned.length : 0;
+      const avgHerb = owned.length ? owned.reduce((s, n) => s + n.herb, 0) / owned.length : 0;
+      if (owned.length === 0 || (avgMin < 10 && avgHerb < 12)) {
+        f.dryEpochs = (f.dryEpochs || 0) + 1;
+        if (f.dryEpochs >= 2) {
+          f.alive = false; f.fallen = endY;
+          owned.forEach(n => { n.owner = null; if (n.stage === 'sect_peak') n.stage = 'sect_ruin'; });
+          collapsedFacs.push(f.name);
+          SIM.chronicles.unshift({ year:endY, tag:'矿竭崩解', text:`【资源枯竭硬崩解】${f.name} 连续两纪元矿药俱竭，弟子散尽、道统崩解，原祖地化作古宗遗址！` });
+        }
+      } else {
+        f.dryEpochs = 0;
+      }
+    });
+  }
+
   notes.push(`全界凡人自然净变动 ${popNet >= 0 ? '+' : ''}${popNet.toLocaleString()}`);
   if (SIM.awakened) notes.push(`生态净煞还灵与地质补矿已前置结算（${healedPlates} 处荒废板块显著回暖）`);
   if (agedOut.length) notes.push(`本轮自然寿终坐化：${agedOut.join('、')}（已自动加入已故禁写名单并清空其原掌舵席位）`);
+  if (collapsedFacs.length) notes.push(`本轮因矿竭硬崩解覆灭：${collapsedFacs.join('、')}`);
   return notes.join('；');
 }
 
@@ -947,9 +992,19 @@ function applyAndValidatePatch(patch, startY, endY, p) {
         if (op.memory) existing.memories.push(`第${endY}年陨落：${op.memory}`);
         vacateLeaderIfDead(existing.name, '陨落');
       } else if (op.op === 'ascend') {
-        existing.realm = '飞升'; existing.alive = false;
-        existing.memories.push(`第${endY}年白日飞升：${op.memory || '破界飞升'}`);
-        vacateLeaderIfDead(existing.name, '白日飞升');
+        const canAscend = ['化神', '合道'].includes(existing.realm) || ['化神', '合道'].includes(realm);
+        if (!canAscend) {
+          // 防止 DeepSeek 把“突破金丹/元婴”误标成 ascend 导致活人被当飞升收尸！
+          const targetR = (realm === '飞升' || !REALM_LIFESPAN[realm]) ? '金丹' : realm;
+          existing.realm = targetR;
+          existing.maxAge = Math.round(REALM_LIFESPAN[targetR].maxAge * spMul);
+          if (op.memory) existing.memories.push(`第${endY}年破境${targetR}：${op.memory}`);
+          addRef('黄牌', `【飞升红线纠偏】${existing.name} 尚未修至化神/合道，驳回误标飞升，自动转为破境【${targetR}】继续存活！`);
+        } else {
+          existing.realm = '飞升'; existing.alive = false;
+          existing.memories.push(`第${endY}年白日飞升：${op.memory || '破界飞升'}`);
+          vacateLeaderIfDead(existing.name, '白日飞升');
+        }
       } else {
         existing.realm = realm;
         existing.maxAge = maxAge;
@@ -1066,7 +1121,7 @@ async function runOneDeepSeekEpoch() {
   // 保存回滚快照（若 API 请求失败则无损回滚前置物理 Pre-Tick）
   const rollbackStr = JSON.stringify({
     nodes: SIM.nodes, factions: SIM.factions, people: SIM.people,
-    coreEnergy: SIM.coreEnergy, year: SIM.year
+    coreEnergy: SIM.coreEnergy, year: SIM.year, awakened: SIM.awakened
   });
   const preTickSummary = runPhysicsPreTick(startY, endY, p);
   const blackSwan = rollBlackSwan(startY, endY, p);
@@ -1119,7 +1174,7 @@ async function runOneDeepSeekEpoch() {
     const rb = JSON.parse(rollbackStr);
     SIM.nodes = rb.nodes; SIM.nodeMap = Object.fromEntries(SIM.nodes.map(n => [n.id, n]));
     SIM.factions = rb.factions; SIM.people = rb.people;
-    SIM.coreEnergy = rb.coreEnergy; SIM.year = rb.year;
+    SIM.coreEnergy = rb.coreEnergy; SIM.year = rb.year; SIM.awakened = rb.awakened;
 
     st.style.color = '#ff9d95';
     st.textContent = `推演失败（已回滚至第${startY}年）：${err.message}`;
@@ -1252,7 +1307,7 @@ function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
   const p = getParams();
   const lines = [
-    `# 《沧溟天道因果推演 v7.3》全量世界报告（第 1 → ${SIM.year} 年）`,
+    `# 《沧溟天道因果推演 v7.4》全量世界报告（第 1 → ${SIM.year} 年）`,
     ``,
     `## 一、核心指标与创世参数`,
     `- 时代：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海：${SIM.seaTechUnlocked ? '已连通' : '物理隔绝'}`,

@@ -6,6 +6,7 @@
   'use strict';
 
   const LS_KEY = 'qingyun_v87_world_life_v1';
+  const APP_VER = 'v11.3';
   let WORLD = null;
   let HERO = null;
   let activeTab = 'map';
@@ -99,19 +100,19 @@
         position:absolute; inset:0; z-index:32; pointer-events:none;
         font-family:"Songti SC","Kaiti SC","Noto Serif SC",serif; color:#ebe3d3;
       }
-      /* 顶部水墨卷轴地名与时辰栏 */
+      /* 顶部水墨卷轴地名与时辰栏（紧凑控宽，绝不与左上/右上 HUD 撞车） */
       .ow-top-bar {
         position:absolute; top:14px; left:50%; transform:translateX(-50%); pointer-events:auto;
-        display:flex; align-items:center; gap:10px; padding:6px 26px;
-        background:linear-gradient(90deg, rgba(7,10,14,0) 0%, rgba(10,14,19,0.82) 14%, rgba(10,14,19,0.82) 86%, rgba(7,10,14,0) 100%);
+        display:flex; align-items:center; gap:6px; padding:5px 16px;
+        background:linear-gradient(90deg, rgba(7,10,14,0) 0%, rgba(10,14,19,0.84) 10%, rgba(10,14,19,0.84) 90%, rgba(7,10,14,0) 100%);
         border-top:1px solid rgba(212,184,122,0.45);
         border-bottom:1px solid rgba(212,184,122,0.45);
-        font-size:12px; letter-spacing:1px; white-space:nowrap;
+        font-size:11.5px; letter-spacing:0.6px; white-space:nowrap;
       }
       .ow-micro-btn {
         background:rgba(212,184,122,0.08); border:1px solid rgba(212,184,122,0.38); color:#ebd5a2;
-        padding:2px 9px; border-radius:2px; font-size:11px; cursor:pointer; font-family:inherit;
-        letter-spacing:1px; transition:all 0.16s;
+        padding:2px 7px; border-radius:2px; font-size:10.5px; cursor:pointer; font-family:inherit;
+        letter-spacing:0.5px; transition:all 0.16s;
       }
       .ow-micro-btn:hover { background:rgba(212,184,122,0.26); color:#fff; border-color:#f2daa0; }
       .ow-micro-btn.crimson {
@@ -915,7 +916,7 @@
     const body = document.getElementById('ls-body');
     const title = document.getElementById('ls-title');
     const curPlate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-    title.textContent = `沧溟修仙模拟人生 v10.5 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
+    title.textContent = `沧溟修仙模拟人生 ${APP_VER} · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
 
     document.querySelectorAll('.ls-tab').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === activeTab);
@@ -1686,7 +1687,7 @@
       HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
       HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);
-      window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclusion');
+      window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclude');
       pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
       if ((HERO._guideStep || 0) < 3) HERO._guideStep = 3;
       if (window.WorldDirector) {
@@ -1957,14 +1958,14 @@
       hud.innerHTML = `
         <div class="ow-top-bar">
           <span id="ow-region-info">沧溟山河</span>
-          <button class="ow-micro-btn" id="ow-btn-layer">出城舆图</button>
-          <button class="ow-micro-btn" id="ow-btn-cave">回洞府</button>
-          <button class="ow-micro-btn" id="ow-btn-birth" style="display:none;">童年手记</button>
+          <button class="ow-micro-btn" id="ow-btn-layer">出城</button>
+          <button class="ow-micro-btn" id="ow-btn-cave">洞府</button>
+          <button class="ow-micro-btn" id="ow-btn-birth" style="display:none;">出身</button>
           <button class="ow-micro-btn" id="ow-btn-tod">昼</button>
-          <button class="ow-micro-btn" id="ow-btn-clock" title="切换岁月自然流逝">流逝:开</button>
-          <button class="ow-micro-btn" id="ow-btn-m1">一月</button>
+          <button class="ow-micro-btn" id="ow-btn-clock" title="切换岁月自然流逝">⏸</button>
+          <button class="ow-micro-btn" id="ow-btn-m1">+1月</button>
           <button class="ow-micro-btn" id="ow-btn-y1">闭关</button>
-          <button class="ow-micro-btn crimson" id="ow-btn-break" style="display:none;">破境渡劫</button>
+          <button class="ow-micro-btn crimson" id="ow-btn-break" style="display:none;">破境</button>
         </div>
         <div id="ow-minimap-box" title="点击罗盘任意方位自动寻路">
           <span class="mm-card mm-n">北</span><span class="mm-card mm-s">南</span>
@@ -2094,7 +2095,7 @@
       let autoClockOn = true;
       document.getElementById('ow-btn-clock').onclick = () => {
         autoClockOn = !autoClockOn;
-        document.getElementById('ow-btn-clock').textContent = autoClockOn ? '流逝:开' : '流逝:停';
+        document.getElementById('ow-btn-clock').textContent = autoClockOn ? '⏸' : '▶';
         showOwToast(autoClockOn ? '岁月恢复自然流逝（每 25 秒推进一月）' : '已暂停岁月自然流逝');
       };
       setInterval(() => {
@@ -2157,7 +2158,7 @@
     modal.innerHTML = `
       <div class="ls-box">
         <div class="ls-head">
-          <h2 id="ls-title">沧溟修仙模拟人生 v9.0</h2>
+          <h2 id="ls-title">沧溟修仙模拟人生 ${APP_VER}</h2>
           <button class="ls-btn red" id="ls-close">✕ 返回大世界</button>
         </div>
         <div class="ls-tabs">
@@ -2199,7 +2200,7 @@
     curtain.id = 'v10-title-curtain';
     curtain.innerHTML = `
       <div class="v10-title-card">
-        <div style="font-size:11px;letter-spacing:4px;color:#9ff2cf;margin-bottom:6px;">真实演化修仙模拟人生 · 沧溟界 v10.7</div>
+        <div style="font-size:11px;letter-spacing:4px;color:#9ff2cf;margin-bottom:6px;">真实演化修仙模拟人生 · 沧溟界 ${APP_VER}</div>
         <h1 style="font-size:32px;letter-spacing:6px;color:#f5e2b5;margin:0 0 10px;font-weight:700;">青云问道录</h1>
         <div style="font-size:12px;color:#bfb7a8;line-height:1.7;margin-bottom:18px;">
           五洲七海已先行自然演化 1200 年：宗门兴衰、物价涨落、遗迹现世、众生百态皆非预设剧本。<br/>

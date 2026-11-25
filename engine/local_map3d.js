@@ -1008,7 +1008,7 @@
     const raycaster = new THREE.Raycaster(); const mouse = new THREE.Vector2();
     let rDrag = false, moved = false, lx = 0, ly = 0;
 
-    const onPointerDown = e => { lx = e.clientX; ly = e.clientY; moved = false; if (e.button === 2 || e.shiftKey) rDrag = true; };
+    const onPointerDown = e => { lx = e.clientX; ly = e.clientY; moved = false; if (e.button === 2) rDrag = true; };
     const onPointerMove = e => {
       const dx = e.clientX - lx, dy = e.clientY - ly;
       if (Math.abs(dx) + Math.abs(dy) > 5) moved = true;

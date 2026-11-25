@@ -390,8 +390,10 @@
       // 地标牌匾
       const hasRuin = (world.ruins || []).some(r => r.plateId === nd.id);
       const hasInst = (world.institutions || []).some(i => i.plateId === nd.id && i.status !== 'abolished');
-      const badges = (hasRuin ? '🗝️' : '') + (hasInst ? '⚖️' : '') + (nd.sha >= 55 ? '🔥' : '');
-      const tex = makeNameplateTexture(`${badges}${nd.name}`, `${nd.id} · 脉${nd.leyline} 暗${nd.darkForestIdx || 0}`, nd.sha >= 55 ? '#e06258' : '#d4b87a');
+      const badges = (hasRuin ? '遗' : '') + (hasInst ? '会' : '') + (nd.sha >= 55 ? '煞' : '');
+      const pi = nd.priceIndex || {};
+      const hotTrade = pi.pill >= 1.35 ? `丹×${pi.pill}↑` : (pi.mineral >= 1.35 ? `矿×${pi.mineral}↑` : (pi.grain >= 1.35 ? `粮×${pi.grain}↑` : `脉${nd.leyline}`));
+      const tex = makeNameplateTexture(`${badges ? '[' + badges + ']' : ''}${nd.name}`, `${nd.id} · ${hotTrade} 暗${nd.darkForestIdx || 0}`, nd.sha >= 55 ? '#e06258' : '#d4b87a');
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
       sp.scale.set(3.4, 1.12, 1);
       sp.position.set(c3[0], baseH + 2.55, c3[1]);

@@ -1272,9 +1272,39 @@
     state = {
       renderer, scene, camera, raf: null, cleanup,
       heroPos, swordMesh, joyVec, opts, plate, MAP_W, MAP_H,
-      buildingsForMini, npcActors, hostileActors, applyTimeOfDay, castSkill, combatState,
+      buildingsForMini, npcActors, hostileActors, clickMeshes, applyTimeOfDay, castSkill, combatState,
       getTimeMode: () => timeMode,
-      getNearby: () => nearbyTarget
+      getNearby: () => nearbyTarget,
+      spawnDuelNpc: (npc, isLethal) => {
+        const rIdx = npc.realmIdx || 1;
+        const hp = Math.round(120 + rIdx * 95);
+        const atk = Math.round(15 + rIdx * 10);
+        const sx = Math.max(-18, Math.min(18, heroPos.x + 4.5));
+        const sz = Math.max(-14, Math.min(14, heroPos.z + 1.2));
+        const sp = makeHumanSprite('assets/chars/elder.webp', npc.name, '', 0xe05248, 1.5, 2.0, true);
+        sp.group.position.set(sx, 0, sz);
+        sp.hpSprite.material.map = makeHpBarTexture(hp, hp, `${npc.name}(${npc.realm || '修士'})`);
+        sp.hpSprite.material.needsUpdate = true;
+        const warnRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.3, 2.45, 28),
+          new THREE.MeshBasicMaterial({ color: 0xff3b30, side: THREE.DoubleSide, transparent: true, opacity: 0 })
+        );
+        warnRing.rotateX(-Math.PI / 2); warnRing.position.y = 0.08;
+        sp.group.add(warnRing);
+        const en = {
+          id: 'duel_' + npc.id + '_' + Date.now(), sp, warnRing,
+          name: npc.name, homeX: sx, homeZ: sz, x: sx, z: sz, tx: sx, tz: sz,
+          hp, maxHp: hp, atk,
+          rewardStones: 85 + rIdx * 45, rewardExp: 55 + rIdx * 35,
+          drop: isLethal ? `${npc.name}储物袋` : '切磋心得玉简',
+          isEnforcer: false, isDuel: true, isLethal: !!isLethal, npcRef: npc,
+          alive: true, respawnTimer: 99999, aiState: 'chase', aiTimer: 0.5, hitFlash: 0, speed: 3.1
+        };
+        sp.body.userData = { hostileRef: en };
+        scene.add(sp.group); clickMeshes.push(sp.body);
+        hostileActors.push(en);
+        spawnFloatText(sx, 2.8, sz, isLethal ? '拔剑死战!' : '请赐教!', '#ff9138');
+      }
     };
     animate(performance.now());
     return true;
@@ -1321,7 +1351,9 @@
     };
   }
 
-  const LocalMap3D = { mount, dispose, toggleFly, setJoystick, triggerInteract, walkTo, castSkill, getCombatHudState, cycleTimeOfDay, getMinimapData };
+  function spawnDuelNpc(npc, isLethal) { if (state && state.spawnDuelNpc) state.spawnDuelNpc(npc, isLethal); }
+
+  const LocalMap3D = { mount, dispose, toggleFly, setJoystick, triggerInteract, walkTo, castSkill, getCombatHudState, cycleTimeOfDay, getMinimapData, spawnDuelNpc };
   if (typeof module !== 'undefined' && module.exports) module.exports = LocalMap3D;
   root.LocalMap3D = LocalMap3D;
 })(typeof window !== 'undefined' ? window : globalThis);

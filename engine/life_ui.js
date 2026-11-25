@@ -497,6 +497,7 @@
       return `
         <div class="ls-scene-banner">
           <div style="color:#f2daa0;font-size:13.5px;font-weight:700;margin-bottom:4px;">📜 0–18 岁童年少年开局手记 · ${ch.age} (${step + 1}/4)</div>
+          ${step === 0 ? `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span style="font-size:11.5px;color:#9ff2cf;">自定道号：</span><input class="ls-input" id="inp-hero-daoname" value="${HERO.name}" style="max-width:180px;" /></div>` : ''}
           <div style="font-size:12px;margin-bottom:10px;">${ch.prompt}</div>
           <div style="display:flex;flex-direction:column;gap:6px;">
             ${ch.choices.map((c, idx) => `<button class="ls-btn jade" style="text-align:left;padding:7px 10px;" data-birth="${idx}">${idx + 1}. ${c.label}</button>`).join('')}
@@ -751,6 +752,8 @@
     // 0-18 岁童年手记抉择
     body.querySelectorAll('[data-birth]').forEach(btn => {
       btn.onclick = () => {
+        const nameInp = document.getElementById('inp-hero-daoname');
+        if (nameInp && nameInp.value.trim()) HERO.name = nameInp.value.trim().slice(0, 8);
         const idx = Number(btn.dataset.birth);
         const picks = activeScene.data.picks || [];
         picks.push(idx);
@@ -759,10 +762,11 @@
           activeScene = { type: 'birth_story', data: { step: nextStep, picks } };
         } else {
           window.LifeModules.applyBirthChoices(HERO, picks);
-          pushLog(`📜 你完成了 0–18 岁成长手记，携初始道心正式踏入沧溟修仙界！`);
+          pushLog(`📜 【${HERO.name}】完成了 0–18 岁成长手记，携初始道心正式踏入沧溟修仙界！`);
           activeScene = null;
           saveState(); syncTopHud();
-          showOwToast('📜 0–18 岁成长手记已铸就你的初始根骨与道心！');
+          switchViewLayer(viewLayer, HERO.locId, currentRoom);
+          showOwToast(`【${HERO.name}】0–18 岁成长手记已铸就你的初始根骨与道心！`);
         }
         renderModal();
       };
@@ -1079,6 +1083,10 @@
                   <div><span class="ls-pill">信任 ${rel.trust}</span><span class="ls-pill">敬畏 ${rel.dread}</span><span class="ls-pill jade">人情把柄 ${rel.hook}</span><span class="ls-pill">道念共鸣 ${rel.daoResonance}</span></div>
                 </div>
               </div>
+              <div style="display:flex;gap:6px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed rgba(212,184,122,0.2);">
+                <button class="ls-btn jade" id="btn-duel-spar">实景切磋论道（直接在大街即时开打）</button>
+                <button class="ls-btn red" id="btn-duel-kill">实景伏击夺宝（生死死战 · 胜则陨落写入世界史）</button>
+              </div>
               <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">
                 ${window.LifeSim.SOCIAL_ACTIONS.map(a => `
                   <button class="ls-btn ${a.id==='ai_free_talk'?'blue':(a.cat==='暗黑魔道'?'red':(a.cat==='道途传承'?'jade':''))}" data-sact="${a.id}" title="${a.desc}">[${a.cat}] ${a.name}</button>
@@ -1089,6 +1097,26 @@
           </div>
         </div>
       `;
+      const startLiveDuel = isLethal => {
+        if (!curNpc) return;
+        document.getElementById('life-sim-modal').classList.remove('open');
+        const launch = () => {
+          if (window.LocalMap3D && window.LocalMap3D.spawnDuelNpc) {
+            window.LocalMap3D.spawnDuelNpc(curNpc, isLethal);
+            showOwToast(isLethal
+              ? `拔剑伏击【${curNpc.name}】！走位躲红圈、按 F/2/3 即时生死决战！`
+              : `向【${curNpc.name}】发起实景切磋！按 F/2/3 即时论剑！`);
+          }
+        };
+        if (viewLayer !== 'local') {
+          switchViewLayer('local', HERO.locId);
+          setTimeout(launch, 160);
+        } else launch();
+      };
+      const ds = document.getElementById('btn-duel-spar');
+      const dk = document.getElementById('btn-duel-kill');
+      if (ds) ds.onclick = () => startLiveDuel(false);
+      if (dk) dk.onclick = () => startLiveDuel(true);
       body.querySelectorAll('[data-npc]').forEach(el => { el.onclick = () => { selectedNpcId = el.dataset.npc; activeScene = null; renderModal(); }; });
       body.querySelectorAll('[data-sact]').forEach(btn => {
         btn.onclick = () => {
@@ -1382,6 +1410,8 @@
 
     const btBtn = document.getElementById('ow-btn-break');
     if (btBtn) btBtn.style.display = HERO.exp >= HERO.maxExp ? 'inline-block' : 'none';
+    const biBtn = document.getElementById('ow-btn-birth');
+    if (biBtn) biBtn.style.display = HERO.birthDone ? 'none' : 'inline-block';
 
     const regEl = document.getElementById('ow-region-info');
     if (regEl) {
@@ -1727,6 +1757,12 @@
           if (ex) ex.qty += 1;
           else HERO.bag.push({ id: 'it_' + Date.now(), name: en.drop, kind: '妖材', qty: 1, desc: `即时斩杀【${en.name}】掉落` });
         }
+        if (en.isDuel && en.isLethal && en.npcRef) {
+          en.npcRef.alive = false;
+          HERO.wanted = (HERO.wanted || 0) + 25;
+          HERO.life.reputation.demonic += 15;
+          WORLD.chronicles.unshift({ year: WORLD.year, tag: '陨落', text: `第${WORLD.year}年：【${en.npcRef.name}】(${en.npcRef.realm})在实景斗法中被【${HERO.masked ? HERO.maskName : HERO.name}】当街斩杀夺宝！` });
+        }
         if (window.WorldDirector) {
           const done = window.WorldDirector.recordProgress(HERO, 'kill', 1);
           if (done) showOwToast(`悬赏达成【${done.title}】！请前往广场悬赏榜领赏`);
@@ -1809,6 +1845,7 @@
           <span id="ow-region-info">沧溟山河</span>
           <button class="ow-micro-btn" id="ow-btn-layer">出城舆图</button>
           <button class="ow-micro-btn" id="ow-btn-cave">回洞府</button>
+          <button class="ow-micro-btn" id="ow-btn-birth" style="display:none;">童年手记</button>
           <button class="ow-micro-btn" id="ow-btn-tod">昼</button>
           <button class="ow-micro-btn" id="ow-btn-m1">一月</button>
           <button class="ow-micro-btn" id="ow-btn-y1">闭关</button>
@@ -1896,6 +1933,12 @@
       document.getElementById('ow-btn-cave').onclick = () => {
         switchViewLayer('interior', HERO.locId, 'cave');
         showOwToast('已步入私人【灵脉洞府·石室】，可打坐、炼丹或观想遗物');
+      };
+      document.getElementById('ow-btn-birth').onclick = () => {
+        activeTab = 'life';
+        activeScene = { type: 'birth_story', data: { step: 0, picks: [] } };
+        document.getElementById('life-sim-modal').classList.add('open');
+        renderModal();
       };
       document.getElementById('ow-btn-tod').onclick = () => {
         if (viewLayer !== 'local' || !window.LocalMap3D) { showOwToast('昼夜灯火切换仅在局部城镇实景中生效'); return; }

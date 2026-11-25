@@ -50,7 +50,7 @@ window.GAME_DATA.EVENTS = {
                 hp: 140, maxHp: 140, atk: 16, talkDef: 10, expReward: 65, stoneReward: 65,
                 onWin: () => {
                   addItem('eq_clear_jade', 1);
-                  showToast('击退柳家护卫，对方遗落一枚【清心玉佩】。');
+                  showToast('击退柳家护卫，对方遗落一枚【宁心温玉佩】。');
                 }
               });
             }
@@ -77,7 +77,7 @@ window.GAME_DATA.EVENTS = {
                     G.flags.divorceResolved = true;
                     G.fame += 45; G.sense += 8;
                     addItem('eq_ancient_ring', 1);
-                    showToast('三年之约大胜！东洲震动，声望 +45，得绝世孤品【太虚古玉戒】。');
+                    showToast('三年之约大胜！东洲震动，声望 +45，得绝世孤品【太虚洞天戒】。');
                   }
                 });
               }
@@ -136,7 +136,7 @@ window.GAME_DATA.EVENTS = {
                     G.flags.divorceResolved = true;
                     G.fame += 40;
                     addItem('eq_xuan_armor', 1);
-                    showToast('击败柳家真传，恩怨彻底了结，缴获【玄铁内甲】！');
+                    showToast('击败柳家真传，恩怨彻底了结，缴获【戊土玄圭宝甲】！');
                   }
                 });
               }
@@ -177,7 +177,7 @@ window.GAME_DATA.EVENTS = {
               addItem('eq_qingyun_sword', 1);
               addItem('tr_flying_sword', 1);
               setAllyExpr('sister', 'smile');
-              showToast('正式拜入青云剑宗！获【青云制式剑】与外物法宝【悬浮青霜飞剑】。');
+              showToast('正式拜入青云剑宗！获【青云制式剑】与外物法宝【青霜子母飞剑】。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -275,7 +275,7 @@ window.GAME_DATA.EVENTS = {
                 G.fame += 35; G.allies.sister.bond += 18;
                 addItem('eq_xuan_armor', 1);
                 setAllyExpr('sister', 'smile');
-                showToast('护山大功告成！获封青云内门真传，赐【玄铁内甲】。');
+                showToast('护山大功告成！获封青云内门真传，赐【戊土玄圭宝甲】。');
               }
             });
           }
@@ -349,7 +349,7 @@ window.GAME_DATA.EVENTS = {
       if (G.month < 10) {
         setDialogue({
           speaker: '沈云舒', asset: ASSETS.sister,
-          text: `“岁末鉴宝大拍定于第 1 年·冬（第 10 月，尚余 ${10 - G.month} 月）。届时会流出古修玄铁内甲与高阶心法残卷，你不妨先多备些灵石。”`,
+          text: `“岁末鉴宝大拍定于第 1 年·冬（第 10 月，尚余 ${10 - G.month} 月）。届时会流出古修戊土玄圭宝甲与高阶心法残卷，你不妨先多备些灵石。”`,
           choices: [
             { text: '前往鬼市装备坊挑拣货色', hint: '装备交易', action: () => ctx.openEquipShop() },
             { text: '改日再来', action: () => { setDialogue(null); renderAll(); } }
@@ -360,15 +360,15 @@ window.GAME_DATA.EVENTS = {
 
       setDialogue({
         speaker: '鬼市岁末鉴宝大拍', asset: ASSETS.sister,
-        text: '第 1 年·冬，鬼市石窟灯火通明。沈云舒轻敲紫檀木槌，三件压轴拍品依次呈上：玄品【玄铁内甲】、万宝楼秘传《万宝凝神录》配【乾坤储物袋】，以及一只被世家子弟盯上的疑似假古匣。',
+        text: '第 1 年·冬，鬼市石窟灯火通明。沈云舒轻敲紫檀木槌，三件压轴拍品依次呈上：玄品【戊土玄圭宝甲】、万宝楼秘传《万宝凝神录》配【乾坤储物袋】，以及一只被世家子弟盯上的疑似假古匣。',
         choices: [
           {
-            text: '以 110 灵石拍下玄品【玄铁内甲】', hint: '原价155 护体极佳',
+            text: '以 110 灵石拍下玄品【戊土玄圭宝甲】', hint: '原价155 护体极佳',
             action: () => {
               if (G.stone < 110) return showToast('灵石不足 110 枚。');
               advanceTime(1); G.stone -= 110; G.factions.wanbao = 2;
               addItem('eq_xuan_armor', 1);
-              showToast('拍得【玄铁内甲】！已存入乾坤行囊。');
+              showToast('拍得【戊土玄圭宝甲】！已存入乾坤行囊。');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -508,10 +508,10 @@ window.GAME_DATA.EVENTS = {
     if (stage === 1) {
       setDialogue({
         speaker: '墨离', asset: ASSETS.elder,
-        text: '“既入幽冥门下，须过夺魂试炼。击败这座煞气傀儡，宗内便赐你镇魂法宝【幽冥摄魂铃】与玄品兵甲。”',
+        text: '“既入幽冥门下，须过夺魂试炼。击败这座煞气傀儡，宗内便赐你镇魂法宝【太古摄魂金铃】与玄品兵甲。”',
         choices: [
           {
-            text: '迎战夺魂煞傀', hint: '得【幽冥摄魂铃】+【幽冥噬魂刃】',
+            text: '迎战夺魂煞傀', hint: '得【太古摄魂金铃】+【幽冥噬魂刃】',
             action: () => {
               startBattle({
                 name: '幽冥夺魂煞傀', asset: ASSETS.wolf_boss, bg: 'market',
@@ -520,7 +520,7 @@ window.GAME_DATA.EVENTS = {
                   G.factions.nether = 2;
                   addItem('tr_soul_bell', 1);
                   addItem('eq_nether_blade', 1);
-                  showToast('通过夺魂试炼！获外物法宝【幽冥摄魂铃】与【幽冥噬魂刃】。');
+                  showToast('通过夺魂试炼！获外物法宝【太古摄魂金铃】与【幽冥噬魂刃】。');
                 }
               });
             }
@@ -621,7 +621,7 @@ window.GAME_DATA.EVENTS = {
               addItem('eq_uniq_venom_eye', 1);
               addItem('eq_ancient_ring', 1);
               const g = gainExp(120);
-              showToast(`巧破古阵！修为 +${g}，得绝世孤品【蚀骨妖瞳】与【太虚古玉戒】！`);
+              showToast(`巧破古阵！修为 +${g}，得绝世孤品【破妄妖瞳玉】与【太虚洞天戒】！`);
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -632,7 +632,7 @@ window.GAME_DATA.EVENTS = {
               G.hp = Math.max(20, Math.floor(G.hp * 0.7));
               addItem('eq_uniq_venom_eye', 1);
               addItem('eq_ancient_ring', 1);
-              showToast('强破古阵略受震荡，成功夺得绝世孤品【蚀骨妖瞳】与【太虚古玉戒】！');
+              showToast('强破古阵略受震荡，成功夺得绝世孤品【破妄妖瞳玉】与【太虚洞天戒】！');
               setDialogue(null); saveGame('auto', true); renderAll();
             }
           },
@@ -657,7 +657,7 @@ window.GAME_DATA.EVENTS = {
     if (round >= 3) {
       setDialogue({
         speaker: '东洲大比执事', asset: ASSETS.elder,
-        text: '“陈道友已在东洲宗门大比力压群雄夺得魁首，如今演武台尚可供你与各宗真传切磋磨砺百兵熟练度。”',
+        text: '“陈道友已在东洲宗门大比力压群雄夺得魁首，如今演武台尚可供你与各宗真传切磋磨砺仙道造诣。”',
         choices: [
           {
             text: '登台与各宗真传切磋（磨砺招式熟练度）', hint: '实战切磋',
@@ -680,13 +680,13 @@ window.GAME_DATA.EVENTS = {
         title: '初赛 · 玄天宗剑子「顾惊鸿」',
         intro: '青云演武台上剑气纵横。玄天宗真传顾惊鸿负手而立：“青云门下久不出奇才，今日大比初战，且让我称称你的斤两。”',
         enemy: { name:'玄天剑子·顾惊鸿', asset:ASSETS.sister_fierce, bg:'sect_plaza', hp:320, maxHp:320, atk:28, expReward:160, stoneReward:90 },
-        reward: () => { addItem('eq_qingyun_crown', 1); showToast('大比初赛胜出！获【青云剑冠】与 90 灵石！'); }
+        reward: () => { addItem('eq_qingyun_crown', 1); showToast('大比初赛胜出！获【紫金太白道冠】与 90 灵石！'); }
       },
       {
         title: '半决 · 焚天谷刀魁「厉狂砂」',
         intro: '半决赛擂台上热浪滚滚，焚天谷刀魁厉狂砂扛着赤铁重刀大步登台：“少拿花哨剑招糊弄老子，接我三刀不退再谈魁首！”',
         enemy: { name:'焚天刀魁·厉狂砂', asset:ASSETS.elder, bg:'sect_plaza', hp:460, maxHp:460, atk:36, expReward:230, stoneReward:140 },
-        reward: () => { addItem('tr_flying_sword', 1); showToast('力克焚天刀魁晋级决赛！获玄品外物法宝【悬浮青霜飞剑】！'); }
+        reward: () => { addItem('tr_flying_sword', 1); showToast('力克焚天刀魁晋级决赛！获玄品外物法宝【青霜子母飞剑】！'); }
       },
       {
         title: '决战 · 东洲魁首「剑尊亲传·陆沉舟」',
@@ -699,7 +699,7 @@ window.GAME_DATA.EVENTS = {
             G.skills.push('star_sword_rain');
             G.skillProf.star_sword_rain = { lv: 1, exp: 0 };
           }
-          showToast('夺得东洲宗门大比魁首！声望 +60，神识 +4，得孤品【太古混元棍】并领悟【九霄落星剑】！');
+          showToast('夺得东洲宗门大比魁首！声望 +60，神识 +4，得孤品【乾坤量天尺】并领悟【离火燎原剑气】！');
         }
       }
     ];
@@ -759,7 +759,7 @@ window.GAME_DATA.EVENTS = {
                 onWin: () => {
                   G.flags.demonTideStage = 1;
                   addItem('tr_soul_bell', 1);
-                  showToast('击溃幽冥先锋！缴获外物法宝【幽冥摄魂铃】，直逼血魔将主坛！');
+                  showToast('击溃幽冥先锋！缴获外物法宝【太古摄魂金铃】，直逼血魔将主坛！');
                   saveGame('auto', true);
                 }
               });
@@ -789,7 +789,7 @@ window.GAME_DATA.EVENTS = {
                 G.fame += 80; G.sense += 5;
                 addItem('eq_uniq_undying', 1);
                 addItem('marrow_pill', 2);
-                showToast('斩杀幽冥血魔将！东洲举宗同庆，声望 +80，神识 +5，得孤品【不灭血衣】与洗髓丹×2！');
+                showToast('斩杀幽冥血魔将！东洲举宗同庆，声望 +80，神识 +5，得孤品【涅槃不灭衣】与洗髓丹×2！');
                 saveGame('auto', true);
               }
             });
@@ -824,7 +824,7 @@ window.GAME_DATA.EVENTS = {
                   G.flags.ancientRealmStage = 1;
                   G.body += 4; G.speed += 4; G.sense += 4;
                   addItem('eq_ancient_ring', 1);
-                  showToast('击碎太古剑傀！根骨/遁速/神识各 +4，得【太虚古玉戒】，太古核心已开启！');
+                  showToast('击碎太古剑傀！根骨/遁速/神识各 +4，得【太虚洞天戒】，太古核心已开启！');
                   saveGame('auto', true);
                 }
               });
@@ -841,7 +841,7 @@ window.GAME_DATA.EVENTS = {
       text: '秘境最深处雷海翻涌，九霄天雷凝聚为万丈法相：“破此法相，东洲再无敌手，诸天大道任尔逍遥！”',
       choices: [
         {
-          text: '以平生所学百兵大道，迎战九霄雷劫化身！', hint: '终极试炼·贰 (HP 1680)',
+          text: '以平生所学六道神通，迎战九霄雷劫化身！', hint: '终极试炼·贰 (HP 1680)',
           action: () => {
             startBattle({
               name: '九霄雷劫化身', asset: ASSETS.wolf_boss, bg: 'world_map',
@@ -851,7 +851,7 @@ window.GAME_DATA.EVENTS = {
                 G.fame += 150;
                 addItem('eq_uniq_venom_eye', 1);
                 addItem('condense_pill', 3);
-                showToast('斩破九霄雷劫化身！威震诸天，声望 +150，获孤品【蚀骨妖瞳】与破境凝元丹×3！');
+                showToast('斩破九霄雷劫化身！威震诸天，声望 +150，获孤品【破妄妖瞳玉】与破境凝元丹×3！');
                 saveGame('auto', true);
               }
             });

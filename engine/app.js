@@ -26,23 +26,29 @@ function triggerShake() {
 }
 
 function defaultState() {
-  return {
-    name: '陈清安', realmIdx: 0,
+  const st = {
+    name: '陈清安', lifeCount: 1, realmIdx: 0, loc: 'map',
     hp: 130, maxHp: 130, qi: 85, maxQi: 85, exp: 0,
     body: 10, wit: 10, speed: 10, luck: 10, sense: 10, fame: 0,
-    elements: { gold: 72, wood: 52, water: 58, fire: 46, earth: 54 },
-    root: '五行灵根', talent: '残魂相伴', sect: '散修',
-    age: 18, maxAge: 100, month: 1, stone: 85,
+    elements: { gold: 28, wood: 26, water: 28, fire: 25, earth: 27 },
+    root: '五行均衡灵根', talent: '宿慧通明', sect: '散修',
+    age: 16, maxAge: 100, month: 1, stone: 85,
+    caveOwned: false,
+    caveVault: { items: {}, stones: 0 },
+    worldRelic: null,
+    worldRemains: null,
+    nemesis: null,
+    stolenMarketPool: [],
     heartArt: 'turtle_breath',
-    ownedHeartArts: ['turtle_breath', 'qingyun_breath'],
+    ownedHeartArts: ['turtle_breath', 'qingyun_breath', 'xuanxu_sutra'],
     passives: ['p_crit_edge'],
     ownedPassives: ['p_crit_edge', 'p_heavy_force', 'p_venom_mist', 'p_thorns_shell', 'p_beast_bond', 'p_blood_fury'],
-    skills: ['basic_sword', 'evade_step', 'venom_dart', 'sweep_staff'],
+    skills: ['basic_sword', 'silk_palm', 'venom_dart', 'wind_rod'],
     skillProf: {
       basic_sword: { lv: 1, exp: 0 },
-      evade_step:  { lv: 1, exp: 0 },
+      silk_palm:   { lv: 1, exp: 0 },
       venom_dart:  { lv: 1, exp: 0 },
-      sweep_staff: { lv: 1, exp: 0 }
+      wind_rod:    { lv: 1, exp: 0 }
     },
     equipment: {
       weapon: 'eq_iron_sword',
@@ -67,6 +73,13 @@ function defaultState() {
     allies: buildInitialAllies(),
     flags: {}
   };
+  if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
+  st.lifeCount = st.lifeCount || 1;
+  st.caveOwned = Boolean(st.caveOwned);
+  st.caveVault = st.caveVault || { items: {}, stones: 0 };
+  st.stolenMarketPool = Array.isArray(st.stolenMarketPool) ? st.stolenMarketPool : [];
+  if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
+  return st;
 }
 
 function buildInitialAllies() {
@@ -178,6 +191,11 @@ function normalizeState(st) {
   if ((st.factions.wanbao || 0) >= 1 && st.allies.shen) st.allies.shen.unlocked = true;
   if (st.flags.divorceBranch && st.allies.liu) st.allies.liu.unlocked = true;
   if ((st.factions.nether || 0) >= 1 && st.allies.moli) st.allies.moli.unlocked = true;
+  st.lifeCount = st.lifeCount || 1;
+  st.caveOwned = Boolean(st.caveOwned);
+  st.caveVault = st.caveVault || { items: {}, stones: 0 };
+  st.stolenMarketPool = Array.isArray(st.stolenMarketPool) ? st.stolenMarketPool : [];
+  if (window.REINCARNATION) window.REINCARNATION.ensureWorldRelic(st);
   return st;
 }
 
@@ -361,16 +379,24 @@ function getNextTimelineText() {
   return next ? `${next.title}（余${next.month - G.month}月）` : '东洲风云变幻，大道可期';
 }
 function advanceTime(months = 1) {
+  const prevYear = Math.floor((G.month - 1) / 12);
   G.month += months;
-  if (G.month % 12 === 1) G.age += 1;
-  if (G.age >= G.maxAge && window.MINIGAMES) {
-    window.MINIGAMES.openEnding(getEventCtx());
+  const newYear = Math.floor((G.month - 1) / 12);
+  if (newYear > prevYear) G.age += (newYear - prevYear);
+  if (G.age >= G.maxAge && window.REINCARNATION) {
+    G.loc = currentLocationId || 'sect';
+    if (window.REINCARNATION.hasRelic(G)) {
+      window.REINCARNATION.executeReincarnation(getEventCtx(), 'calm', null);
+    } else {
+      window.REINCARNATION.triggerTrueDeath(getEventCtx(), '大限已至，寿元耗尽坐化');
+    }
   }
 }
 function gainExp(amt) {
-  const ha = D.HEART_ARTS[G.heartArt] || { expBonus: 0 };
+  const ha = D.HEART_ARTS[G.heartArt] || { expBonus: 0, elem: 'none' };
+  const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, ha.elem) : { rate: 1.0 };
   const eq = getEquipStats();
-  const bonus = Math.floor(amt * (1 + G.wit * 0.03 + (ha.expBonus || 0) + (eq.expRate || 0)));
+  const bonus = Math.max(2, Math.floor(amt * apt.rate * (1 + G.wit * 0.03 + (ha.expBonus || 0) + (eq.expRate || 0))));
   G.exp += bonus;
   const need = D.REALMS[G.realmIdx].exp;
   if (G.exp >= need && !D.REALMS[G.realmIdx + 1]?.tribulation) tryRealmUp(false);
@@ -522,7 +548,14 @@ function startQuiz() {
           SFX.play('click');
           for (const [k,v] of Object.entries(o.eff)) {
             if (k === 'root' || k === 'talent') G[k] = v;
-            else if (k === 'skill') { if (!G.skills.includes(v)) G.skills.push(v); }
+            else if (k === 'rootPreset') {
+              if (v === 'sky_fire') G.elements = { gold: 6, wood: 5, water: 2, fire: 94, earth: 4 };
+              else if (v === 'dual_gold_water') G.elements = { gold: 68, wood: 8, water: 64, fire: 3, earth: 7 };
+              else G.elements = { gold: 28, wood: 26, water: 28, fire: 25, earth: 27 };
+            }
+            else if (k === 'skill') {
+              if (!G.skills.includes(v)) { G.skills.push(v); G.skillProf[v] = { lv: 1, exp: 0 }; }
+            }
             else G[k] = (G[k] || 0) + v;
           }
           step++; renderStep();
@@ -530,16 +563,17 @@ function startQuiz() {
         box.appendChild(b);
       });
     } else {
+      const el = G.elements;
       root.innerHTML = `
         <div class="title-box">
           <h2 class="title-main" style="font-size:19px;letter-spacing:4px;">命格已定 · 启程东洲</h2>
           <div style="display:flex;align-items:center;gap:18px;margin:10px 0 14px;">
             ${buildRadarSvg(G.elements)}
             <div style="flex:1;font-size:12.5px;line-height:1.85;color:#dfd6c6;">
-              <div><b style="color:#ebd29b;">灵根资质：</b>${G.root}</div>
+              <div><b style="color:#ebd29b;">灵根格局：</b>${G.root}（金${el.gold} · 木${el.wood} · 水${el.water} · 火${el.fire} · 土${el.earth}）</div>
               <div><b style="color:#ebd29b;">先天气运：</b>${G.talent}</div>
               <div><b style="color:#ebd29b;">核心五维：</b>根骨 ${G.body} · 悟性 ${G.wit} · 遁速 ${G.speed} · 气运 ${G.luck} · 神识 ${G.sense}</div>
-              <div><b style="color:#ebd29b;">初始盘缠：</b>${G.stone} 灵石</div>
+              <div><b style="color:#ebd29b;">天地唯一：</b>【造化轮回盘】已隐匿于东洲某处机缘</div>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--gold-hair);">
@@ -562,7 +596,10 @@ function startQuiz() {
 }
 
 function enterLocation(locId) {
-  SFX.play('click'); currentLocationId = locId; activePanel = null; activeDialogue = null; renderAll();
+  SFX.play('click');
+  currentLocationId = locId;
+  if (G) G.loc = locId || 'map';
+  activePanel = null; activeDialogue = null; renderAll();
 }
 
 function interactNpc(npcId) {
@@ -572,18 +609,20 @@ function interactNpc(npcId) {
     const choices = [];
     if (G.sect === '散修') {
       choices.push({
-        text: '行拜师礼，正式拜入青云剑宗', hint: '获心法与青霜剑胚',
+        text: '行拜师礼，正式拜入青云剑宗', hint: '获太白剑典与制式飞剑',
         action: () => {
           G.sect = '青云剑宗'; G.factions.qingyun = Math.max(G.factions.qingyun || 0, 1);
           G.allies.sister.bond += 15; G.fame += 10;
           if (!G.ownedHeartArts.includes('qingyun_breath')) G.ownedHeartArts.push('qingyun_breath');
-          if (!G.skills.includes('sister_frost')) G.skills.push('sister_frost');
-          G.artifacts.frost_embryo = G.artifacts.frost_embryo || 1; G.artifactId = 'frost_embryo';
+          if (!G.skills.includes('sister_frost')) {
+            G.skills.push('sister_frost');
+            G.skillProf.sister_frost = { lv: 1, exp: 0 };
+          }
           addItem('eq_qingyun_sword', 1);
           allyExprMap.sister = 'smile';
           activeDialogue = {
             speaker: '林清霜', asset: ASSETS.sister_smile,
-            text: '她微微颔首，唇角露出一丝难得的浅笑：“既入青云门下，日后便是我师弟了。这柄青云制式剑、寒霜剑胚与吐纳心法，你且收好。”',
+            text: '她微微颔首，唇角露出一丝难得的浅笑：“既入青云门下，日后便是我师弟了。这柄太白分光剑器、玄冥寒霜剑阵玉简与剑宗仙典，你且收好。”',
             choices: [{ text:'多谢师姐照拂', action:()=>{ activeDialogue=null; saveGame('auto',true); renderAll(); } }]
           };
           renderAll();
@@ -661,9 +700,9 @@ function interactNpc(npcId) {
 
 function getEventCtx() {
   return {
-    G, D, ASSETS,
+    G, D, ASSETS, SFX,
     setDialogue: d => { activeDialogue = d; },
-    startBattle, addItem, gainExp, advanceTime, showToast, saveGame, renderAll, buyItem, openEquipShop,
+    startBattle, addItem, gainExp, advanceTime, recalcDerivedStats, showToast, saveGame, renderAll, buyItem, openEquipShop,
     getItemIcon, formatStatSummary, startQuiz,
     setAllyExpr: (id, expr) => { allyExprMap[id] = expr; }
   };
@@ -674,20 +713,41 @@ function openEquipShop() {
   const stockIds = unlockedHigh
     ? ['eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_venom_circlet', 'eq_iron_wrist', 'eq_venom_sachet', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell']
     : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_qingyun_crown', 'eq_wind_boots', 'eq_iron_wrist', 'eq_qiankun_ring', 'tr_poison_needle', 'tr_spirit_banner'];
-  const choices = stockIds.map(id => {
+  const choices = [];
+
+  // 若前世野外遗骸超30年被路人斩妖取走，珍品会流落至此供高价赎回！
+  (G.stolenMarketPool || []).forEach((sid, idx) => {
+    const it = D.ITEMS[sid];
+    if (!it) return;
+    const redeemPrice = Math.round((it.price || 150) * 1.2);
+    choices.push({
+      text: `【前世流落旧物】赎回【${it.name}】`,
+      hint: `${redeemPrice} 灵石`,
+      action: () => {
+        if (G.stone < redeemPrice) return showToast(`灵石不足 ${redeemPrice} 枚。`);
+        G.stone -= redeemPrice;
+        G.stolenMarketPool.splice(idx, 1);
+        addItem(sid, 1);
+        showToast(`赎回了前世遗失旧物【${it.name}】！`);
+        saveGame('auto', true); openEquipShop();
+      }
+    });
+  });
+
+  stockIds.forEach(id => {
     const it = D.ITEMS[id];
-    return {
+    choices.push({
       text: `购入【${it.name}】(${it.tier})`,
       hint: `${it.price}灵石 · ${it.type === 'treasure' ? (it.mode === 'auto' ? '悬浮法宝' : '主动法宝') : formatStatSummary(it.stats)}`,
       action: () => buyItem(id)
-    };
+    });
   });
-  choices.push({ text: '离开装备坊', action: () => { activeDialogue = null; renderAll(); } });
+  choices.push({ text: '离开法器坊', action: () => { activeDialogue = null; renderAll(); } });
   activeDialogue = {
-    speaker: '鬼市装备坊', asset: ASSETS.elder,
+    speaker: '鬼市法器坊', asset: ASSETS.elder,
     text: unlockedHigh
-      ? '凭万宝楼验货令入内，玄黑木架上陈列着宗门套装、玄品护腕/头饰/储物戒与外物法宝：“看中哪件直接点货，银货两讫。”'
-      : '灯影摇曳的装备摊上摆着各部位灵品装备与外物法宝：“初来乍到先看外摊货色，若想见玄品重宝与孤品，可逛拍卖会或拿万宝楼验货令。”',
+      ? '凭万宝楼验货令入内，玄黑木架上陈列着宗门套装法器、玄品道冠/法镯/须弥戒与体外法宝：“看中哪件直接点货，银货两讫。”'
+      : '灯影摇曳的法器摊上摆着各部位灵品法器与体外法宝：“初来乍到先看外摊货色，若想见玄品重宝与绝世古宝，可逛拍卖会或拿万宝楼验货令。”',
     choices
   };
   renderAll();
@@ -700,26 +760,30 @@ function openLibraryModal(catFilter) {
       const learned = catSkills.filter(s => G.skills.includes(s.id)).length;
       const m = getCatMastery(c.id);
       return {
-        text: `研习【${c.name}】典籍（已习 ${learned}/${catSkills.length} 招 · 总造诣 ${m}/100）`,
-        hint: c.desc.slice(0, 12),
+        text: `参悟【${c.name}】玉简（已修 ${learned}/${catSkills.length} 门 · 大道造诣 ${m}/100）`,
+        hint: c.desc.slice(0, 13),
         action: () => openLibraryModal(c.id)
       };
     });
     choices.push({
-      text: '静心演武，提升当前出战 4 招熟练度与修为', hint: '+1月 悟性+1',
+      text: '静心推演道法，提升出战 4 门神通熟练度与修为', hint: '+1月 悟性+1',
       action: () => {
         advanceTime(1); G.wit += 1;
-        G.skills.slice(0, 4).forEach(sid => gainSkillProf(sid, 28));
+        G.skills.slice(0, 4).forEach(sid => {
+          const sk = D.SKILLS[sid];
+          const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, sk?.elem) : { rate: 1 };
+          gainSkillProf(sid, Math.max(3, Math.round(28 * apt.rate)));
+        });
         const g = gainExp(52);
         recalcDerivedStats(false);
-        showToast(`藏经阁演武一月，修为 +${g}，悟性 +1，出战 4 招熟练度大幅精进！`);
+        showToast(`藏经阁推演一月，修为 +${g}，悟性 +1，出战神通按灵根资质精进！`);
         activeDialogue = null; saveGame('auto', true); renderAll();
       }
     });
     choices.push({ text: '离开藏经阁', action: () => { activeDialogue = null; renderAll(); } });
     activeDialogue = {
-      speaker: '藏经阁长老', asset: ASSETS.elder,
-      text: '“武学之道贵在博采众长。五大门类各藏五门招式，单招练至化境仅得 22 点造诣；唯同系五招皆融会贯通，方能将总熟练度推至百点化境！”',
+      speaker: '藏经阁传功长老', asset: ASSETS.elder,
+      text: '“仙道浩瀚，六大道门各藏五门神通。无属性通用法术人人可平顺修习；五行真法则极看灵根资质——高资质一日千里，1点低资质亦可强修，只是苦熬数载方有所成！”',
       choices
     };
     renderAll();
@@ -733,40 +797,43 @@ function openLibraryModal(catFilter) {
     const owned = G.skills.includes(s.id);
     const reqM = s.reqMastery || 0;
     const cost = s.price || 25;
+    const elName = (D.ELEM_NAMES && D.ELEM_NAMES[s.elem]) || '通用';
+    const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, s.elem) : { rate: 1, label: '1.0x' };
     if (owned) {
       const p = (G.skillProf && G.skillProf[s.id]) || { lv: 1, exp: 0 };
+      const stepPts = Math.max(3, Math.round(36 * apt.rate));
       return {
-        text: `精研已习招式【${s.name}】（当前：${PROF_NAMES[p.lv]} · 集气${s.atbCost}）`,
-        hint: p.lv >= 4 ? '已至化境' : '15灵石 熟练度+35',
+        text: `闭关苦修【${s.name}】(${elName} · 当前${PROF_NAMES[p.lv]})`,
+        hint: p.lv >= 4 ? '已圆满' : `15灵石 · 效率${apt.rate}x (+${stepPts})`,
         action: () => {
-          if (p.lv >= 4) return showToast(`【${s.name}】已至化境，请改练同系其他招式以推高总造诣！`);
+          if (p.lv >= 4) return showToast(`【${s.name}】已臻圆满，请兼修同道其他神通以推高【${cat.name}】造诣！`);
           if (G.stone < 15) return showToast('灵石不足 15 枚。');
           G.stone -= 15; advanceTime(1);
-          gainSkillProf(s.id, 35);
-          showToast(`精研【${s.name}】一月，当前【${cat.name}】总造诣：${getCatMastery(catFilter)}/100！`);
+          gainSkillProf(s.id, stepPts);
+          showToast(`参悟【${s.name}】一月（效率 ${apt.rate}x），当前【${cat.name}】造诣：${getCatMastery(catFilter)}/100！`);
           saveGame('auto', true); openLibraryModal(catFilter);
         }
       };
     }
     return {
-      text: `研习新招【${s.name}】（集气${s.atbCost} · 灵${s.qiCost}）`,
-      hint: reqM > 0 ? `需${cat.name}造诣${reqM} · ${cost}灵石` : `${cost}灵石 +1月`,
+      text: `拓印修习【${s.name}】(${elName} · 集气${s.atbCost})`,
+      hint: `${reqM > 0 ? `需${cat.name}${reqM} · ` : ''}${cost}灵石 · 效率${apt.rate}x`,
       action: () => {
-        if (curM < reqM) return showToast(`需【${cat.name}】总造诣达到 ${reqM}（当前 ${curM}）方可研习此高阶招式！`);
+        if (curM < reqM) return showToast(`需【${cat.name}】造诣达到 ${reqM}（当前 ${curM}）方可参悟此高阶神通！`);
         if (G.stone < cost) return showToast(`灵石不足 ${cost} 枚。`);
         G.stone -= cost; advanceTime(1);
         G.skills.push(s.id);
         G.skillProf[s.id] = { lv: 1, exp: 0 };
         SFX.play('levelup');
-        showToast(`习得【${s.name}】！当前【${cat.name}】总造诣：${getCatMastery(catFilter)}/100。`);
+        showToast(`习得【${s.name}】！${s.elem !== 'none' && apt.rate < 0.4 ? '（此系灵根微弱，后续修炼将极为缓慢）' : ''}`);
         saveGame('auto', true); openLibraryModal(catFilter);
       }
     };
   });
-  choices.push({ text: '← 返回门类目录', action: () => openLibraryModal(null) });
+  choices.push({ text: '← 返回六道目录', action: () => openLibraryModal(null) });
   activeDialogue = {
-    speaker: `藏经阁 · ${cat.name}阁`, asset: ASSETS.elder,
-    text: `【${cat.name}】当前总造诣：${curM} / 100（全${cat.name}招式伤害 +${Math.round(curM * 0.4)}%）。${cat.desc}`,
+    speaker: `藏经阁 · ${cat.name}分阁`, asset: ASSETS.elder,
+    text: `【${cat.name}】当前造诣：${curM} / 100（全${cat.name}神通伤害 +${Math.round(curM * 0.45)}%）。${cat.desc}`,
     choices
   };
   renderAll();
@@ -801,7 +868,18 @@ function openBeastTameModal() {
 
 function handleHotspot(hid) {
   SFX.play('click');
+  if (hid === 'cave_manage') {
+    window.REINCARNATION.openCaveAbode(getEventCtx());
+    renderAll();
+    return;
+  }
+  if (hid === 'reclaim_remains') {
+    window.REINCARNATION.checkRemainsOrNemesisAt(getEventCtx(), currentLocationId);
+    renderAll();
+    return;
+  }
   if (hid === 'sect_trial') {
+    window.REINCARNATION.tryDiscoverRelicAt(getEventCtx(), 'sect');
     D.EVENTS.runSectTrial(getEventCtx());
     renderAll();
   } else if (hid === 'sect_grand_tourney') {
@@ -812,6 +890,7 @@ function handleHotspot(hid) {
   } else if (hid === 'sect_alchemy') {
     window.MINIGAMES.openAlchemy(getEventCtx());
   } else if (hid === 'cliff_event') {
+    window.REINCARNATION.tryDiscoverRelicAt(getEventCtx(), 'cliff');
     D.EVENTS.runCliffEvent(getEventCtx());
     renderAll();
   } else if (hid === 'inn_tea') {
@@ -820,15 +899,18 @@ function handleHotspot(hid) {
     showToast('在天机阁品茶歇息，气血灵力圆满，悟性 +1。');
     saveGame('auto', true); renderAll();
   } else if (hid === 'inn_rumor') {
-    const rumorExtra = G.flags.divorceBranch && !G.flags.divorceResolved && G.month >= 18
-      ? ' 另外，玄天宗那边传出风声，柳若云已快破入筑基，第 3 年·冬思过崖怕是有场好戏。'
-      : '';
+    window.REINCARNATION.ensureWorldRelic(G);
+    const relicRumor = G.worldRelic.holder === 'player'
+      ? '【造化轮回盘】此刻正贴身藏于你怀中，世间绝无第二件。'
+      : `天机推演显示：天地唯一至宝【造化轮回盘】本世气机似隐现于「${G.worldRelic.rumor}」。`;
+    const nemLocObj = G.nemesis && D.LOCATIONS.find(l => l.id === G.nemesis.loc);
+    const nemNote = G.nemesis ? ` 另外，夺走你前世身家的死敌【${G.nemesis.name}】近期在【${nemLocObj ? nemLocObj.name : '东洲'}】一带出没！` : '';
     activeDialogue = {
       speaker: '天机掌柜', asset: ASSETS.elder,
-      text: `掌柜擦着青瓷茶壶低声道：“近来万妖古林洞府异动，鬼市深处也常有幽冥玄宗的人出没。对了，青云大师姐私下偏爱云州桂花糕。”${rumorExtra}`,
+      text: `掌柜压低声音道：“${relicRumor}${nemNote}对了，青云大师姐私下偏爱云州灵桂糕。”`,
       choices: [
-        { text:'购一盒【云州桂花糕】', hint:'20 灵石', action: () => buyItem('osmanthus_cake') },
-        { text:'多谢掌柜指点', action: () => { activeDialogue = null; renderAll(); } }
+        { text:'购一盒【云州灵桂糕】', hint:'20 灵石', action: () => buyItem('osmanthus_cake') },
+        { text:'多谢掌柜指点天机', action: () => { activeDialogue = null; renderAll(); } }
       ]
     };
     renderAll();
@@ -851,6 +933,7 @@ function handleHotspot(hid) {
   } else if (hid === 'market_auction') {
     window.MINIGAMES.openAuction(getEventCtx());
   } else if (hid === 'market_faction') {
+    window.REINCARNATION.tryDiscoverRelicAt(getEventCtx(), 'market');
     D.EVENTS.runMarketFaction(getEventCtx());
     renderAll();
   } else if (hid === 'nether_path') {
@@ -869,12 +952,14 @@ function handleHotspot(hid) {
   } else if (hid === 'forest_tame') {
     openBeastTameModal();
   } else if (hid === 'forest_ruin') {
+    window.REINCARNATION.tryDiscoverRelicAt(getEventCtx(), 'forest');
     D.EVENTS.runForestRuin(getEventCtx());
     renderAll();
   } else if (hid === 'forest_demon_tide') {
     D.EVENTS.runDemonTide(getEventCtx());
     renderAll();
   } else if (hid === 'altar_ancient_realm') {
+    window.REINCARNATION.tryDiscoverRelicAt(getEventCtx(), 'altar');
     D.EVENTS.runAncientRealm(getEventCtx());
     renderAll();
   } else if (hid === 'altar_break') {
@@ -920,8 +1005,10 @@ function buyItem(id) {
 // Combat (delegated to v6 Real-Time ATB engine/combat.js)
 function startBattle(enemy) {
   activeDialogue = null; activePanel = null;
+  if (G) G.loc = currentLocationId || 'sect';
   window.COMBAT.start(enemy, {
     G, D, ASSETS,
+    getFullCtx: getEventCtx,
     getEquipStats, getActiveSets, getUnlockedTreasureSlots, gainSkillProf, getCatMastery,
     getAllyDef, getAllyAsset, gainExp, tryRealmUp, saveGame,
     setAllyExpr: (id, ex) => { allyExprMap[id] = ex; },
@@ -1073,12 +1160,14 @@ function renderSplitPanel() {
       `;
     }).join('');
 
+    const el = G.elements || {};
+    const hasRelicNow = window.REINCARNATION && window.REINCARNATION.hasRelic(G);
     main.innerHTML = `
       <div class="fullbody-col">
         <div class="fullbody-wrap">
           <img class="full-char" src="${ASSETS.hero_full}" />
           <div class="dantian-waist"></div>
-          <div class="lifespan-ring">寿元 ${G.age} / ${G.maxAge} 岁 · 声望 ${G.fame || 0}</div>
+          <div class="lifespan-ring">第 ${G.lifeCount || 1} 世 · 寿元 ${G.age}/${G.maxAge} 岁 · ${hasRelicNow ? '怀揣轮回盘' : '无轮回至宝'}</div>
         </div>
       </div>
       <div class="glass-panel">
@@ -1086,8 +1175,8 @@ function renderSplitPanel() {
           <div style="display:flex;align-items:center;gap:10px;">
             <span class="vermilion-seal">${G.sect || '青云门人'}</span>
             <div>
-              <div class="mg-name">${G.name} <span class="mg-realm">${realm.name}</span></div>
-              <div class="mg-sub">${G.root} · ${G.talent}</div>
+              <div class="mg-name">${G.name} <span class="mg-realm">${realm.name} · 第${G.lifeCount || 1}世</span></div>
+              <div class="mg-sub">${G.root}（金${el.gold} 木${el.wood} 水${el.water} 火${el.fire} 土${el.earth}） · ${G.talent}</div>
             </div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -1114,11 +1203,11 @@ function renderSplitPanel() {
               ${buildRadarSvg(G.elements)}
             </div>
           </div>
-          <div class="mg-divider">百兵武学总熟练度（0–100 · 多招兼修方能登峰造极）</div>
+          <div class="mg-divider">六大仙道造诣（0–100 · 单门圆满+22，同道兼修诸法方臻化境）</div>
           <div class="mastery-list">${catBarsHtml}</div>
           <div class="mg-foot-strip">
-            <span>流派：<b>${ha.style || '自由修习'}</b></span>
-            <span>暴击 <b>${critPct}%</b></span>
+            <span>仙典：<b>${ha.style || '混元修习'}</b></span>
+            <span>会心 <b>${critPct}%</b></span>
             <span>气血 <b>${G.hp}/${G.maxHp}</b></span>
             <span>灵力 <b>${Math.floor(G.qi)}/${G.maxQi}</b></span>
             <span>灵兽：<b>${G.activeBeast ? D.BEAST_DEFS[G.activeBeast].name : '未出战'}</b></span>
@@ -1358,9 +1447,13 @@ function renderSplitPanel() {
           if (it.marrow) {
             const ks = [['body','根骨'], ['wit','悟性'], ['speed','遁速'], ['sense','神识']];
             const pick = ks[Math.floor(Math.random() * ks.length)];
-            G[pick[0]] += 2; recalcDerivedStats(false);
+            const eks = [['gold','金'], ['wood','木'], ['water','水'], ['fire','火'], ['earth','土']];
+            const ep = eks[Math.floor(Math.random() * eks.length)];
+            G[pick[0]] += 2;
+            G.elements[ep[0]] = Math.min(100, (G.elements[ep[0]] || 20) + 4);
+            recalcDerivedStats(false);
             const g = gainExp(it.exp || 130);
-            showToast(`服下【${it.name}】，${pick[1]} +2，修为 +${g}！`);
+            showToast(`服下【${it.name}】，${pick[1]} +2，${ep[1]}灵根资质 +4，修为 +${g}！`);
           } else if (it.exp) {
             const g = gainExp(it.exp);
             showToast(`服下【${it.name}】，修为 +${g}，状态圆满！`);
@@ -1379,29 +1472,32 @@ function renderSplitPanel() {
       det.innerHTML = `<div class="det-empty">点选上方行囊物品或左侧装备槽位查看详情与属性对比。</div>`;
     }
   }
-  // 3. 功法流派页：左侧主修心法 + 3辅修流派被动 + 4出战招式槽（每招带专属图标）；右侧心法/被动/全招式库
+  // 3. 功法神通页：左侧主修仙典 + 3悟道秘印 + 4出战神通（每门带专属图标与灵根契合效率）；右侧仙典/秘印/全神通玉简
   else if (curTab === 'skills') {
     const curHa = D.HEART_ARTS[G.heartArt] || D.HEART_ARTS.turtle_breath;
+    const curHaApt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, curHa.elem) : { label: '1.0x' };
     main.innerHTML = `
       <div class="dual-left">
-        <div class="sec-head"><span>流派构筑与出战配置</span><span style="font-size:10.5px;color:var(--jade);">${curHa.style}</span></div>
+        <div class="sec-head"><span>仙道构筑与出战神通</span><span style="font-size:10.5px;color:var(--jade);">${curHa.style}</span></div>
         <div class="gp-body">
-          <div class="sub-cap">当前主修心法</div>
+          <div class="sub-cap">当前主修仙典（吐纳效率：${curHaApt.label}）</div>
           <div class="glass-card active"><div><h4>${curHa.name}</h4><p>${curHa.desc}</p></div></div>
-          <div class="sub-cap">辅修流派被动（已装 ${G.passives.length}/3）</div>
+          <div class="sub-cap">悟道秘印（已烙 ${G.passives.length}/3 枚）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            ${G.passives.map(pid => `<div class="glass-card active" style="padding:6px 10px;"><div><h4>${D.PASSIVES[pid].name} <span style="font-size:10px;color:var(--jade);">[${D.PASSIVES[pid].style}]</span></h4><p>${D.PASSIVES[pid].desc}</p></div></div>`).join('') || '<div class="glass-card"><p>点击右侧辅修被动装配（最多 3 门）</p></div>'}
+            ${G.passives.map(pid => `<div class="glass-card active" style="padding:6px 10px;"><div><h4>${D.PASSIVES[pid].name} <span style="font-size:10px;color:var(--jade);">[${D.PASSIVES[pid].style}]</span></h4><p>${D.PASSIVES[pid].desc}</p></div></div>`).join('') || '<div class="glass-card"><p>点击右侧悟道秘印烙印（最多 3 枚）</p></div>'}
           </div>
-          <div class="sub-cap">出战招式槽（实时集气释放 · 4 招）</div>
+          <div class="sub-cap">出战神通槽（实时集气催动 · 4 门）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
             ${G.skills.slice(0, 4).map((sid, idx) => {
               const s = D.SKILLS[sid]; const p = (G.skillProf && G.skillProf[sid]) || { lv: 1 };
+              const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, s.elem) : { rate: 1, qiMul: 1 };
+              const elTag = (D.ELEM_NAMES && D.ELEM_NAMES[s.elem]) || '通用';
               return `
                 <div class="glass-card sk-slot-row">
                   ${window.getSkillIconHtml(sid, 'sk-ico-badge')}
                   <div style="flex:1;min-width:0;">
                     <h4>槽${idx+1} · ${s.name} <em style="font-style:normal;font-size:10px;color:var(--jade);">[${PROF_NAMES[p.lv]}]</em></h4>
-                    <p>${D.SKILL_CATS[s.cat].name} · 集气 ${s.atbCost} · 灵力 ${s.qiCost}</p>
+                    <p>${D.SKILL_CATS[s.cat].name} · ${elTag}(${apt.rate}x) · 集气 ${s.atbCost} · 灵 ${Math.max(1, Math.round(s.qiCost * apt.qiMul))}</p>
                   </div>
                 </div>
               `;
@@ -1410,13 +1506,13 @@ function renderSplitPanel() {
         </div>
       </div>
       <div class="dual-right">
-        <div class="sec-head"><span>心法 · 辅修被动 · 招式典籍</span><button class="filter-pill active" id="btn-learn-more">藏经阁习招</button></div>
+        <div class="sec-head"><span>仙典 · 悟道秘印 · 神通玉简</span><button class="filter-pill active" id="btn-learn-more">藏经阁参悟</button></div>
         <div class="gp-body">
-          <div class="sub-cap gold">主修心法（点击切换）</div>
+          <div class="sub-cap gold">主修仙典（点击运转）</div>
           <div id="ha-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
-          <div class="sub-cap gold" style="margin-top:4px;">辅修流派被动（点击装配 / 卸下，最多 3 门）</div>
+          <div class="sub-cap gold" style="margin-top:4px;">悟道秘印（点击装配 / 卸下，最多 3 枚）</div>
           <div id="pa-wrap" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
-          <div class="sub-cap gold" style="margin-top:4px;">全部已学招式（点击置顶出战 · 同系多练堆 100 造诣）</div>
+          <div class="sub-cap gold" style="margin-top:4px;">已悟神通与通用法术（点击置顶出战 · 同道兼修堆 100 造诣）</div>
           <div id="sk-wrap" style="display:flex;flex-direction:column;gap:5px;"></div>
         </div>
       </div>
@@ -1425,10 +1521,11 @@ function renderSplitPanel() {
     const hw = main.querySelector('#ha-wrap');
     G.ownedHeartArts.forEach(hid => {
       const ha = D.HEART_ARTS[hid]; if (!ha) return;
+      const hApt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, ha.elem) : { rate: 1 };
       const c = document.createElement('div'); c.className = 'glass-card' + (G.heartArt === hid ? ' active' : '');
       c.style.cursor = 'pointer';
-      c.innerHTML = `<div><h4>${ha.name} <span style="font-size:10px;color:var(--jade);">[${ha.style}]</span> ${G.heartArt === hid ? '<span class="mini-seal">主修</span>' : ''}</h4><p>${ha.desc}</p></div>`;
-      c.onclick = () => { G.heartArt = hid; recalcDerivedStats(false); SFX.play('click'); showToast(`切换主修心法：${ha.name}`); saveGame('auto', true); renderAll(); };
+      c.innerHTML = `<div><h4>${ha.name} <span style="font-size:10px;color:var(--jade);">[${ha.style} · ${hApt.rate}x]</span> ${G.heartArt === hid ? '<span class="mini-seal">主修</span>' : ''}</h4><p>${ha.desc}</p></div>`;
+      c.onclick = () => { G.heartArt = hid; recalcDerivedStats(false); SFX.play('click'); showToast(`切换主修仙典：${ha.name}`); saveGame('auto', true); renderAll(); };
       hw.appendChild(c);
     });
     const pw = main.querySelector('#pa-wrap');
@@ -1453,13 +1550,15 @@ function renderSplitPanel() {
     G.skills.forEach((sid, idx) => {
       const s = D.SKILLS[sid]; if (!s) return;
       const p = (G.skillProf && G.skillProf[sid]) || { lv: 1, exp: 0 };
+      const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, s.elem) : { rate: 1 };
+      const elTag = (D.ELEM_NAMES && D.ELEM_NAMES[s.elem]) || '通用';
       const inBattle = idx < 4;
       const c = document.createElement('div'); c.className = 'glass-card sk-slot-row' + (inBattle ? ' active' : '');
       c.style.cursor = 'pointer';
       c.innerHTML = `
         ${window.getSkillIconHtml(sid, 'sk-ico-badge')}
         <div style="flex:1;min-width:0;">
-          <h4>${s.name} <span style="font-size:10px;color:var(--muted);">(${D.SKILL_CATS[s.cat].name}·${PROF_NAMES[p.lv]})</span> ${inBattle ? `<span class="mini-set">出战${idx+1}</span>` : ''}</h4>
+          <h4>${s.name} <span style="font-size:10px;color:var(--muted);">(${D.SKILL_CATS[s.cat].name}·${elTag}·${apt.rate}x·${PROF_NAMES[p.lv]})</span> ${inBattle ? `<span class="mini-set">出战${idx+1}</span>` : ''}</h4>
           <p>${s.desc}</p>
         </div>
         <span style="font-size:10.5px;color:#ebd29b;flex-shrink:0;">集气 ${s.atbCost}</span>
@@ -1467,7 +1566,7 @@ function renderSplitPanel() {
       c.onclick = () => {
         if (idx === 0) return;
         G.skills.splice(idx, 1); G.skills.unshift(sid);
-        SFX.play('click'); showToast(`已将【${s.name}】置入出战招式首位。`);
+        SFX.play('click'); showToast(`已将【${s.name}】置入出战神通首位。`);
         saveGame('auto', true); renderAll();
       };
       sw.appendChild(c);
@@ -1823,9 +1922,9 @@ function renderAll() {
   if (!inBattle && !activePanel) {
     if (!locObj) {
       // Constellation travel lines SVG
-      const pairs = [['sect','inn'], ['sect','cliff'], ['cliff','market'], ['inn','market'], ['inn','altar'], ['market','forest'], ['forest','altar']];
+      const pairs = [['sect','cave'], ['cave','altar'], ['sect','inn'], ['sect','cliff'], ['cliff','market'], ['inn','market'], ['inn','altar'], ['market','forest'], ['forest','altar']];
       const byId = Object.fromEntries(D.LOCATIONS.map(l => [l.id, l]));
-      const lines = pairs.map(([a,b]) => `<line x1="${byId[a].x}%" y1="${byId[a].y}%" x2="${byId[b].x}%" y2="${byId[b].y}%" stroke="rgba(235,210,155,0.32)" stroke-width="1" stroke-dasharray="3 4"/>`).join('');
+      const lines = pairs.filter(([a,b]) => byId[a] && byId[b]).map(([a,b]) => `<line x1="${byId[a].x}%" y1="${byId[a].y}%" x2="${byId[b].x}%" y2="${byId[b].y}%" stroke="rgba(235,210,155,0.32)" stroke-width="1" stroke-dasharray="3 4"/>`).join('');
       wl.innerHTML = `<svg id="map-lines-svg">${lines}</svg>`;
       const activeLocs = new Set(D.TIMELINE.filter(t => {
         if (G.month < t.month) return false;
@@ -1835,6 +1934,8 @@ function renderAll() {
         if (t.loc === 'cliff' && !G.flags?.divorceResolved) return true;
         return false;
       }).map(t => t.loc));
+      if (G.worldRemains?.loc) activeLocs.add(G.worldRemains.loc);
+      if (G.nemesis?.loc) activeLocs.add(G.nemesis.loc);
       D.LOCATIONS.forEach(loc => {
         const m = document.createElement('div');
         m.className = 'map-pin' + (activeLocs.has(loc.id) ? ' has-event' : '');
@@ -1859,6 +1960,16 @@ function renderAll() {
         b.onclick = () => handleHotspot(h.id);
         bl.appendChild(b);
       });
+      // 若当前地点留有前世妖兽盘踞遗骸 或 搜身宿敌，动态显示追讨按钮！
+      if ((G.worldRemains && G.worldRemains.loc === locObj.id) || (G.nemesis && G.nemesis.loc === locObj.id)) {
+        const rb = document.createElement('button');
+        rb.className = 'sleek-btn jade';
+        rb.textContent = G.worldRemains && G.worldRemains.loc === locObj.id
+          ? `追索前世遗骸（${G.worldRemains.beastName}盘踞）`
+          : `手刃前世死敌 · ${G.nemesis.name}`;
+        rb.onclick = () => handleHotspot('reclaim_remains');
+        bl.appendChild(rb);
+      }
     }
   }
 

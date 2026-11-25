@@ -212,11 +212,13 @@ window.COMBAT = {
     const { G, D } = this._ctx;
     const sk = D.SKILLS[skillId];
     if (!sk) return;
+    const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, sk.elem) : { rate: 1, qiMul: 1, dmgMul: 1 };
+    const realQiCost = Math.max(1, Math.round(sk.qiCost * apt.qiMul));
     if (S.heroAtb < sk.atbCost) return showToast(`集气不足（需 ${sk.atbCost}，当前 ${Math.floor(S.heroAtb)}）。`);
-    if (G.qi < sk.qiCost) return showToast(`灵力不足 ${sk.qiCost}。`);
+    if (G.qi < realQiCost) return showToast(`灵力不足 ${realQiCost}（低灵根强催异系法术灵耗更高）。`);
 
     S.heroAtb = Math.max(0, S.heroAtb - sk.atbCost);
-    G.qi = Math.max(0, G.qi - sk.qiCost);
+    G.qi = Math.max(0, G.qi - realQiCost);
 
     const e = S.enemy;
     const eq = this._ctx.getEquipStats();
@@ -224,32 +226,48 @@ window.COMBAT = {
     const passives = G.passives || [];
     const sets = this._ctx.getActiveSets();
 
-    // Mastery multipliers: single-skill level (1~4) + category total mastery (0~100)
-    const prof = this._ctx.gainSkillProf(skillId, 18);
+    // Mastery multipliers: single-skill level (1~4) + Dao mastery (0~100) + 1~100 Root Aptitude
+    const profGain = Math.max(2, Math.round(18 * apt.rate * (1 + Math.max(0, (G.wit || 10) - 10) * 0.025)));
+    const prof = this._ctx.gainSkillProf(skillId, profGain);
     const catTotal = this._ctx.getCatMastery(sk.cat);
-    const elemVal = (G.elements && G.elements[sk.elem]) || 50;
-    const masteryMul = (1 + (prof.lv - 1) * 0.14) * (1 + catTotal * 0.008) * (0.85 + elemVal * 0.004);
+    const masteryMul = (1 + (prof.lv - 1) * 0.14) * (1 + catTotal * 0.0045) * apt.dmgMul;
 
-    let baseAtk = (G.body || 10) * 1.9 + (G.sense || 10) * 1.2 + (ha.atkBonus || 0) + (eq.atk || 0);
-    let dmg = Math.round(baseAtk * sk.power * masteryMul);
+    // 五行相生连携判定（金->水->木->火->土->金）
+    const genMap = { gold:'water', water:'wood', wood:'fire', fire:'earth', earth:'gold' };
+    let synerMul = 1.0, synerTag = '';
+    if (S.lastElem && sk.elem && sk.elem !== 'none' && genMap[S.lastElem] === sk.elem) {
+      synerMul = G.heartArt === 'xuanxu_sutra' ? 1.42 : 1.22;
+      G.qi = Math.min(G.maxQi, G.qi + 6);
+      synerTag = '【五行相生】';
+    }
+    if (sk.elem && sk.elem !== 'none') S.lastElem = sk.elem;
 
-    // Build modifiers
+    let baseAtk = (G.body || 10) * 1.9 + (G.sense || 10) * 1.25 + (ha.atkBonus || 0) + (eq.atk || 0);
+    let dmg = Math.round(baseAtk * sk.power * masteryMul * synerMul);
+
+    // Build & Dao 60/100 milestone modifiers
     if (sets.qingyun >= 2 && sk.cat === 'sword') dmg = Math.round(dmg * 1.12);
+    if (catTotal >= 100 && sk.cat === 'sword') dmg = Math.round(dmg * 1.18);
     if (passives.includes('p_heavy_force') && sk.atbCost >= 70) dmg = Math.round(dmg * 1.28);
     const hpRatio = G.hp / Math.max(1, G.maxHp);
     if (ha.berserk || sk.berserkScale) dmg = Math.round(dmg * (1 + (1 - hpRatio) * 0.65));
     if (sets.blood >= 4 && hpRatio < 0.5) dmg = Math.round(dmg * 1.35);
     if (sk.shieldDmg && S.shield > 0) dmg += Math.round(S.shield * sk.shieldDmg);
 
+    // 毒火攻心印：火系或魂蛊神通命中带蛊目标，不消层额外触发一次蛊毒爆发
+    if (passives.includes('p_venom_mist') && e.poison > 0 && (sk.elem === 'fire' || sk.cat === 'soul')) {
+      dmg += Math.round(e.poison * 10);
+    }
+
     // Poison detonation
     if (sk.detonatePoison && e.poison > 0) {
-      const detDmg = Math.round(e.poison * 18 * (sets.venom >= 4 ? 1.45 : 1));
+      const detDmg = Math.round(e.poison * 18 * ((sets.venom >= 4 || catTotal >= 100) ? 1.45 : 1));
       dmg += detDmg;
-      e.poison = sets.venom >= 4 ? Math.ceil(e.poison * 0.5) : 0;
+      e.poison = (sets.venom >= 4 || catTotal >= 100) ? Math.ceil(e.poison * 0.5) : 0;
     }
 
     // Crit check
-    const critChance = Math.min(0.85, 0.08 + (G.luck || 10) * 0.01 + (eq.crit || 0) + (ha.critBonus || 0) + (sk.critBonus || 0) + (sets.qingyun >= 2 ? 0.10 : 0));
+    const critChance = Math.min(0.85, 0.08 + (G.luck || 10) * 0.01 + (eq.crit || 0) + (ha.critBonus || 0) + (sk.critBonus || 0) + (sets.qingyun >= 2 ? 0.10 : 0) + (catTotal >= 60 && sk.cat === 'sword' ? 0.08 : 0));
     let isCrit = false;
     if (dmg > 0 && Math.random() < critChance) {
       isCrit = true;
@@ -283,9 +301,10 @@ window.COMBAT = {
     let addPois = (sk.poison || 0) + (ha.poisonBonus || 0) + (passives.includes('p_venom_mist') ? 1 : 0) + (sets.venom >= 2 ? 2 : 0);
     if (addPois > 0) e.poison += addPois;
 
-    // Apply damage & poise
+    // 神识压制加成破定
+    const senseAdvantage = Math.max(0.85, Math.min(1.45, 1 + ((G.sense || 10) - 16) * 0.012));
     e.hp = Math.max(0, e.hp - dmg);
-    let poiseDmg = (sk.poiseDmg || 12) * (passives.includes('p_heavy_force') && sk.atbCost >= 70 ? 1.4 : 1);
+    let poiseDmg = (sk.poiseDmg || 12) * senseAdvantage * (passives.includes('p_heavy_force') && sk.atbCost >= 70 ? 1.4 : 1);
     if (eq.uniqueEffects.includes('heavy_poise') && sk.atbCost >= 70) poiseDmg *= 2;
     this._damageEnemyPoise(Math.round(poiseDmg));
 
@@ -293,8 +312,8 @@ window.COMBAT = {
     FX.slash(sk.elem === 'water' ? '#82d2ff' : (sk.elem === 'wood' ? '#70d6ab' : '#ebd29b'), 0.72, 0.45);
     FX.burst(isCrit ? '255,220,130' : '220,195,140', isCrit ? 30 : 18, 0.72, 0.45);
     triggerShake();
-    this._spawnFloat('.c-actor.enemy', `${isCrit ? '暴击 ' : ''}-${dmg}`, isCrit ? '#ffe49c' : '#fff');
-    S.ticker = `${isCrit ? '【会心暴击】' : ''}施展【${sk.name}】造成 ${dmg} 点伤害${addPois ? `（叠毒+${addPois}）` : ''}！`;
+    this._spawnFloat('.c-actor.enemy', `${isCrit ? '会心 ' : ''}-${dmg}`, isCrit ? '#ffe49c' : '#fff');
+    S.ticker = `${synerTag}${isCrit ? '【会心】' : ''}施展【${sk.name}】造成 ${dmg} 点伤害${addPois ? `（噬心蛊+${addPois}）` : ''}！`;
 
     if (e.hp <= 0) { this._handleWin(); return; }
     this._syncBars();
@@ -404,10 +423,14 @@ window.COMBAT = {
     if (e.hp <= 0) { this._handleWin(); return; }
     if (G.hp <= 0) {
       if (G.activeAlly) this._ctx.setAllyExpr(G.activeAlly, 'injured');
-      G.hp = Math.floor(G.maxHp * 0.5); G.qi = Math.floor(G.maxQi * 0.5);
+      const killerSnap = { ...e };
       this.stop();
-      showToast('力竭败退，幸得脱身休整。');
       this._ctx.onBattleEnd();
+      if (window.REINCARNATION && window.REINCARNATION.hasRelic(G)) {
+        window.REINCARNATION.executeReincarnation(this._ctx.getFullCtx(), 'panic', killerSnap);
+      } else if (window.REINCARNATION) {
+        window.REINCARNATION.triggerTrueDeath(this._ctx.getFullCtx(), `斗法不敌，殒命于【${killerSnap.name}】之手`);
+      }
       return;
     }
     this._syncBars();
@@ -427,6 +450,9 @@ window.COMBAT = {
     if (beastObj) {
       beastObj.exp = (beastObj.exp || 0) + 30;
       if (beastObj.exp >= beastObj.lv * 40) { beastObj.exp -= beastObj.lv * 40; beastObj.lv++; }
+    }
+    if (window.REINCARNATION) {
+      window.REINCARNATION.tryDiscoverRelicAt(this._ctx.getFullCtx(), G.loc === 'map' ? 'sect' : G.loc);
     }
     if (wonTrib) this._ctx.tryRealmUp(true);
     else {
@@ -507,17 +533,20 @@ window.COMBAT = {
     `;
     const tb = cb.querySelector('#talisman-bar');
 
-    // 4 Active Battle Skills (each with its own dedicated 3A icon + ATB cost!)
+    // 4 Active Battle Skills (each with its own dedicated 3A icon + ATB & Root-adjusted Qi cost!)
     G.skills.slice(0, 4).forEach(sid => {
       const sk = D.SKILLS[sid];
       if (!sk) return;
+      const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, sk.elem) : { qiMul: 1 };
+      const realQi = Math.max(1, Math.round(sk.qiCost * apt.qiMul));
       const b = document.createElement('button');
       b.className = 'talisman-btn';
       b.dataset.skId = sid;
+      b.dataset.realQi = String(realQi);
       b.innerHTML = `
         ${window.getSkillIconHtml(sid, 't-ico')}
         <span class="t-name">${sk.name}</span>
-        <span class="t-sub">集气 ${sk.atbCost} · 灵 ${sk.qiCost}</span>
+        <span class="t-sub">集气 ${sk.atbCost} · 灵 ${realQi}</span>
       `;
       b.onclick = () => this.useSkill(sid);
       tb.appendChild(b);
@@ -589,7 +618,8 @@ window.COMBAT = {
     // Update skill button readiness in real time
     document.querySelectorAll('#talisman-bar [data-sk-id]').forEach(btn => {
       const sk = D.SKILLS[btn.dataset.skId];
-      const ready = sk && S.heroAtb >= sk.atbCost && G.qi >= sk.qiCost;
+      const rq = Number(btn.dataset.realQi || (sk && sk.qiCost) || 10);
+      const ready = sk && S.heroAtb >= sk.atbCost && G.qi >= rq;
       btn.classList.toggle('ready', ready);
       btn.classList.toggle('disabled', !ready);
     });

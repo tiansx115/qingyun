@@ -11,6 +11,7 @@ window.ICONS = {
   retreat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 14l-4-4 4-4"/><path d="M5 10h10a4 4 0 0 1 0 8h-3"/></svg>`,
   spark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2z"/></svg>`,
   lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="11" width="14" height="10" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/></svg>`,
+  home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>`,
   bagua: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.1"><polygon points="32,4 52,12 60,32 52,52 32,60 12,52 4,32 12,12"/><circle cx="32" cy="32" r="16"/><path d="M32 16a8 8 0 0 1 0 16 8 8 0 0 0 0 16"/><circle cx="32" cy="24" r="2" fill="currentColor"/><circle cx="32" cy="40" r="2"/></svg>`
 };
 
@@ -40,11 +41,16 @@ window.SKILL_ICONS = {
   vajra_fist: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="9" width="16" height="14" rx="3"/><path d="M12 9v6M16 9v6M20 9v6M8 17h16"/></svg>`,
   iron_counter: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4l10 4v8c0 6-4.5 10-10 12-5.5-2-10-6-10-12V8l10-4z"/><path d="M11 15l5-4 5 4-5 6-5-6z"/></svg>`,
   taiji_seal: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="16,3 27,9.5 27,22.5 16,29 5,22.5 5,9.5"/><circle cx="16" cy="16" r="6"/><path d="M16 10a3 3 0 0 1 0 6 3 3 0 0 0 0 6"/></svg>`,
-  // 术法毒功 (5)
+  // 魂蛊与灵契扩充神通
   venom_dart: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l-9 9M27 12l-9 9M18 5l-9 9"/><circle cx="8" cy="24" r="2.2"/><circle cx="14" cy="26" r="1.4" opacity="0.7"/></svg>`,
   corpse_mist: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 19c0-4 3-7 7-7 2-3 7-4 10-1 3 1 4 4 3 8"/><path d="M8 24c4-2 12-2 16 0M10 27c3-1 9-1 12 0" opacity="0.65"/></svg>`,
+  venom_miasma: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="14" r="4"/><circle cx="21" cy="13" r="3.5"/><circle cx="16" cy="21" r="4.5"/><path d="M6 27c6-2 14-2 20 0" opacity="0.6"/></svg>`,
+  soul_flame: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4c4 6 8 10 8 16a8 8 0 0 1-16 0c0-5 3-9 6-12 0 3 2 5 2 5s2-4 0-9z"/><circle cx="16" cy="21" r="2.2"/></svg>`,
   venom_burst: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="5"/><path d="M16 4v4M16 24v4M4 16h4M24 16h4M7.5 7.5l3 3M21.5 21.5l3 3M24.5 7.5l-3 3M10.5 21.5l-3 3"/></svg>`,
+  spirit_call: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="5"/><circle cx="16" cy="16" r="10" stroke-dasharray="6 4"/><path d="M16 3v4M16 25v4"/></svg>`,
   mind_strike: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 5c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z"/><path d="M16 12v10M11 17h10"/></svg>`,
+  beast_frenzy: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 24L19 6M13 26L25 8"/><path d="M6 15l12 10" opacity="0.65"/></svg>`,
+  earth_nurture: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="16,6 27,24 5,24"/><path d="M11 24l5-8 5 8"/><path d="M4 27h24"/></svg>`,
   celestial_hymn: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="16" cy="16" r="10"/><path d="M16 6l2.5 7.5L26 16l-7.5 2.5L16 26l-2.5-7.5L6 16l7.5-2.5L16 6z"/></svg>`,
   // 战斗核心动作与外物法宝
   counter: `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="16" cy="16" r="10.5"/><path d="M16 5.5a5.25 5.25 0 0 1 0 10.5 5.25 5.25 0 0 0 0 10.5"/><circle cx="16" cy="10.8" r="1.4" fill="currentColor"/><circle cx="16" cy="21.2" r="1.4"/></svg>`,

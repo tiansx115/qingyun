@@ -855,14 +855,17 @@
       if (ofd) ofd.onclick = () => { activeScene = { type: 'found_sect', data: { plateName: sp.name } }; renderModal(); };
     } else if (activeTab === 'life') {
       const life = HERO.life;
+      const lin = window.Lineage ? window.Lineage.ensureLineage(HERO) : { generation: 1, companion: null, heirs: [], ancestors: [] };
+      const candNpc = (WORLD.agents || []).find(a => a.alive) || { id: 'npc_0', name: '苏清婉', realm: '筑基初期' };
       body.innerHTML = `
         ${sceneHtml}
         <div class="ls-card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <div class="ls-slot-box" data-asset-slot="hero_portrait"><img src="assets/chars/hero.webp" alt="主角立绘" /></div>
           <div style="flex:1;min-width:260px;">
             <div style="font-size:13px;">
+              <span class="ls-pill">第${lin.generation}代</span>
               <b style="color:#f2daa0;">${HERO.masked ? `${HERO.maskName} (易容马甲)` : HERO.name}</b> ·
-              <span class="ls-pill jade">${HERO.realm}</span> · 寿 <b>${HERO.age}</b> 岁 · 灵石 <b>${HERO.stones}</b> · IQ:${HERO.iq} EQ:${HERO.eq} 悟:${HERO.daoWit}
+              <span class="ls-pill jade">${HERO.realm}</span> · 寿 <b>${HERO.age}/${HERO.lifespan || 110}</b> 岁 · 灵石 <b>${HERO.stones}</b> · IQ:${HERO.iq} EQ:${HERO.eq} 悟:${HERO.daoWit}
             </div>
             <div style="margin-top:4px;font-size:11px;">
               心魔 <b style="color:${life.heartDemon>=50?'#ff9d95':'#6fd3a8'}">${life.heartDemon}/100</b> ｜ 丹毒 <b>${life.pillToxin}/100</b> ｜ 孤寂 <b>${life.loneliness}/100</b>
@@ -873,11 +876,34 @@
               <button class="ls-btn" data-act="mortal">红尘炼心 (1年)</button>
               <button class="ls-btn" data-act="work">仙城画符谋生 (1年)</button>
               <button class="ls-btn blue" data-act="court">入世当王府供奉 (1年)</button>
-              <button class="ls-btn ${HERO.masked?'red':''}" data-act="mask">${HERO.masked ? '🎭 摘下马甲' : '🎭 戴上易容马甲'}</button>
+              <button class="ls-btn ${HERO.masked?'red':''}" data-act="mask">${HERO.masked ? '摘下马甲' : '戴上易容马甲'}</button>
             </div>
           </div>
         </div>
         ${lastLog.length ? `<div class="ls-log"><b style="color:#6fd3a8;">【最新尘世变迁与人生记录】</b><br/>${lastLog.map(x => `• ${x}`).join('<br/>')}</div>` : ''}
+        <div class="ls-card" style="border-color:rgba(212,184,122,0.42);">
+          <h3><span>道侣双修 · 血脉子嗣与代际传承（第 ${lin.generation} 代）</span><span>先祖碑林：${lin.ancestors.length} 位</span></h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+            <div>
+              <b>道侣：</b>${lin.companion ? `<span style="color:#ffbed8;">${lin.companion.name}</span>（${lin.companion.realm} · 情谊 ${lin.companion.intimacy}）` : '尚未结缘'}
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;">
+              ${!lin.companion
+                ? `<button class="ls-btn jade" data-lin="bond">与【${candNpc.name}】缔结道侣</button>`
+                : `<button class="ls-btn jade" data-lin="dual">双修共参大道(+修为/抚心魔)</button><button class="ls-btn blue" data-lin="child">孕育血脉子嗣</button>`}
+              <button class="ls-btn" data-lin="disciple">收徒亲传弟子</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${lin.heirs.length ? lin.heirs.map(h => `
+              <div style="padding:5px 8px;background:rgba(12,18,26,0.9);border:1px solid rgba(212,184,122,0.28);border-radius:3px;font-size:10.5px;">
+                <b style="color:#f2daa0;">${h.name}</b> <span class="ls-pill">${h.kind}</span> (悟${h.daoWit} 智${h.iq})
+                <button class="ls-btn red" style="margin-left:6px;padding:2px 6px;" data-inherit="${h.id}">坐化传功·下代继位</button>
+              </div>
+            `).join('') : '<span style="font-size:10.5px;color:#938c7e;">尚无衣钵传人（可收徒或与道侣育子，寿尽时可由下代无缝继承洞府、宗门与遗物）</span>'}
+          </div>
+          ${lin.ancestors.length ? `<div style="margin-top:6px;font-size:10px;color:#bfb7a8;border-top:1px dashed rgba(212,184,122,0.18);padding-top:4px;"><b>先祖碑文：</b>${lin.ancestors.slice(0,2).map(a => a.epitaph).join(' ｜ ')}</div>` : ''}
+        </div>
         <div class="ls-grid-2">
           <div class="ls-card">
             <h3><span>凡人亲情与故旧羁绊</span><span style="font-size:10px;color:#938c7e;">故乡:${life.homePlateName}</span></h3>
@@ -904,6 +930,26 @@
           lastLog = res.changes.slice();
           if (res.proactiveEvent) lastLog.unshift(`${res.proactiveEvent.title}：${res.proactiveEvent.desc}`);
           saveState(); renderModal();
+        };
+      });
+      body.querySelectorAll('[data-lin]').forEach(btn => {
+        btn.onclick = () => {
+          if (!window.Lineage) return;
+          const op = btn.dataset.lin;
+          let res;
+          if (op === 'bond') res = window.Lineage.bondCompanion(HERO, candNpc);
+          else if (op === 'dual') res = window.Lineage.dualCultivate(HERO, WORLD);
+          else res = window.Lineage.adoptOrBirthHeir(HERO, WORLD, op);
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+          else showOwToast(res.msg);
+        };
+      });
+      body.querySelectorAll('[data-inherit]').forEach(btn => {
+        btn.onclick = () => {
+          if (!window.Lineage) return;
+          const res = window.Lineage.passTorchToHeir(HERO, WORLD, btn.dataset.inherit);
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+          else showOwToast(res.msg);
         };
       });
     } else if (activeTab === 'social') {
@@ -1266,10 +1312,12 @@
     renderModal();
   }
 
-  let viewLayer = 'local'; // 'local' (正常视角局部城镇/宗门/野外实景) | 'world' (五洲七海大洲地图)
+  let viewLayer = 'local'; // 'local' (城镇实景) | 'world' (大洲地图) | 'interior' (室内精细实景)
+  let currentRoom = 'cave';
   let minimapTimer = null;
 
   function activeMapEngine() {
+    if (viewLayer === 'interior') return window.InteriorMap3D;
     return viewLayer === 'local' ? window.LocalMap3D : window.Map3D;
   }
 
@@ -1348,33 +1396,64 @@
 
   function handleWorldInteract(target) {
     if (!target) return;
+    if (target.type === 'exit_interior') {
+      switchViewLayer('local', HERO.locId);
+      showOwToast('已推门走出，重返城镇大街');
+      return;
+    }
+    if (target.type === 'open_alchemy') { openModalTab('bag'); return; }
+    if (target.type === 'open_world_tab') { openModalTab('world'); return; }
+    if (target.type === 'cave_relics') {
+      HERO.life.heartDemon = Math.max(0, HERO.life.heartDemon - 20);
+      HERO.life.loneliness = Math.max(0, HERO.life.loneliness - 15);
+      saveState(); syncTopHud();
+      showOwToast('观想供案旧物与功法残卷，道心通明（心魔-20、孤寂-15）');
+      return;
+    }
+    if (target.type === 'tea_rest') {
+      ensureHeroStats(); HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
+      saveState(); syncTopHud();
+      showOwToast('饮下一盏青云灵茶，气血与灵力尽数恢复！');
+      return;
+    }
+    if (target.type === 'sect_panel') {
+      selectedPlateId = target.data.plate.id;
+      openModalTab(HERO.myFactionId ? 'world' : 'map');
+      return;
+    }
     if (target.type === 'meditate') {
       ensureHeroStats();
       const nd = target.data || WORLD.nodeMap[HERO.locId];
-      const gain = Math.round(28 + (nd.leyline || 40) * 0.55 + (HERO.daoWit || 70) * 0.2);
+      const caveBonus = 1 + ((HERO.caveLv || 1) - 1) * 0.25;
+      const gain = Math.round((28 + (nd.leyline || 40) * 0.55 + (HERO.daoWit || 70) * 0.2) * caveBonus);
       HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
-      HERO.hp = HERO.maxHp;
+      HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);
       window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclusion');
-      pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，引动地脉灵气，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
+      pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
       saveState(); syncTopHud();
       showOwToast(HERO.exp >= HERO.maxExp
-        ? `✨ 吐纳圆满！修为已满（${HERO.exp}/${HERO.maxExp}），可点击顶部【⚡破境渡劫】！`
-        : `🧘 盘膝打坐一月：修为 +${gain}（${HERO.exp}/${HERO.maxExp}），气血回满`);
+        ? `修为圆满（${HERO.exp}/${HERO.maxExp}）！可点击顶部【破境渡劫】`
+        : `盘膝打坐一月：修为 +${gain}（${HERO.exp}/${HERO.maxExp}），气血灵力回满`);
       return;
     }
     if (target.type === 'exit_world') {
       switchViewLayer('world');
-      showOwToast('🌍 已走出城门！现处于【五洲七海 2.5D 大洲地图】，可跨洲御剑远行');
+      showOwToast('已走出山门 · 进入五洲七海 2.5D 大洲地图');
       return;
     }
     if (target.type === 'teahouse') {
+      if (viewLayer === 'local' && window.InteriorMap3D) {
+        switchViewLayer('interior', HERO.locId, 'teahouse');
+        showOwToast('步入【仙缘茶馆·雅间】，可听评书、品灵茶或结交散修');
+        return;
+      }
       const sp = target.data.plate || WORLD.nodeMap[HERO.locId];
       const hist = WORLD.chronicles[Math.floor(Math.random() * Math.min(20, WORLD.chronicles.length))];
       HERO.life.loneliness = Math.max(0, HERO.life.loneliness - 15);
       pushLog(`你在【${sp.name}】仙缘茶馆听评书：“${hist ? hist.text : '太古灵潮初开之时……'}”`);
       saveState(); syncTopHud();
-      showOwToast(`🍵 茶馆听书：${hist ? hist.text.slice(0, 38) + '…' : '孤寂大幅缓解！'}`);
+      showOwToast(`茶馆听书：${hist ? hist.text.slice(0, 38) + '…' : '孤寂大幅缓解！'}`);
       return;
     }
     if (target.type === 'market') {
@@ -1404,6 +1483,11 @@
       return;
     }
     if (target.type === 'sect_hall') {
+      if (viewLayer === 'local' && window.InteriorMap3D) {
+        switchViewLayer('interior', HERO.locId, 'sect_hall');
+        showOwToast('步入【宗门大殿·正堂】，可登台议事、开宗立派或查阅悬赏');
+        return;
+      }
       selectedPlateId = target.data.plate.id;
       activeTab = 'map'; activeScene = null;
       document.getElementById('life-sim-modal').classList.add('open');
@@ -1452,19 +1536,21 @@
     }
   }
 
-  function switchViewLayer(layer, plateId) {
+  function switchViewLayer(layer, plateId, roomType) {
     ensureInit();
     if (plateId) { HERO.locId = plateId; selectedPlateId = plateId; }
+    if (roomType) currentRoom = roomType;
     viewLayer = layer;
     const host = document.getElementById('main-map3d-host');
     if (!host) return;
     if (window.LocalMap3D) window.LocalMap3D.dispose();
     if (window.Map3D) window.Map3D.dispose();
+    if (window.InteriorMap3D) window.InteriorMap3D.dispose();
 
     const wrap = document.getElementById('ow-nearby-wrap');
     if (wrap) wrap.classList.remove('show');
     const swBtn = document.getElementById('ow-btn-layer');
-    if (swBtn) swBtn.textContent = viewLayer === 'local' ? '🌍 出城·大洲地图' : '🏘️ 进入本地实景';
+    if (swBtn) swBtn.textContent = viewLayer === 'interior' ? '离开室内' : (viewLayer === 'local' ? '出城舆图' : '进城实景');
 
     const commonOpts = {
       onRegionChange: pid => {
@@ -1528,7 +1614,10 @@
 
     syncTopHud();
     requestAnimationFrame(() => {
-      if (viewLayer === 'local' && window.LocalMap3D) {
+      if (viewLayer === 'interior' && window.InteriorMap3D) {
+        const plate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+        window.InteriorMap3D.mount(host, WORLD, HERO, plate, currentRoom, commonOpts);
+      } else if (viewLayer === 'local' && window.LocalMap3D) {
         const plate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
         window.LocalMap3D.mount(host, WORLD, HERO, plate, commonOpts);
       } else if (window.Map3D) {
@@ -1572,6 +1661,7 @@
         <div class="ow-top-bar">
           <span id="ow-region-info">沧溟山河</span>
           <button class="ow-micro-btn" id="ow-btn-layer">出城舆图</button>
+          <button class="ow-micro-btn" id="ow-btn-cave">回洞府</button>
           <button class="ow-micro-btn" id="ow-btn-tod">昼</button>
           <button class="ow-micro-btn" id="ow-btn-m1">一月</button>
           <button class="ow-micro-btn" id="ow-btn-y1">闭关</button>
@@ -1653,7 +1743,12 @@
         const e = activeMapEngine(); if (e) e.triggerInteract();
       };
       document.getElementById('ow-btn-layer').onclick = () => {
-        switchViewLayer(viewLayer === 'local' ? 'world' : 'local');
+        if (viewLayer === 'interior') switchViewLayer('local', HERO.locId);
+        else switchViewLayer(viewLayer === 'local' ? 'world' : 'local');
+      };
+      document.getElementById('ow-btn-cave').onclick = () => {
+        switchViewLayer('interior', HERO.locId, 'cave');
+        showOwToast('已步入私人【灵脉洞府·石室】，可打坐、炼丹或观想遗物');
       };
       document.getElementById('ow-btn-tod').onclick = () => {
         if (viewLayer !== 'local' || !window.LocalMap3D) { showOwToast('昼夜灯火切换仅在局部城镇实景中生效'); return; }

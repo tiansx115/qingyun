@@ -1,9 +1,9 @@
-const CACHE_NAME = 'qingyun-v10-1-0';
+const CACHE_NAME = 'qingyun-v10-2-0';
 const CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './styles/main.css',
   './data/skills_items.js', './data/beasts.js', './data/world.js', './data/allies.js', './data/events.js',
-  './engine/vendor/three.min.js', './engine/icons.js', './engine/audio_fx.js', './engine/achievements.js', './engine/appearance.js', './engine/sociology.js', './engine/world_core.js', './engine/life_sim.js', './engine/realtime_combat.js', './engine/life_modules.js', './engine/map3d.js', './engine/local_map3d.js', './engine/genesis.js', './engine/world_sim.js', './engine/encounters.js', './engine/reincarnation.js', './engine/combat.js', './engine/minigames.js', './engine/app.js', './engine/life_ui.js',
+  './engine/vendor/three.min.js', './engine/icons.js', './engine/audio_fx.js', './engine/achievements.js', './engine/appearance.js', './engine/sociology.js', './engine/world_core.js', './engine/life_sim.js', './engine/realtime_combat.js', './engine/life_modules.js', './engine/lineage.js', './engine/map3d.js', './engine/local_map3d.js', './engine/interior_map3d.js', './engine/genesis.js', './engine/world_sim.js', './engine/encounters.js', './engine/reincarnation.js', './engine/combat.js', './engine/minigames.js', './engine/app.js', './engine/life_ui.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
   './assets/ui3a/title_bg.jpg', './assets/ui3a/logo_calligraphy.png',
   './assets/ui3a/plaque_vert.png', './assets/ui3a/avatar_ring.png',

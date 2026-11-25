@@ -2121,16 +2121,36 @@ function renderSplitPanel() {
       </div>
       <div class="dual-right">
         <div class="sec-head">
-          <span>《沧溟风物邸报》编年史</span>
-          <span style="font-size:10.5px;color:var(--muted);">在世众生 ${npcs.filter(x=>x.alive).length} 人 · 每日同步演化</span>
+          <span>《沧溟创世史》· 秘宝传世录 · 邸报</span>
+          <span style="font-size:10.5px;color:var(--muted);">在世众生 ${npcs.filter(x=>x.alive).length} 人 · 正向演化</span>
         </div>
         <div class="gp-body">
-          ${newsList.map(nw => `
+          ${(G.relicChronicles || []).length ? `<div class="sub-cap gold">绝世秘宝真实来历（开档三百年正向推演生成）</div>` : ''}
+          ${(G.relicChronicles || []).map(rc => `
+            <div class="glass-card active" style="padding:6px 10px;">
+              <div style="flex:1;min-width:0;">
+                <h4>${rc.itemName} <span class="mini-set">第${rc.year}年 · ${rc.locName}</span></h4>
+                <p>${rc.story}</p>
+              </div>
+              <button class="sleek-btn ghost" data-goto="${rc.locId}" style="padding:3px 8px;font-size:10px;flex-shrink:0;">探访旧地</button>
+            </div>
+          `).join('')}
+          <div class="sub-cap gold" style="margin-top:4px;">当代《沧溟风物邸报》</div>
+          ${newsList.slice(0, 18).map(nw => `
             <div class="glass-card" style="padding:7px 11px;align-items:flex-start;">
               <span class="mini-set" style="flex-shrink:0;margin-top:2px;">${nw.tag || '风闻'}</span>
               <div style="flex:1;min-width:0;">
                 <p style="color:var(--text);font-size:11.5px;">${nw.text}</p>
                 <p style="font-size:9.5px;color:var(--muted);margin-top:2px;">${nw.dateStr || ''}</p>
+              </div>
+            </div>
+          `).join('')}
+          ${(G.genesisChronicles || []).length ? `<div class="sub-cap gold" style="margin-top:4px;">太古至第 300 年创世编年史（正向实演）</div>` : ''}
+          ${(G.genesisChronicles || []).slice(0, 16).map(gc => `
+            <div class="glass-card" style="padding:6px 10px;align-items:flex-start;">
+              <span class="mini-seal" style="flex-shrink:0;margin-top:2px;">${gc.tag}</span>
+              <div style="flex:1;min-width:0;">
+                <p style="color:var(--text);font-size:11px;"><b>沧溟第${gc.year}年</b> · ${gc.text}</p>
               </div>
             </div>
           `).join('')}
@@ -2417,6 +2437,17 @@ function renderAll() {
           window.ENCOUNTERS.triggerRandomEncounter(getEventCtx(), locObj.id);
         };
         bl.appendChild(eb);
+      }
+      // 地脉沧桑碑（查看此地六元地脉生态与自第1年正向演化至今的真实历史与秘宝传闻！）
+      if (window.GENESIS) {
+        const gb = document.createElement('button');
+        gb.className = 'sleek-btn ghost';
+        gb.textContent = '地脉沧桑碑';
+        gb.onclick = () => {
+          SFX.play('click');
+          window.GENESIS.openNodeChronicleModal(getEventCtx(), locObj.id);
+        };
+        bl.appendChild(gb);
       }
       // 动态展示当前地点刷出的限时天降随机秘境！
       const localRift = (G.randomRifts || []).find(rf => rf.loc === locObj.id && rf.expireDay > G.totalDays);

@@ -5,7 +5,9 @@
 // 4. 全随机限时天降秘境与悬赏奇遇（逾期会被其他赶到的随机修士抢先搬空！）
 
 window.WORLD_SIM = (function () {
-  const REALM_SPEED_LI = [25, 36, 52, 140, 560, 2400, 11000, 45000, 120000];
+  // 千万里修仙大界尺度（SCALE_MUL = 50，东西横跨 600万~1200万里，约地球尺度的 150 倍！）
+  const SCALE_MUL = 50;
+  const REALM_SPEED_LI = [280, 720, 1800, 7500, 32000, 140000, 520000, 1800000, 4800000];
   const CN_MONTHS = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'];
 
   const NINE_POWERS = [
@@ -410,13 +412,16 @@ window.WORLD_SIM = (function () {
       if (typeof n.travelDaysLeft !== 'number') n.travelDaysLeft = 0;
     });
     if (!Array.isArray(G.randomRifts)) G.randomRifts = [];
-    if (!Array.isArray(G.worldNews)) G.worldNews = [{ day: G.totalDays, dateStr: '纪元初开', tag: '天机', text: '本纪元众生谱已随机衍化生成，唯一【造化轮回盘】隐匿于五洲七海之间。' }];
+    if (!Array.isArray(G.worldNews)) G.worldNews = [{ day: G.totalDays, dateStr: '沧溟第301年', tag: '天机', text: '正向创世推演三百载已毕，沧溟大界群雄并起，唯一【造化轮回盘】隐匿于五洲七海之间。' }];
     if (!Array.isArray(G.letters)) G.letters = [];
+    if (window.GENESIS && (!G._genesisDone || !G.worldNodes)) {
+      window.GENESIS.runForwardGenesis(G, D);
+    }
   }
 
-  function getCal(totalDays) {
+  function getCal(totalDays, yearOffset) {
     const td = Math.max(1, Math.floor(totalDays || 1));
-    const year = Math.floor((td - 1) / 360) + 1;
+    const year = Math.floor((td - 1) / 360) + 1 + (yearOffset || 0);
     const mIdx = Math.floor(((td - 1) % 360) / 30);
     const day = ((td - 1) % 30) + 1;
     const season = ['春', '春', '春', '夏', '夏', '夏', '秋', '秋', '秋', '冬', '冬', '冬'][mIdx];
@@ -425,8 +430,8 @@ window.WORLD_SIM = (function () {
 
   function formatDate(G) {
     initWorldState(G);
-    const c = getCal(G.totalDays);
-    return `第${c.year}年·${c.monthCn}月·${c.day}日`;
+    const c = getCal(G.totalDays, G.genesisYearOffset || 0);
+    return `沧溟第${c.year}年·${c.monthCn}月·${c.day}日`;
   }
 
   function pushNews(G, tag, text) {
@@ -462,7 +467,7 @@ window.WORLD_SIM = (function () {
     if (!locA || !locB || locA.id === locB.id) return 0;
     const dx = (locA.gx || 20000) - (locB.gx || 20000);
     const dy = (locA.gy || 30000) - (locB.gy || 30000);
-    return Math.max(120, Math.round(Math.sqrt(dx * dx + dy * dy)));
+    return Math.max(6000, Math.round(Math.sqrt(dx * dx + dy * dy) * SCALE_MUL));
   }
 
   // ===== 三级分频时间轮（算染分离：纯内存极速推演，零 DOM 操作，10年闭关 < 25ms！）=====
@@ -537,6 +542,12 @@ window.WORLD_SIM = (function () {
       const newQuarterIdx = Math.floor((G.totalDays - 1) / 90);
       if (newQuarterIdx > prevQuarterIdx) {
         runQuarterlyFactionPulse(ctx);
+      }
+
+      // 【第4级 · 十年大世演替（每 3,600 日）】复用正向创世法则持续改写山河、灵矿、城池升格与宗门兴衰！
+      if (G.totalDays % 3600 === 0 && window.GENESIS) {
+        const curY = getCal(G.totalDays, G.genesisYearOffset || 0).year;
+        window.GENESIS.evolveWorldDecade(G, D, curY, false);
       }
 
       // 闭关智能唤醒判定
@@ -1064,8 +1075,8 @@ window.WORLD_SIM = (function () {
 
     if ((fromLoc.isPort || toLoc.isPort || (maxSea >= 1 && maxSea <= 2)) && maxSea <= 2) {
       const blockaded = G.worldState.seaBlockadeUntilDay > G.totalDays;
-      const shipDays = Math.max(3, Math.ceil(distLi / 650));
-      const fare = Math.max(35, Math.round((distLi / 220) * (G.factionRep.wanbao >= 30 ? 0.75 : 1)));
+      const shipDays = Math.max(3, Math.ceil(distLi / (650 * SCALE_MUL)));
+      const fare = Math.max(35, Math.round((distLi / (220 * SCALE_MUL)) * (G.factionRep.wanbao >= 30 ? 0.75 : 1)));
       choices.push({
         text: blockaded ? '【停航】外海兽潮肆虐，万宝跨洋巨舰暂封航路' : `搭乘万宝跨洋灵舟前往（船票 ${fare} 灵石 · 航程 ${shipDays} 日）`,
         hint: blockaded ? '兽潮封海' : '阵法庇护安全渡海',
@@ -1085,7 +1096,7 @@ window.WORLD_SIM = (function () {
 
     if (toLoc.hasTeleport) {
       const halfOff = (G.factionRep.juntian >= 40 || G.factionRep.daqian >= 40 || G.sect === '青云剑宗');
-      const tpFee = Math.max(120, Math.round((distLi / 180) * (halfOff ? 0.55 : 1.0)));
+      const tpFee = Math.max(120, Math.round((distLi / (180 * SCALE_MUL)) * (halfOff ? 0.55 : 1.0)));
       choices.push({
         text: `借用跨洲古传送阵瞬移至【${toLoc.name}】（耗 1 日）`,
         hint: `${tpFee} 灵石${halfOff ? '(仙盟/皇朝优待)' : ''}`,

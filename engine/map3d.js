@@ -599,8 +599,10 @@
       }
     };
     const onKeyUp = e => { keys[e.key.toLowerCase()] = false; };
+    const onBlur = () => { for (const k in keys) keys[k] = false; rDragging = false; };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
 
     const dom = renderer.domElement;
     const raycaster = new THREE.Raycaster();
@@ -861,6 +863,7 @@
     const cleanupListeners = () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('resize', onResize);

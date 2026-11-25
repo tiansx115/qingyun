@@ -6,7 +6,7 @@
   'use strict';
 
   const LS_KEY = 'qingyun_v87_world_life_v1';
-  const APP_VER = 'v11.5';
+  const APP_VER = 'v11.6';
   let WORLD = null;
   let HERO = null;
   let activeTab = 'map';
@@ -98,6 +98,7 @@
     st.textContent = `
       #ow-hud {
         position:absolute; inset:0; z-index:32; pointer-events:none;
+        user-select:none; -webkit-user-select:none;
         font-family:"Songti SC","Kaiti SC","Noto Serif SC",serif; color:#ebe3d3;
       }
       /* 顶部水墨卷轴地名与时辰栏（紧凑控宽，绝不与左上/右上 HUD 撞车） */
@@ -728,7 +729,7 @@
 
         if (activeScene.type === 'found_sect' && sc === 'do_found_sect') {
           const nm = (document.getElementById('inp-new-sect-name')?.value || '太初青云宗').trim();
-          if (HERO.stones < 150) { alert('灵石不足 150！'); return; }
+          if (HERO.stones < 150) { showOwToast('灵石不足 150，暂无法开宗立派'); return; }
           HERO.stones -= 150;
           const nd = WORLD.nodeMap[HERO.locId];
           const fac = {
@@ -845,7 +846,7 @@
           lot.checked = true;
           pushLog(`你运起神识鉴宝【${lot.name}】→ 确认此物为【${lot.isFake ? '黑幕赝品！' : '货真价实之物！'}】`);
         } else if (op === 'buy') {
-          if (HERO.stones < lot.price) { alert('灵石不足！'); return; }
+          if (HERO.stones < lot.price) { showOwToast(`灵石不足（需 ${lot.price} 灵石）`); return; }
           HERO.stones -= lot.price;
           if (lot.isFake) {
             pushLog(`你花 ${lot.price} 灵石拍下【${lot.name}】，散场后才发现竟是黑市假货，血亏！`);
@@ -1404,7 +1405,7 @@
           window.LifeSim.initHeroLife(HERO, WORLD);
           pushLog(`✔ 已导入实验室第 ${WORLD.year} 年世界！`);
           saveState(); renderModal();
-        } catch (err) { alert('导入失败：' + err.message); }
+        } catch (err) { showOwToast('导入失败：' + err.message); }
       };
       const rg = document.getElementById('ls-regen-world');
       if (rg) rg.onclick = () => {
@@ -1433,7 +1434,7 @@
           selectedPlateId = HERO.locId || 'E2';
           saveState(); switchViewLayer('local', HERO.locId); renderModal();
           showOwToast(`已读取存档：【${HERO.name}】第 ${WORLD.year} 年！`);
-        } catch (err) { alert('读取存档失败：' + err.message); }
+        } catch (err) { showOwToast('读取存档失败：' + err.message); }
       };
       const bSaveDs = document.getElementById('btn-save-ds');
       if (bSaveDs) bSaveDs.onclick = () => {
@@ -2269,6 +2270,9 @@
       modal.classList.remove('open');
       syncTopHud();
     };
+    modal.addEventListener('click', e => {
+      if (e.target === modal) { modal.classList.remove('open'); syncTopHud(); }
+    });
     window.addEventListener('keydown', e => {
       if (e.key === 'Escape' && modal.classList.contains('open')) {
         modal.classList.remove('open');

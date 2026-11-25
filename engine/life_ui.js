@@ -183,6 +183,41 @@
         display:none; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:sans-serif;
       }
       .ow-sk-cd.on { display:flex; }
+      /* 左上角新手4步极简引导条（完成后自动消失，可随时点×关闭） */
+      #ow-guide-pill {
+        position:absolute; left:18px; top:94px; pointer-events:auto; max-width:270px;
+        background:rgba(10,15,22,0.84); border-left:2.5px solid #f2daa0;
+        border-top:1px solid rgba(212,184,122,0.3); border-bottom:1px solid rgba(212,184,122,0.3);
+        border-right:1px solid rgba(212,184,122,0.2);
+        padding:6px 10px; font-size:11px; line-height:1.45; color:#ebe3d3;
+        box-shadow:0 4px 16px rgba(0,0,0,0.6); display:none;
+      }
+      #ow-guide-pill.show { display:flex; align-items:flex-start; gap:8px; }
+      #ow-guide-close { background:none; border:none; color:#9d9586; cursor:pointer; font-size:12px; padding:0; }
+      #ow-guide-close:hover { color:#fff; }
+      /* 统一 3A 宋明开场标题幕布（彻底取代旧版割裂开场） */
+      #v10-title-curtain {
+        position:fixed; inset:0; z-index:9600;
+        background:radial-gradient(circle at 50% 40%, rgba(16,26,34,0.88) 0%, rgba(5,8,12,0.97) 100%);
+        backdrop-filter:blur(8px); display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-family:"Songti SC","Kaiti SC","Noto Serif SC",serif; color:#f2e7d0; text-align:center; padding:20px;
+      }
+      .v10-title-card {
+        max-width:520px; width:92%; padding:30px 28px;
+        background:linear-gradient(180deg, rgba(14,20,28,0.92), rgba(8,11,16,0.96));
+        border:1px solid rgba(212,184,122,0.58);
+        box-shadow:0 0 0 4px rgba(8,11,15,0.8), 0 0 0 5px rgba(212,184,122,0.25), 0 24px 64px rgba(0,0,0,0.88);
+      }
+      .v10-t-btn {
+        width:100%; padding:10px 16px; margin-top:10px; cursor:pointer; font-family:inherit;
+        font-size:13.5px; letter-spacing:2px; font-weight:700; border-radius:2px;
+        background:rgba(212,184,122,0.12); border:1px solid rgba(212,184,122,0.52); color:#f5e2b5;
+      }
+      .v10-t-btn:hover { background:rgba(212,184,122,0.28); color:#fff; }
+      .v10-t-btn.main {
+        background:linear-gradient(180deg, rgba(162,48,40,0.94), rgba(110,24,20,0.98));
+        border-color:#f5dda2; color:#fff6e2;
+      }
       /* 左下角极简双行轻提示（稳避左下角版本号与居中技能栏） */
       .ow-whisper-bl {
         position:absolute; left:16px; bottom:26px; max-width:230px; pointer-events:none;
@@ -1413,6 +1448,25 @@
     const biBtn = document.getElementById('ow-btn-birth');
     if (biBtn) biBtn.style.display = HERO.birthDone ? 'none' : 'inline-block';
 
+    // 更新左上角新手4步极简引导条
+    const gp = document.getElementById('ow-guide-pill');
+    const gt = document.getElementById('ow-guide-txt');
+    if (gp && gt) {
+      if (HERO._guideDismissed || (HERO.realmIdx || 0) >= 1) {
+        gp.classList.remove('show');
+      } else {
+        const step = HERO._guideStep || 0;
+        const steps = [
+          '<b>初入仙途 (1/4)</b><br/>走到广场西侧【悬赏榜】按 <b>E</b>（或点右上罗盘「赏」字自动寻路）',
+          '<b>初入仙途 (2/4)</b><br/>过南桥去城外，左键点妖狼，走位躲红圈并按 <b>F / 2</b> 斩杀拾取金球',
+          '<b>初入仙途 (3/4)</b><br/>点顶部【回洞府】在蒲团按 <b>E</b> 打坐，蓄满修为进度条',
+          '<b>初入仙途 (4/4)</b><br/>修为蓄满后，点顶部红印【破境渡劫】踏入下一重境界！'
+        ];
+        gt.innerHTML = steps[Math.min(step, steps.length - 1)];
+        gp.classList.add('show');
+      }
+    }
+
     const regEl = document.getElementById('ow-region-info');
     if (regEl) {
       const holds = (nd.holdings || []).map(h => {
@@ -1499,11 +1553,23 @@
       ctx.fillRect(0, H * 0.70, W, H * 0.10);
     }
 
-    // 建筑 / 板块点
+    // 建筑 / 板块点（带清晰单字地标，一眼认出悬赏/坊市/蒲团/城门！）
+    const poiChar = { sect_hall: '宗', market: '市', teahouse: '茶', black_market: '黑', meditate: '坐', gather: '草', ruin: '遗', exit: '门', bounty: '赏' };
+    ctx.font = 'bold 9px "Songti SC",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     (d.pois || []).forEach(p => {
       const px = sx(p.x), py = sy(p.z);
-      ctx.fillStyle = p.type === 'exit' ? '#ffcf6e' : (p.type === 'ruin' ? '#f7d070' : (p.type === 'sea' ? 'rgba(70,130,180,0.35)' : '#d4b87a'));
-      ctx.fillRect(px - 3, py - 3, 6, 6);
+      const ch = poiChar[p.type];
+      if (ch && d.mode === 'local') {
+        ctx.fillStyle = p.type === 'exit' || p.type === 'bounty' ? 'rgba(247,208,112,0.92)' : 'rgba(20,30,40,0.88)';
+        ctx.beginPath(); ctx.arc(px, py, 6.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#d4b87a'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = (p.type === 'exit' || p.type === 'bounty') ? '#14120e' : '#f2daa0';
+        ctx.fillText(ch, px, py + 0.5);
+      } else {
+        ctx.fillStyle = p.type === 'sea' ? 'rgba(70,130,180,0.35)' : '#d4b87a';
+        ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
+      }
     });
     // NPC（蓝点）
     ctx.fillStyle = '#70b8f0';
@@ -1525,6 +1591,7 @@
   function handleWorldInteract(target) {
     if (!target) return;
     if (target.type === 'bounty_board') {
+      if ((HERO._guideStep || 0) < 1) HERO._guideStep = 1;
       activeTab = 'map';
       activeScene = { type: 'bounty_board', data: {} };
       document.getElementById('life-sim-modal').classList.add('open');
@@ -1586,6 +1653,7 @@
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);
       window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclusion');
       pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
+      if ((HERO._guideStep || 0) < 3) HERO._guideStep = 3;
       if (window.WorldDirector) {
         const done = window.WorldDirector.recordProgress(HERO, 'meditate', 1);
         if (done) showOwToast(`悬赏达成【${done.title}】！请前往广场悬赏榜领赏`);
@@ -1757,6 +1825,7 @@
           if (ex) ex.qty += 1;
           else HERO.bag.push({ id: 'it_' + Date.now(), name: en.drop, kind: '妖材', qty: 1, desc: `即时斩杀【${en.name}】掉落` });
         }
+        if ((HERO._guideStep || 0) < 2) HERO._guideStep = 2;
         if (en.isDuel && en.isLethal && en.npcRef) {
           en.npcRef.alive = false;
           HERO.wanted = (HERO.wanted || 0) + 25;
@@ -1857,6 +1926,10 @@
           <canvas id="ow-minimap-cv" width="124" height="124"></canvas>
           <div id="ow-minimap-title">沧溟舆图</div>
         </div>
+        <div id="ow-guide-pill">
+          <div id="ow-guide-txt"></div>
+          <button id="ow-guide-close" title="隐藏引导">✕</button>
+        </div>
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
           <button id="ow-nearby-btn">[E] 交互</button>
         </div>
@@ -1947,6 +2020,9 @@
         document.getElementById('ow-btn-tod').textContent = lb;
         showOwToast(m === 'night' ? '暮色四合，仙镇华灯初上，黑市鬼火幽幽…' : (m === 'dusk' ? '残阳如血，倦鸟归林…' : '晨曦初照，天地灵气复苏'));
       };
+      document.getElementById('ow-guide-close').onclick = () => {
+        HERO._guideDismissed = true; saveState(); syncTopHud();
+      };
       document.getElementById('ow-btn-break').onclick = () => attemptBreakthrough();
       document.getElementById('ow-minimap-cv').onclick = e => {
         const eng = activeMapEngine();
@@ -2036,10 +2112,47 @@
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });
 
-    // 启动即进入真 2.5D HD-2D 可操控主角开放大世界！
+    // 隐藏旧版 app.js 割裂开场幕布，改用统一 3A 沧溟界开场幕布
+    const oldTitle = document.getElementById('title-root');
+    if (oldTitle) oldTitle.style.display = 'none';
+
     mountMainBg3D();
-    // 若旧版标题遮罩在点击进入后重新渲染了旧 HUD，定时保证我们的实时数值同步
-    setInterval(syncTopHud, 2000);
+    setInterval(() => {
+      syncTopHud();
+      const ot = document.getElementById('title-root');
+      if (ot && ot.style.display !== 'none') ot.style.display = 'none';
+    }, 1200);
+
+    // 统一 3A 宋明开场标题幕布（让第一次打开游戏的玩家清晰了解世界并一键开局！）
+    const hasSave = !!localStorage.getItem(LS_KEY);
+    const curtain = document.createElement('div');
+    curtain.id = 'v10-title-curtain';
+    curtain.innerHTML = `
+      <div class="v10-title-card">
+        <div style="font-size:11px;letter-spacing:4px;color:#9ff2cf;margin-bottom:6px;">真实演化修仙模拟人生 · 沧溟界 v10.7</div>
+        <h1 style="font-size:32px;letter-spacing:6px;color:#f5e2b5;margin:0 0 10px;font-weight:700;">青云问道录</h1>
+        <div style="font-size:12px;color:#bfb7a8;line-height:1.7;margin-bottom:18px;">
+          五洲七海已先行自然演化 1200 年：宗门兴衰、物价涨落、遗迹现世、众生百态皆非预设剧本。<br/>
+          你将亲自漫游于三层立体山海实景，在饥荒式即时斗法与百年世家传承中走出自己的仙途。
+        </div>
+        ${hasSave ? `<button class="v10-t-btn main" id="t-btn-cont">继续仙途（${HERO.name} · ${HERO.realm} · 第${WORLD.year}年）</button>` : ''}
+        <button class="v10-t-btn ${hasSave ? '' : 'main'}" id="t-btn-birth">${hasSave ? '重开新档 · 0–18 岁童年手记开局' : '踏入沧溟 · 0–18 岁童年手记开局'}</button>
+        <button class="v10-t-btn" id="t-btn-direct">直接降临仙城广场</button>
+      </div>
+    `;
+    document.body.appendChild(curtain);
+    const closeCurtain = () => { if (curtain.parentNode) curtain.parentNode.removeChild(curtain); };
+    const bCont = document.getElementById('t-btn-cont');
+    if (bCont) bCont.onclick = () => { closeCurtain(); showOwToast(`欢迎归来，【${HERO.name}】！`); };
+    document.getElementById('t-btn-direct').onclick = () => { closeCurtain(); showOwToast('已降临仙城中央广场 · 请参考左上角 4 步初入指引！'); };
+    document.getElementById('t-btn-birth').onclick = () => {
+      if (hasSave) { freshWorld(Math.floor(Math.random() * 99999)); switchViewLayer('local', HERO.locId); }
+      closeCurtain();
+      activeTab = 'life';
+      activeScene = { type: 'birth_story', data: { step: 0, picks: [] } };
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+    };
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);

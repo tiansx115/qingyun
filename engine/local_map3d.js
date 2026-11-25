@@ -1032,7 +1032,15 @@
       regenTick += dt;
       if (regenTick >= 1.0 && hero) {
         regenTick = 0;
-        if ((hero.qi || 0) < (hero.maxQi || 80)) { hero.qi = Math.min(hero.maxQi || 80, (hero.qi || 0) + 4); if (opts.onHeroStatsChange) opts.onHeroStatsChange(); }
+        let changed = false;
+        if ((hero.qi || 0) < (hero.maxQi || 80)) { hero.qi = Math.min(hero.maxQi || 80, (hero.qi || 0) + 4); changed = true; }
+        // 中央广场青铜火盆安全区：受伤回到广场烤火自动缓慢回血（饥荒营火体验！）
+        if ((hero.hp || 0) < (hero.maxHp || 120) && Math.hypot(heroPos.x, heroPos.z) < 5.8) {
+          hero.hp = Math.min(hero.maxHp || 120, (hero.hp || 0) + 6);
+          spawnFloatText(heroPos.x, 2.3, heroPos.z, '+6 气血', '#6fd3a8');
+          changed = true;
+        }
+        if (changed && opts.onHeroStatsChange) opts.onHeroStatsChange();
         if (hero.pets && hero.pets.length > 0) {
           const nearEn = findNearestHostile(6.5);
           if (nearEn && nearEn.aiState !== 'patrol') {

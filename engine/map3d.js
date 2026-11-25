@@ -63,27 +63,34 @@
     return bestId;
   }
 
-  function makeNameplateTexture(title, sub, borderColor, bgColor) {
+  function makeNameplateTexture(title, sub, borderColor) {
     const cv = document.createElement('canvas');
-    cv.width = 256; cv.height = 84;
+    cv.width = 256; cv.height = 68;
     const ctx = cv.getContext('2d');
-    ctx.fillStyle = bgColor || 'rgba(8,13,20,0.86)';
-    ctx.strokeStyle = borderColor || '#d4b87a';
-    ctx.lineWidth = 3;
+    const grd = ctx.createLinearGradient(0, 0, 256, 0);
+    grd.addColorStop(0, 'rgba(8,10,14,0)');
+    grd.addColorStop(0.15, 'rgba(8,11,16,0.84)');
+    grd.addColorStop(0.85, 'rgba(8,11,16,0.84)');
+    grd.addColorStop(1, 'rgba(8,10,14,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 8, 256, 52);
+
+    ctx.strokeStyle = borderColor || 'rgba(212,184,122,0.75)';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.roundRect(6, 6, 244, 64, 9);
-    ctx.fill();
+    ctx.moveTo(28, 9); ctx.lineTo(228, 9);
+    ctx.moveTo(28, 59); ctx.lineTo(228, 59);
     ctx.stroke();
 
     ctx.fillStyle = '#f6e7c1';
-    ctx.font = 'bold 23px "Songti SC","Noto Serif SC",serif';
+    ctx.font = 'bold 21px "Songti SC","Noto Serif SC",serif';
     ctx.textAlign = 'center';
-    ctx.fillText(title.slice(0, 10), 128, 35);
+    ctx.fillText(title.slice(0, 10), 128, sub ? 34 : 42);
 
     if (sub) {
-      ctx.fillStyle = '#9ff2cf';
-      ctx.font = '16px sans-serif';
-      ctx.fillText(sub.slice(0, 16), 128, 59);
+      ctx.fillStyle = '#a8d9c4';
+      ctx.font = '13.5px sans-serif';
+      ctx.fillText(sub.slice(0, 18), 128, 53);
     }
     const tex = new THREE.CanvasTexture(cv);
     tex.needsUpdate = true;

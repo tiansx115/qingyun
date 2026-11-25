@@ -183,12 +183,13 @@
         display:none; align-items:center; justify-content:center; font-size:13px; font-weight:700; font-family:sans-serif;
       }
       .ow-sk-cd.on { display:flex; }
-      /* 左下角极简操作轻提示 */
+      /* 左下角极简双行轻提示（稳避左下角版本号与居中技能栏） */
       .ow-whisper-bl {
-        position:absolute; left:18px; bottom:18px; pointer-events:none;
-        font-size:10.5px; color:rgba(230,220,200,0.68); letter-spacing:0.8px;
-        text-shadow:0 1px 4px rgba(0,0,0,0.9);
+        position:absolute; left:16px; bottom:26px; max-width:230px; pointer-events:none;
+        font-size:10px; line-height:1.45; color:rgba(230,220,200,0.62); letter-spacing:0.6px;
+        text-shadow:0 1px 4px rgba(0,0,0,0.92);
       }
+      .mini-bar.exp i { background:linear-gradient(90deg, #b88b35, #f5d882); }
       /* 右下角 5 枚宋明玉印功能键 */
       .ow-menu-br {
         position:absolute; right:18px; bottom:18px; pointer-events:auto;
@@ -1211,6 +1212,17 @@
     const tEl = document.getElementById('hud-timeline');
     const hpBar = document.getElementById('bar-hp');
     const qiBar = document.getElementById('bar-qi');
+    let expBar = document.getElementById('bar-exp');
+    if (!expBar) {
+      const bars = document.querySelector('#hud-tl .hud-mini-bars');
+      if (bars) {
+        const wrap = document.createElement('div');
+        wrap.className = 'mini-bar exp';
+        wrap.innerHTML = '<i id="bar-exp" style="width:0%"></i>';
+        bars.appendChild(wrap);
+        expBar = document.getElementById('bar-exp');
+      }
+    }
     const hpTxt = document.getElementById('bar-hp-txt');
     const qiTxt = document.getElementById('bar-qi-txt');
     if (rEl) rEl.textContent = HERO.realm;
@@ -1218,10 +1230,11 @@
     if (sEl) sEl.textContent = HERO.stones;
     if (aEl) aEl.textContent = `${HERO.age}/${HERO.lifespan}岁`;
     if (hpBar) hpBar.style.width = Math.min(100, Math.round(HERO.hp / HERO.maxHp * 100)) + '%';
-    if (qiBar) qiBar.style.width = Math.min(100, Math.round(HERO.exp / HERO.maxExp * 100)) + '%';
-    if (hpTxt) hpTxt.textContent = `血${HERO.hp}/${HERO.maxHp}`;
-    if (qiTxt) qiTxt.textContent = `修为${HERO.exp}/${HERO.maxExp}`;
-    if (tEl) tEl.textContent = `身在【${nd.name}】· 灵脉${nd.leyline} · 暗森${nd.darkForestIdx || 0}`;
+    if (qiBar) qiBar.style.width = Math.min(100, Math.round((HERO.qi || 0) / HERO.maxQi * 100)) + '%';
+    if (expBar) expBar.style.width = Math.min(100, Math.round(HERO.exp / HERO.maxExp * 100)) + '%';
+    if (hpTxt) hpTxt.textContent = `血${HERO.hp} 气${Math.round(HERO.qi || 0)}`;
+    if (qiTxt) qiTxt.textContent = `修${HERO.exp}/${HERO.maxExp}`;
+    if (tEl) tEl.style.display = 'none';
 
     const btBtn = document.getElementById('ow-btn-break');
     if (btBtn) btBtn.style.display = HERO.exp >= HERO.maxExp ? 'inline-block' : 'none';
@@ -1531,10 +1544,18 @@
     const app = document.getElementById('app');
     if (!app) return;
 
-    ['world-layer', 'hud-bl', 'hud-br', 'hud-tc'].forEach(id => {
+    ['world-layer', 'hud-bl', 'hud-br', 'hud-tc', 'hud-timeline'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    const hudTl = document.getElementById('hud-tl');
+    if (hudTl && !hudTl._v10Bound) {
+      hudTl._v10Bound = true;
+      hudTl.addEventListener('click', e => {
+        e.preventDefault(); e.stopImmediatePropagation();
+        openModalTab('life');
+      }, true);
+    }
 
     let host = document.getElementById('main-map3d-host');
     if (!host) {
@@ -1595,7 +1616,7 @@
             <span class="ow-sk-name" id="ow-fly-txt">御剑</span>
           </button>
         </div>
-        <div class="ow-whisper-bl">WASD / 点击行走 · 点怪或 F/2/3/4 即时斗法 · E 交互 · Space 御剑 · 右键转视角</div>
+        <div class="ow-whisper-bl">WASD / 点地行走 · 点怪或 F/2/3/4 斗法<br/>E 交互 · Space 御剑 · 右键转视角</div>
         <div class="ow-menu-br">
           <button class="ow-seal-btn primary" data-ow-tab="map">
             <svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z"/></svg><span>舆图</span>

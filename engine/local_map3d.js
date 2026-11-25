@@ -152,34 +152,101 @@
     return tex;
   }
 
-  // 3A 重檐翘角中式仙侠殿阁（双层飞檐 + 石阶 + 朱红回廊 + 鎏金宝顶 + 飘动竖幡旗）
+  // 柔和贴地接触阴影贴图（零性能损耗让建筑/树木扎实落地！）
+  let _softShadowTex = null;
+  function getSoftShadowTex() {
+    if (_softShadowTex) return _softShadowTex;
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
+    const ctx = cv.getContext('2d');
+    const g = ctx.createRadialGradient(64, 64, 12, 64, 64, 62);
+    g.addColorStop(0, 'rgba(0,0,0,0.52)');
+    g.addColorStop(0.65, 'rgba(0,0,0,0.22)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+    _softShadowTex = new THREE.CanvasTexture(cv);
+    return _softShadowTex;
+  }
+
+  // 构建真实中式横脊歇山顶（正脊横梁 + 前后坡面 + 鎏金鸱吻 + 四角翘起飞檐）
+  function buildChineseRoof(w, d, roofHex) {
+    const g = new THREE.Group();
+    const rMat = new THREE.MeshStandardMaterial({ color: roofHex || 0x1e3345, roughness: 0.48, metalness: 0.24 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xe2be6b, metalness: 0.78, roughness: 0.28 });
+    const eaveW = w + 1.4, eaveD = d + 1.25;
+    const slopeLen = eaveD * 0.58;
+    const slopeH = 1.05;
+
+    // 屋檐下深色斗拱木椽阴影带
+    const soffit = new THREE.Mesh(new THREE.BoxGeometry(eaveW - 0.15, 0.22, eaveD - 0.15), new THREE.MeshStandardMaterial({ color: 0x2b1d17, roughness: 0.88 }));
+    soffit.position.y = 0.08; g.add(soffit);
+
+    // 前后坡面黛瓦屋顶
+    const slopeGeo = new THREE.BoxGeometry(eaveW, 0.14, slopeLen);
+    const frontSlope = new THREE.Mesh(slopeGeo, rMat);
+    frontSlope.position.set(0, slopeH * 0.56, eaveD * 0.24);
+    frontSlope.rotation.x = 0.44;
+    g.add(frontSlope);
+
+    const backSlope = new THREE.Mesh(slopeGeo, rMat);
+    backSlope.position.set(0, slopeH * 0.56, -eaveD * 0.24);
+    backSlope.rotation.x = -0.44;
+    g.add(backSlope);
+
+    // 两侧山墙封顶三角楔（用梯形盒填充）
+    const core = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, slopeH * 0.78, d * 0.65), rMat);
+    core.position.y = slopeH * 0.48; g.add(core);
+
+    // 横向鎏金正脊横梁 + 左右上翘鸱吻兽首
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(eaveW * 0.92, 0.2, 0.24), goldMat);
+    ridge.position.y = slopeH + 0.06; g.add(ridge);
+    [-eaveW * 0.46, eaveW * 0.46].forEach(rx => {
+      const chiwen = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.26), goldMat);
+      chiwen.position.set(rx, slopeH + 0.24, 0);
+      chiwen.rotation.z = rx > 0 ? -0.35 : 0.35;
+      g.add(chiwen);
+    });
+
+    // 四角微微上翘的飞檐翼角
+    const cornerGeo = new THREE.BoxGeometry(0.55, 0.1, 0.55);
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) => {
+      const tip = new THREE.Mesh(cornerGeo, rMat);
+      tip.position.set(sx * (eaveW * 0.48), 0.32, sz * (eaveD * 0.46));
+      tip.rotation.z = sx * 0.38;
+      tip.rotation.x = -sz * 0.32;
+      g.add(tip);
+    });
+    return g;
+  }
+
+  // 3A 重檐歇山顶中式仙侠殿阁（石阶/朱柱/雕花暖窗/双层横脊飞檐/飘动竖幡旗/贴地接触阴影）
   function buildGrandHall(w, h, d, roofHex, wallHex, bannerColor, flagsOut) {
     const g = new THREE.Group();
+    // 贴地柔和接触阴影
+    const sh = new THREE.Mesh(
+      new THREE.PlaneGeometry(w + 3.4, d + 3.2),
+      new THREE.MeshBasicMaterial({ map: getSoftShadowTex(), transparent: true, depthWrite: false })
+    );
+    sh.rotation.x = -Math.PI / 2; sh.position.y = 0.02; g.add(sh);
+
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x737069, roughness: 0.9 });
-    // 双层石台基座
     const base1 = new THREE.Mesh(new THREE.BoxGeometry(w + 1.1, 0.32, d + 1.1), stoneMat);
     base1.position.y = 0.16; g.add(base1);
     const base2 = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.26, d + 0.5), stoneMat);
     base2.position.y = 0.45; g.add(base2);
-    // 门前三级白玉石阶
     for (let s = 0; s < 3; s++) {
       const st = new THREE.Mesh(new THREE.BoxGeometry(2.2 + s * 0.2, 0.16, 0.45), stoneMat);
-      st.position.set(0, 0.48 - s * 0.16, d / 2 + 0.45 + s * 0.32);
-      g.add(st);
+      st.position.set(0, 0.48 - s * 0.16, d / 2 + 0.45 + s * 0.32); g.add(st);
     }
 
-    // 主殿墙体
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color: wallHex || 0xd8cdb8, roughness: 0.82 }));
     body.position.y = 0.58 + h / 2; g.add(body);
 
-    // 朱红回廊立柱（前排4柱+后角2柱）
     const pMat = new THREE.MeshStandardMaterial({ color: 0x8a241e, roughness: 0.55 });
     const pGeo = new THREE.CylinderGeometry(0.11, 0.13, h + 0.08, 8);
     [[-w/2, d/2+0.12], [-w/5, d/2+0.12], [w/5, d/2+0.12], [w/2, d/2+0.12], [-w/2, -d/2], [w/2, -d/2]].forEach(([px, pz]) => {
       const p = new THREE.Mesh(pGeo, pMat); p.position.set(px, 0.58 + h / 2, pz); g.add(p);
     });
 
-    // 雕花暖光大门与左右窗格
     const glowMat = new THREE.MeshBasicMaterial({ color: 0xffe09a });
     const door = new THREE.Mesh(new THREE.PlaneGeometry(1.35, Math.min(1.85, h * 0.76)), glowMat);
     door.position.set(0, 0.58 + Math.min(1.85, h * 0.76) / 2, d / 2 + 0.02); g.add(door);
@@ -188,22 +255,17 @@
       win.position.set(wx, 0.58 + h * 0.55, d / 2 + 0.02); g.add(win);
     });
 
-    // 一层宽大飞檐黛瓦顶
-    const roofMat = new THREE.MeshStandardMaterial({ color: roofHex || 0x203547, roughness: 0.5, metalness: 0.22 });
-    const roof1 = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.88, 1.35, 4), roofMat);
-    roof1.rotation.y = Math.PI / 4;
-    roof1.scale.set(w / Math.max(w, d) * 1.18, 1, d / Math.max(w, d) * 1.18);
-    roof1.position.y = 0.58 + h + 0.62; g.add(roof1);
+    // 一层宽大歇山顶
+    const roof1 = buildChineseRoof(w, d, roofHex);
+    roof1.position.y = 0.58 + h;
+    g.add(roof1);
 
-    // 二层重檐楼阁 + 鎏金宝顶
-    const upperWall = new THREE.Mesh(new THREE.BoxGeometry(w * 0.62, h * 0.42, d * 0.62), new THREE.MeshStandardMaterial({ color: 0x6e241e, roughness: 0.7 }));
-    upperWall.position.y = 0.58 + h + 1.15; g.add(upperWall);
-    const roof2 = new THREE.Mesh(new THREE.ConeGeometry(Math.max(w, d) * 0.56, 1.15, 4), roofMat);
-    roof2.rotation.y = Math.PI / 4;
-    roof2.scale.set(w / Math.max(w, d) * 1.12, 1, d / Math.max(w, d) * 1.12);
-    roof2.position.y = 0.58 + h + 1.92; g.add(roof2);
-    const finial = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), new THREE.MeshStandardMaterial({ color: 0xe6c373, metalness: 0.8, roughness: 0.25 }));
-    finial.position.y = 0.58 + h + 2.65; g.add(finial);
+    // 二层重檐楼阁 + 横脊歇山顶
+    const upperWall = new THREE.Mesh(new THREE.BoxGeometry(w * 0.64, h * 0.42, d * 0.64), new THREE.MeshStandardMaterial({ color: 0x6e241e, roughness: 0.7 }));
+    upperWall.position.y = 0.58 + h + 1.12; g.add(upperWall);
+    const roof2 = buildChineseRoof(w * 0.64, d * 0.64, roofHex);
+    roof2.position.y = 0.58 + h + 1.38;
+    g.add(roof2);
 
     // 檐角红灯笼
     const lMat = new THREE.MeshBasicMaterial({ color: 0xff7043 });
@@ -212,24 +274,21 @@
       lan.position.set(lx, 0.58 + h - 0.1, d / 2 + 0.42); g.add(lan);
     });
 
-    // 门口飘动竖幅幡旗/酒幌
     if (bannerColor) {
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 3.6, 6), pMat);
       pole.position.set(w / 2 + 0.65, 1.8, d / 2 + 0.35); g.add(pole);
-      const flag = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.68, 1.85),
-        new THREE.MeshStandardMaterial({ color: bannerColor, side: THREE.DoubleSide, roughness: 0.7 })
-      );
-      flag.position.set(w / 2 + 1.0, 2.55, d / 2 + 0.35);
-      g.add(flag);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 1.85), new THREE.MeshStandardMaterial({ color: bannerColor, side: THREE.DoubleSide, roughness: 0.7 }));
+      flag.position.set(w / 2 + 1.0, 2.55, d / 2 + 0.35); g.add(flag);
       if (flagsOut) flagsOut.push(flag);
     }
     return g;
   }
 
-  // 三层叠叶仙侠古松/灵花树
+  // 三层叠叶仙侠古松/灵花树（带贴地柔和树荫）
   function buildLayeredTree(biome, isBlossom) {
     const g = new THREE.Group();
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.0), new THREE.MeshBasicMaterial({ map: getSoftShadowTex(), transparent: true, depthWrite: false }));
+    sh.rotation.x = -Math.PI / 2; sh.position.y = 0.02; g.add(sh);
     const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.22, 1.35, 6), new THREE.MeshStandardMaterial({ color: 0x4a3425, roughness: 0.92 }));
     tr.position.y = 0.68; g.add(tr);
     const leafCol = isBlossom ? 0xd98ca3
@@ -318,14 +377,19 @@
       const img = new Image(); img.crossOrigin = 'anonymous';
       img.onload = () => {
         ctx.clearRect(0, 0, 160, 220);
-        ctx.save(); ctx.beginPath(); ctx.roundRect(14, 14, 132, 192, 66); ctx.clip();
         const aspect = img.width / img.height;
-        let dw = 152, dh = 152 / aspect;
-        if (dh < 200) { dh = 200; dw = dh * aspect; }
-        ctx.drawImage(img, (160 - dw) / 2, 8, dw, dh);
-        ctx.restore();
-        ctx.strokeStyle = hexStr; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.roundRect(14, 14, 132, 192, 66); ctx.stroke();
+        let dw = 156, dh = 156 / aspect;
+        if (dh < 210) { dh = 210; dw = dh * aspect; }
+        ctx.drawImage(img, (160 - dw) / 2, 4, dw, dh);
+        // 柔和边缘与底部水墨羽化融合（告别粗边框椭圆棋子！）
+        ctx.globalCompositeOperation = 'destination-in';
+        const rad = ctx.createRadialGradient(80, 96, 36, 80, 108, 82);
+        rad.addColorStop(0, 'rgba(255,255,255,1)');
+        rad.addColorStop(0.72, 'rgba(255,255,255,0.92)');
+        rad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = rad;
+        ctx.fillRect(0, 0, 160, 220);
+        ctx.globalCompositeOperation = 'source-over';
         charTex.needsUpdate = true;
       };
       img.src = imgUrl;
@@ -417,7 +481,16 @@
       scene.add(peak);
     }
 
-    // 2. 地面 + 动态透明灵溪水面 + 荷叶
+    // 2. 无缝外延山谷地皮（180×180 直连远山脚下，彻底消灭边缘黑缝！）+ 核心城镇地面
+    const outerCol = { ice: 0x9ab4c7, volcano: 0x3b2620, fire: 0x4d392d, wood: 0x26402f, island: 0x2f374f, ocean: 0x1e4054, earth: 0x384730 }[plate.biome] || 0x384730;
+    const outerGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(180, 180),
+      new THREE.MeshStandardMaterial({ color: outerCol, roughness: 0.96 })
+    );
+    outerGround.rotation.x = -Math.PI / 2;
+    outerGround.position.y = -0.05;
+    scene.add(outerGround);
+
     const MAP_W = 52, MAP_H = 46;
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(MAP_W, MAP_H),

@@ -452,8 +452,28 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(W, H);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    if (THREE.ACESFilmicToneMapping !== undefined) {
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+    }
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
+
+    // 360° 电影级水墨渐变天空穹顶（随昼/暮/夜实时切换，告别单色纯背景！）
+    const makeSkyTex = (topCol, midCol, botCol) => {
+      const scv = document.createElement('canvas'); scv.width = 16; scv.height = 256;
+      const sctx = scv.getContext('2d');
+      const g = sctx.createLinearGradient(0, 0, 0, 256);
+      g.addColorStop(0, topCol); g.addColorStop(0.52, midCol); g.addColorStop(1, botCol);
+      sctx.fillStyle = g; sctx.fillRect(0, 0, 16, 256);
+      return new THREE.CanvasTexture(scv);
+    };
+    const skyTexDay = makeSkyTex('#162c44', '#2a4d5c', '#5b7876');
+    const skyTexDusk = makeSkyTex('#181326', '#5e2f2e', '#c96f3b');
+    const skyTexNight = makeSkyTex('#050812', '#0b1629', '#16283b');
+    const skyMat = new THREE.MeshBasicMaterial({ map: skyTexDay, side: THREE.BackSide, fog: false, depthWrite: false });
+    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(125, 24, 14), skyMat);
+    scene.add(skyDome);
 
     const ambient = new THREE.AmbientLight(0xbfd2e8, 0.88);
     scene.add(ambient);
@@ -917,7 +937,7 @@
     const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: pCol, size: 0.15, transparent: true, opacity: 0.68 }));
     scene.add(particles);
 
-    const camState = { yaw: 0, pitch: 0.54, dist: 14.2, cx: heroPos.x, cz: heroPos.z };
+    const camState = { yaw: 0, pitch: 0.54, dist: 14.2, tYaw: 0, tPitch: 0.54, tDist: 14.2, cx: heroPos.x, cz: heroPos.z };
     const updateCam = () => {
       camera.position.set(
         camState.cx + Math.sin(camState.yaw) * Math.cos(camState.pitch) * camState.dist,
@@ -933,16 +953,19 @@
       timeMode = mode;
       if (mode === 'day') {
         scene.background.setHex(baseSky); scene.fog.color.setHex(baseSky);
+        skyMat.map = skyTexDay; skyMat.needsUpdate = true;
         ambient.color.setHex(0xbfd2e8); ambient.intensity = 0.88;
         sun.color.setHex(0xffe9c2); sun.intensity = 1.2; sun.position.set(18, 30, 20);
         nightLights.forEach(pl => { pl.intensity = 0.25; });
       } else if (mode === 'dusk') {
         scene.background.setHex(0x2e1a1d); scene.fog.color.setHex(0x2e1a1d);
+        skyMat.map = skyTexDusk; skyMat.needsUpdate = true;
         ambient.color.setHex(0xd4967a); ambient.intensity = 0.68;
         sun.color.setHex(0xff8a47); sun.intensity = 1.28; sun.position.set(-28, 11, 14);
         nightLights.forEach(pl => { pl.intensity = 1.2; });
       } else {
         scene.background.setHex(0x070c17); scene.fog.color.setHex(0x070c17);
+        skyMat.map = skyTexNight; skyMat.needsUpdate = true;
         ambient.color.setHex(0x4c6b99); ambient.intensity = 0.44;
         sun.color.setHex(0x7aa4e0); sun.intensity = 0.45; sun.position.set(-14, 24, -16);
         nightLights.forEach(pl => { pl.intensity = 2.15; });
@@ -990,11 +1013,11 @@
       const dx = e.clientX - lx, dy = e.clientY - ly;
       if (Math.abs(dx) + Math.abs(dy) > 5) moved = true;
       lx = e.clientX; ly = e.clientY;
-      if (rDrag) { camState.yaw -= dx * 0.0065; camState.pitch = Math.max(0.32, Math.min(1.15, camState.pitch + dy * 0.005)); }
+      if (rDrag) { camState.tYaw -= dx * 0.0065; camState.tPitch = Math.max(0.32, Math.min(1.15, camState.tPitch + dy * 0.005)); }
     };
     const onPointerUp = () => { rDrag = false; };
     const onContextMenu = e => e.preventDefault();
-    const onWheel = e => { e.preventDefault(); camState.dist = Math.max(8, Math.min(28, camState.dist + e.deltaY * 0.015)); };
+    const onWheel = e => { e.preventDefault(); camState.tDist = Math.max(8, Math.min(28, camState.tDist + e.deltaY * 0.015)); };
     const onClick = e => {
       if (moved || e.button !== 0) return;
       const rect = dom.getBoundingClientRect();
@@ -1136,6 +1159,13 @@
       heroActor.body.scale.x = 1.55 * heroPos.facing;
       swordMesh.position.y = 0.15 + hover;
 
+      // 键盘 Q / R 平滑旋转视角（笔记本触控板福音）
+      if (keys.q) camState.tYaw += dt * 1.45;
+      if (keys.r) camState.tYaw -= dt * 1.45;
+      const damp = Math.min(1, dt * 10);
+      camState.yaw += (camState.tYaw - camState.yaw) * damp;
+      camState.pitch += (camState.tPitch - camState.pitch) * damp;
+      camState.dist += (camState.tDist - camState.dist) * damp;
       camState.cx += (heroPos.x - camState.cx) * Math.min(1, dt * 7.5);
       camState.cz += (heroPos.z - camState.cz) * Math.min(1, dt * 7.5);
       updateCam();

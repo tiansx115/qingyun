@@ -1426,11 +1426,17 @@
       ensureHeroStats();
       HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 15);
+      if (viewLayer === 'local' && window.LocalMap3D && window.LocalMap3D.playBreakthroughVfx) {
+        window.LocalMap3D.playBreakthroughVfx(true, HERO.realm);
+      }
       pushLog(`⚡ 破境成功（成功率 ${rate}%）！你于【${nd.name}】引动天地灵潮，正式踏入【${HERO.realm}】，寿元增至 ${HERO.lifespan} 岁！`);
       showOwToast(`⚡ 破境成功！恭喜踏入【${HERO.realm}】！（成功率 ${rate}%）`);
     } else {
       HERO.exp = Math.floor(HERO.maxExp * 0.65);
       HERO.life.heartDemon = Math.min(100, HERO.life.heartDemon + 12);
+      if (viewLayer === 'local' && window.LocalMap3D && window.LocalMap3D.playBreakthroughVfx) {
+        window.LocalMap3D.playBreakthroughVfx(false, HERO.realm);
+      }
       pushLog(`💔 破境受挫（成功率 ${rate}%，受丹毒/心魔所累），修为跌回 ${HERO.exp}/${HERO.maxExp}，心魔+12！`);
       showOwToast(`💔 破境失败（成功率 ${rate}%），丹毒或心魔过重！`);
     }

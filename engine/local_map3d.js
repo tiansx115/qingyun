@@ -756,10 +756,13 @@
       sp.scale.set(2.8, 0.72, 1); sp.position.set(x, y, z); scene.add(sp);
       vfxList.push({ mesh: sp, life: 0.95, maxLife: 0.95, vy: 1.9, expand: 0 });
     };
-    const spawnSlashVfx = (x, z, angle) => {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 2.1, 16, 1, -0.9, 1.8), new THREE.MeshBasicMaterial({ color: 0x7ef7d4, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }));
+    const spawnSlashVfx = (x, z, angle, isFinisher) => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(isFinisher ? 1.1 : 0.9, isFinisher ? 2.85 : 2.1, 18, 1, isFinisher ? -1.3 : -0.9, isFinisher ? 2.6 : 1.8),
+        new THREE.MeshBasicMaterial({ color: isFinisher ? 0xffe066 : 0x7ef7d4, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+      );
       ring.rotateX(-Math.PI / 2); ring.rotation.z = -angle; ring.position.set(x, 1.0, z); scene.add(ring);
-      vfxList.push({ mesh: ring, life: 0.24, maxLife: 0.24, vy: 0, expand: 2.2 });
+      vfxList.push({ mesh: ring, life: isFinisher ? 0.34 : 0.24, maxLife: isFinisher ? 0.34 : 0.24, vy: 0, expand: isFinisher ? 2.8 : 2.2 });
     };
     const spawnLightningVfx = (x, z) => {
       const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.65, 11, 10), new THREE.MeshBasicMaterial({ color: 0xffe478, transparent: true, opacity: 0.92 }));
@@ -770,7 +773,7 @@
       vfxList.push({ mesh: shock, life: 0.42, maxLife: 0.42, vy: 0, expand: 3.5 });
     };
 
-    const combatState = { cdStrike: 0, cdSpell: 0, cdShield: 0, shieldTime: 0, cdDash: 0 };
+    const combatState = { cdStrike: 0, cdSpell: 0, cdShield: 0, shieldTime: 0, cdDash: 0, comboStep: 0, comboTimer: 0, counterReady: false };
     let camShake = 0;
 
     // 实时敌怪锁定准星环（清晰标示 F/2 即将命中的目标！）
@@ -838,17 +841,28 @@
       const baseAtk = 20 + rIdx * 16 + ((hero && hero.bonusAtk) || 0);
       if (slot === 'strike') {
         if (combatState.cdStrike > 0) return;
-        combatState.cdStrike = 0.45;
-        const tg = findNearestHostile(4.2);
+        combatState.cdStrike = 0.42;
+        combatState.comboStep = (combatState.comboTimer > 0) ? ((combatState.comboStep % 3) + 1) : 1;
+        combatState.comboTimer = 1.6;
+        const isThird = combatState.comboStep === 3;
+        const isCounter = combatState.counterReady;
+        combatState.counterReady = false;
+        const isBig = isThird || isCounter;
+
+        const tg = findNearestHostile(isBig ? 4.8 : 4.2);
         const ang = tg ? Math.atan2(tg.z - heroPos.z, tg.x - heroPos.x) : (heroPos.facing > 0 ? 0 : Math.PI);
         if (tg) heroPos.facing = tg.x >= heroPos.x ? 1 : -1;
-        spawnSlashVfx(heroPos.x, heroPos.z, ang);
+        spawnSlashVfx(heroPos.x, heroPos.z, ang, isBig);
+        if (window.SFX && window.SFX.play) { try { window.SFX.play('click'); } catch {} }
         if (tg) {
-          const crit = Math.random() < 0.22;
-          const dmg = Math.round(baseAtk * (crit ? 1.55 : (0.9 + Math.random() * 0.25)));
+          const crit = isBig || Math.random() < 0.22;
+          const mult = isCounter ? 1.75 : (isThird ? 1.55 : (crit ? 1.45 : (0.92 + Math.random() * 0.22)));
+          const dmg = Math.round(baseAtk * mult);
           const d = Math.max(0.1, Math.hypot(tg.x - heroPos.x, tg.z - heroPos.z));
           damageEnemy(tg, dmg, crit, (tg.x - heroPos.x) / d, (tg.z - heroPos.z) / d);
-          if (hero) { hero.qi = Math.min(hero.maxQi || 80, (hero.qi || 0) + 10); if (opts.onHeroStatsChange) opts.onHeroStatsChange(); }
+          if (isCounter) spawnFloatText(heroPos.x, 2.7, heroPos.z, '破绽反击!', '#ffe066');
+          else if (isThird) spawnFloatText(heroPos.x, 2.6, heroPos.z, '三式·破空斩!', '#ffe066');
+          if (hero) { hero.qi = Math.min(hero.maxQi || 80, (hero.qi || 0) + (isThird ? 16 : 10)); if (opts.onHeroStatsChange) opts.onHeroStatsChange(); }
         }
         return;
       }
@@ -1044,6 +1058,7 @@
       if (combatState.cdSpell > 0) combatState.cdSpell = Math.max(0, combatState.cdSpell - dt);
       if (combatState.cdShield > 0) combatState.cdShield = Math.max(0, combatState.cdShield - dt);
       if (combatState.cdDash > 0) combatState.cdDash = Math.max(0, combatState.cdDash - dt);
+      if (combatState.comboTimer > 0) combatState.comboTimer = Math.max(0, combatState.comboTimer - dt);
       // 更新目标锁定金圈
       const lockTg = findNearestHostile(11.0);
       if (lockTg) {
@@ -1220,7 +1235,10 @@
                 if (opts.onHeroStatsChange) opts.onHeroStatsChange();
               }
             } else {
-              spawnFloatText(heroPos.x, 2.4, heroPos.z, 'MISS 闪避', '#9ff2cf');
+              // 饥荒式极限闪避奖励：躲开红圈扑击，立刻回灵气 +15 并赋予下一次剑诀必暴反击！
+              combatState.counterReady = true;
+              if (hero) { hero.qi = Math.min(hero.maxQi || 80, (hero.qi || 0) + 15); if (opts.onHeroStatsChange) opts.onHeroStatsChange(); }
+              spawnFloatText(heroPos.x, 2.5, heroPos.z, '极限闪避! 气+15·破绽!', '#ffe066');
             }
             en.aiState = 'recover'; en.aiTimer = 0.95;
           }
@@ -1313,6 +1331,26 @@
       buildingsForMini, npcActors, hostileActors, clickMeshes, applyTimeOfDay, castSkill, combatState,
       getTimeMode: () => timeMode,
       getNearby: () => nearbyTarget,
+      playBreakthroughVfx: (success, realmName) => {
+        // 九霄天劫雷柱 + 金色飞升光环特效！
+        camShake = 0.55;
+        spawnLightningVfx(heroPos.x, heroPos.z);
+        setTimeout(() => { if (state) { camShake = 0.45; spawnLightningVfx(heroPos.x + 0.6, heroPos.z - 0.4); } }, 180);
+        const halo = new THREE.Mesh(
+          new THREE.RingGeometry(0.5, 4.2, 32),
+          new THREE.MeshBasicMaterial({ color: success ? 0xffe066 : 0xe05248, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+        );
+        halo.rotateX(-Math.PI / 2); halo.position.set(heroPos.x, 0.16, heroPos.z);
+        scene.add(halo);
+        vfxList.push({ mesh: halo, life: 1.1, maxLife: 1.1, vy: 0.8, expand: 3.2 });
+        spawnFloatText(heroPos.x, 3.1, heroPos.z, success ? `破境成功 · ${realmName}!` : '渡劫受挫 · 心魔反噬!', success ? '#ffe066' : '#ff6b63');
+        // 破境气浪震退周遭敌怪
+        hostileActors.forEach(en => {
+          if (!en.alive) return;
+          const d = Math.hypot(en.x - heroPos.x, en.z - heroPos.z);
+          if (d < 8.0) { en.x += ((en.x - heroPos.x) / Math.max(0.1, d)) * 3.5; en.z += ((en.z - heroPos.z) / Math.max(0.1, d)) * 3.5; }
+        });
+      },
       spawnDuelNpc: (npc, isLethal) => {
         const rIdx = npc.realmIdx || 1;
         const hp = Math.round(120 + rIdx * 95);
@@ -1390,8 +1428,9 @@
   }
 
   function spawnDuelNpc(npc, isLethal) { if (state && state.spawnDuelNpc) state.spawnDuelNpc(npc, isLethal); }
+  function playBreakthroughVfx(success, realmName) { if (state && state.playBreakthroughVfx) state.playBreakthroughVfx(success, realmName); }
 
-  const LocalMap3D = { mount, dispose, toggleFly, setJoystick, triggerInteract, walkTo, castSkill, getCombatHudState, cycleTimeOfDay, getMinimapData, spawnDuelNpc };
+  const LocalMap3D = { mount, dispose, toggleFly, setJoystick, triggerInteract, walkTo, castSkill, getCombatHudState, cycleTimeOfDay, getMinimapData, spawnDuelNpc, playBreakthroughVfx };
   if (typeof module !== 'undefined' && module.exports) module.exports = LocalMap3D;
   root.LocalMap3D = LocalMap3D;
 })(typeof window !== 'undefined' ? window : globalThis);

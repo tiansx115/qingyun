@@ -504,6 +504,21 @@
         </div>
       `;
     }
+    if (activeScene.type === 'mortality') {
+      const lin = window.Lineage ? window.Lineage.ensureLineage(HERO) : { heirs: [] };
+      return `
+        <div class="ls-scene-banner" style="border-color:#e06258;">
+          <div style="color:#ffaaa3;font-size:14px;font-weight:700;margin-bottom:4px;">⏳ 寿元大限将至 · 【${HERO.name}】已至 ${Math.round(HERO.age)}/${HERO.lifespan} 岁</div>
+          <div style="font-size:11.5px;margin-bottom:8px;">长生路漫，气血渐衰。你可以消耗奇珍续命，或立下碑文将洞府、宗门与遗物传给下一代传人！</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${HERO.stones >= 200 ? `<button class="ls-btn jade" data-sc="extend_life">💊 耗 200 灵石服延寿玄丹（寿元 +25 岁）</button>` : ''}
+            ${lin.heirs.length
+              ? lin.heirs.map(h => `<button class="ls-btn blue" data-inherit="${h.id}">🔥 坐化传功给【${h.name}】(${h.kind})</button>`).join('')
+              : `<button class="ls-btn blue" data-sc="auto_inherit">🔥 临终收一名有缘散修继承衣钵（开启第 ${(lin.generation||1)+1} 代）</button>`}
+          </div>
+        </div>
+      `;
+    }
     if (activeScene.type === 'beast_hunt') {
       const b = d.beast || { name: '幽林妖狼', plate: { name: '野外' } };
       return `
@@ -567,6 +582,21 @@
           activeScene = null; saveState(); renderModal(); return;
         }
 
+        if (activeScene.type === 'mortality') {
+          if (sc === 'extend_life' && HERO.stones >= 200) {
+            HERO.stones -= 200;
+            HERO.lifespan = (HERO.lifespan || 110) + 25;
+            pushLog(`你以 200 灵石求得延寿玄丹服下，寿元上限增至 ${HERO.lifespan} 岁！`);
+            activeScene = null; saveState(); syncTopHud(); renderModal(); return;
+          }
+          if (sc === 'auto_inherit' && window.Lineage) {
+            window.Lineage.adoptOrBirthHeir(HERO, WORLD, 'disciple');
+            const hId = HERO.lineage.heirs[0].id;
+            const res = window.Lineage.passTorchToHeir(HERO, WORLD, hId);
+            pushLog(res.msg); showOwToast(res.msg);
+            activeScene = null; saveState(); syncTopHud(); renderModal(); return;
+          }
+        }
         if (activeScene.type === 'beast_hunt') {
           const b = d.beast || { name: '幽林妖狼' };
           if (sc === 'beast_combat' && window.RealtimeCombat) {
@@ -752,7 +782,7 @@
     const body = document.getElementById('ls-body');
     const title = document.getElementById('ls-title');
     const curPlate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-    title.textContent = `沧溟修仙模拟人生 v9.0 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
+    title.textContent = `沧溟修仙模拟人生 v10.3 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
 
     document.querySelectorAll('.ls-tab').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === activeTab);
@@ -1551,6 +1581,8 @@
     if (wrap) wrap.classList.remove('show');
     const swBtn = document.getElementById('ow-btn-layer');
     if (swBtn) swBtn.textContent = viewLayer === 'interior' ? '离开室内' : (viewLayer === 'local' ? '出城舆图' : '进城实景');
+    const skBar = document.getElementById('ow-skill-bar');
+    if (skBar) skBar.style.display = viewLayer === 'local' ? 'flex' : 'none';
 
     const commonOpts = {
       onRegionChange: pid => {
@@ -1770,21 +1802,35 @@
         eng.walkTo(wx, wz);
         showOwToast('🧭 已按小地图坐标自动寻路前往…');
       };
+      function checkMortality() {
+        ensureHeroStats();
+        if (HERO.age >= HERO.lifespan && (!activeScene || activeScene.type !== 'mortality')) {
+          activeTab = 'life';
+          activeScene = { type: 'mortality', data: {} };
+          document.getElementById('life-sim-modal').classList.add('open');
+          renderModal();
+        }
+      }
       document.getElementById('ow-btn-m1').onclick = () => {
-        const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
+        const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
         saveState(); syncTopHud();
-        showOwToast(logs[0] || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
+        const msg = (res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
+        showOwToast(msg);
+        checkMortality();
       };
       document.getElementById('ow-btn-y1').onclick = () => {
         ensureHeroStats();
         const nd = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-        const gain = Math.round(70 + (nd.leyline || 40) * 1.1);
+        const caveBonus = 1 + ((HERO.caveLv || 1) - 1) * 0.25;
+        const gain = Math.round((70 + (nd.leyline || 40) * 1.1) * caveBonus);
         HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
-        const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 12, 'seclusion');
+        const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 12, 'seclude');
         saveState(); syncTopHud();
-        showOwToast(HERO.exp >= HERO.maxExp
-          ? `⚡ 闭关一年修为圆满(${HERO.exp}/${HERO.maxExp})！可点击顶部【⚡破境渡劫】`
-          : (logs[0] || `闭关一年出关！修为 +${gain}，当前第 ${WORLD.year} 年`));
+        const msg = HERO.exp >= HERO.maxExp
+          ? `闭关一年修为圆满(${HERO.exp}/${HERO.maxExp})！可点击顶部【破境渡劫】`
+          : ((res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `闭关一年出关！修为 +${gain}，当前第 ${WORLD.year} 年`));
+        showOwToast(msg);
+        checkMortality();
       };
     }
 

@@ -752,11 +752,34 @@
     };
 
     const combatState = { cdStrike: 0, cdSpell: 0, cdShield: 0, shieldTime: 0 };
+    let camShake = 0;
+
+    // 实景掉落战利品光球池（击杀敌怪当场爆落地面，走近磁吸拾取！）
+    const lootOrbs = [];
+    const spawnLootOrb = (x, z, en) => {
+      const orb = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.32, 0),
+        new THREE.MeshBasicMaterial({ color: 0xf7d070 })
+      );
+      orb.position.set(x, 0.55, z);
+      scene.add(orb);
+      lootOrbs.push({ mesh: orb, x, z, en, phase: Math.random() * 6 });
+    };
+
+    // 伴生灵宠实体（若主角已驯服灵宠，实时跟在主角身边跑！）
+    let petActor = null;
+    if (hero && hero.pets && hero.pets.length > 0) {
+      const pSp = makeHumanSprite('assets/chars/wolf_boss.webp', hero.pets[0], '伴生灵宠', 0x6fd3a8, 1.05, 1.15, false);
+      pSp.group.position.set(heroPos.x - 1.6, 0, heroPos.z + 1.0);
+      scene.add(pSp.group);
+      petActor = { sp: pSp, x: heroPos.x - 1.6, z: heroPos.z + 1.0, phase: 0 };
+    }
 
     const damageEnemy = (en, dmg, isCrit, knockDirX, knockDirZ) => {
       if (!en.alive) return;
       en.hp = Math.max(0, en.hp - dmg);
       en.hitFlash = 0.18;
+      if (isCrit) camShake = Math.max(camShake, 0.22);
       en.x = Math.max(-23, Math.min(23, en.x + knockDirX * 0.65));
       en.z = Math.max(-20, Math.min(20, en.z + knockDirZ * 0.65));
       en.sp.hpSprite.material.map = makeHpBarTexture(en.hp, en.maxHp, en.name);
@@ -766,8 +789,9 @@
       if (en.hp <= 0) {
         en.alive = false; en.respawnTimer = 22.0; en.sp.group.visible = false; en.warnRing.material.opacity = 0;
         if (heroPos.attackTarget === en) heroPos.attackTarget = null;
-        spawnFloatText(en.x, 2.8, en.z, `+${en.rewardStones}石 +${en.rewardExp}修为`, '#6fd3a8');
-        if (opts.onEnemyKilled) opts.onEnemyKilled(en);
+        camShake = Math.max(camShake, 0.3);
+        spawnLootOrb(en.x, en.z, en);
+        spawnFloatText(en.x, 2.7, en.z, `击杀! 掉落【${en.drop}】`, '#f7d070');
       }
     };
 
@@ -1042,6 +1066,44 @@
       camState.cx += (heroPos.x - camState.cx) * Math.min(1, dt * 7.5);
       camState.cz += (heroPos.z - camState.cz) * Math.min(1, dt * 7.5);
       updateCam();
+      if (camShake > 0) {
+        camShake = Math.max(0, camShake - dt * 1.6);
+        camera.position.x += (Math.random() - 0.5) * camShake * 1.1;
+        camera.position.y += (Math.random() - 0.5) * camShake * 0.8;
+      }
+
+      // 伴生灵宠实时跟随主角
+      if (petActor) {
+        const pdx = (heroPos.x - 1.5 * heroPos.facing) - petActor.x;
+        const pdz = (heroPos.z + 0.9) - petActor.z;
+        const pd = Math.hypot(pdx, pdz);
+        if (pd > 0.6) {
+          petActor.x += (pdx / pd) * Math.min(pd, 6.0 * dt);
+          petActor.z += (pdz / pd) * Math.min(pd, 6.0 * dt);
+          petActor.phase += dt * 11;
+          petActor.sp.body.position.y = 0.62 + Math.abs(Math.sin(petActor.phase)) * 0.14;
+        }
+        petActor.sp.group.position.set(petActor.x, 0, petActor.z);
+      }
+
+      // 地面战利品光球旋转 & 走近自动磁吸拾取
+      for (let i = lootOrbs.length - 1; i >= 0; i--) {
+        const lo = lootOrbs[i];
+        lo.mesh.rotation.y = t * 3.0 + lo.phase;
+        lo.mesh.position.y = 0.55 + Math.sin(t * 4.0 + lo.phase) * 0.16;
+        const ld = Math.hypot(heroPos.x - lo.x, heroPos.z - lo.z);
+        if (ld < 3.4) {
+          lo.x += ((heroPos.x - lo.x) / Math.max(0.1, ld)) * 9.5 * dt;
+          lo.z += ((heroPos.z - lo.z) / Math.max(0.1, ld)) * 9.5 * dt;
+          lo.mesh.position.x = lo.x; lo.mesh.position.z = lo.z;
+          if (ld < 0.9) {
+            scene.remove(lo.mesh);
+            lootOrbs.splice(i, 1);
+            spawnFloatText(heroPos.x, 2.7, heroPos.z, `+${lo.en.rewardStones}石 +${lo.en.rewardExp}修`, '#6fd3a8');
+            if (opts.onEnemyKilled) opts.onEnemyKilled(lo.en);
+          }
+        }
+      }
 
       if (clickRingLife > 0) {
         clickRingLife -= dt * 1.5; clickRing.material.opacity = Math.max(0, clickRingLife * 0.9);
@@ -1088,6 +1150,7 @@
               const dmg = Math.max(2, Math.round(en.atk * (combatState.shieldTime > 0 ? 0.38 : 1.0)));
               if (hero) {
                 hero.hp = Math.max(0, (hero.hp || 120) - dmg);
+                camShake = Math.max(camShake, 0.28);
                 spawnFloatText(heroPos.x, 2.5, heroPos.z, combatState.shieldTime > 0 ? `格挡 -${dmg}` : `-${dmg}`, '#ff6b63');
                 if (hero.hp <= 0) {
                   hero.hp = Math.max(20, Math.round((hero.maxHp || 120) * 0.25));

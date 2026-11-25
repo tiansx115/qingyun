@@ -145,12 +145,24 @@
       sw.position.set(wx, 2.75, 0); scene.add(sw);
     });
 
-    // 朱红立柱 & 烛台
+    // 朱红立柱 & 暖光烛台 + 北墙书法挂轴屏风
     const pMat = new THREE.MeshStandardMaterial({ color: 0x7d231d, roughness: 0.6 });
+    const cMat = new THREE.MeshBasicMaterial({ color: 0xffb35c });
     [[-8, -7], [8, -7], [-8, 3], [8, 3]].forEach(([px, pz]) => {
       const col = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 5.5, 8), pMat);
       col.position.set(px, 2.75, pz); scene.add(col);
+      const flame = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 0), cMat);
+      flame.position.set(px + (px < 0 ? 0.65 : -0.65), 2.1, pz); scene.add(flame);
     });
+    // 北墙中堂宣纸水墨挂轴
+    const scrollCv = document.createElement('canvas'); scrollCv.width = 256; scrollCv.height = 128;
+    const sctx = scrollCv.getContext('2d');
+    sctx.fillStyle = '#d8ccb2'; sctx.fillRect(0, 0, 256, 128);
+    sctx.strokeStyle = '#6b4a2b'; sctx.lineWidth = 8; sctx.strokeRect(4, 4, 248, 120);
+    sctx.fillStyle = '#231f1b'; sctx.font = 'bold 42px "Songti SC","Kaiti SC",serif'; sctx.textAlign = 'center';
+    sctx.fillText(roomType === 'cave' ? '道 法 自 然' : (roomType === 'teahouse' ? '清 茶 论 道' : '仙 门 正 统'), 128, 78);
+    const scrollMesh = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(scrollCv) }));
+    scrollMesh.position.set(0, 3.2, -RH / 2 + 0.32); scene.add(scrollMesh);
 
     const interactables = [];
     const clickMeshes = [];

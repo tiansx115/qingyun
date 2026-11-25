@@ -110,6 +110,19 @@
         position:absolute; bottom:84px; left:50%; transform:translateX(-50%); pointer-events:auto;
         display:none;
       }
+      .ow-skill-bar {
+        position:absolute; bottom:18px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:flex; gap:6px; padding:5px 8px; background:rgba(8,13,20,0.86);
+        border:1px solid rgba(212,184,122,0.45); border-radius:10px;
+        box-shadow:0 6px 20px rgba(0,0,0,0.65); backdrop-filter:blur(5px);
+      }
+      .ow-sk-btn {
+        background:rgba(212,184,122,0.12); border:1px solid rgba(212,184,122,0.42); color:#f6e7c1;
+        padding:6px 10px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer;
+        font-family:inherit; white-space:nowrap;
+      }
+      .ow-sk-btn:hover { background:rgba(111,211,168,0.28); border-color:#6fd3a8; color:#fff; }
+      .ow-sk-btn.fire:hover { background:rgba(224,98,88,0.32); border-color:#ff9d95; }
       .ow-nearby-wrap.show { display:block; }
       #ow-nearby-btn {
         background:linear-gradient(180deg, rgba(28,74,58,0.96), rgba(14,42,33,0.98));
@@ -1409,6 +1422,41 @@
         if (fb) fb.textContent = flying ? '🗡️' : '🚶';
         showOwToast(flying ? '🗡️ 已祭出飞剑！进入【御剑飞行】状态' : '🚶 已收剑落地，恢复【徒步漫游】');
       },
+      onHeroStatsChange: () => syncTopHud(),
+      onEnemyKilled: en => {
+        ensureHeroStats();
+        HERO.stones += en.rewardStones;
+        HERO.exp = Math.min(HERO.maxExp, HERO.exp + en.rewardExp);
+        if (en.drop) {
+          const ex = HERO.bag.find(i => i.name === en.drop);
+          if (ex) ex.qty += 1;
+          else HERO.bag.push({ id: 'it_' + Date.now(), name: en.drop, kind: '妖材', qty: 1, desc: `即时斩杀【${en.name}】掉落` });
+        }
+        pushLog(`⚔️ 你在实景激战中斩杀【${en.name}】，收获灵石 +${en.rewardStones}、修为 +${en.rewardExp}、${en.drop}×1！`);
+        saveState(); syncTopHud();
+        showOwToast(`🏆 斩杀【${en.name}】！灵石 +${en.rewardStones} · 修为 +${en.rewardExp} · 掉【${en.drop}】`);
+      },
+      onHeroDefeated: en => {
+        HERO.life.injuries.push({ name: `${en.name}重创暗伤`, penalty: '破境成功率-8%' });
+        HERO.stones = Math.max(0, HERO.stones - 15);
+        pushLog(`🩸 你在城外被【${en.name}】击溃，保命遁符自动闪回中央广场（失 15 灵石，留暗伤）！`);
+        saveState(); syncTopHud();
+        showOwToast(`🩸 不敌【${en.name}】！保命遁符已将你闪回中央广场，快打坐疗伤！`);
+      },
+      onUseQuickPill: () => {
+        ensureHeroStats();
+        const idx = (HERO.bag || []).findIndex(i => i.kind === '丹药' && i.qty > 0);
+        if (idx < 0) { showOwToast('⚠️ 储物袋暂无丹药（可在行囊-洞府炼丹炉用灵草炼制）'); return false; }
+        const it = HERO.bag[idx];
+        it.qty--;
+        if (it.qty <= 0) HERO.bag.splice(idx, 1);
+        HERO.hp = Math.min(HERO.maxHp, HERO.hp + Math.round(HERO.maxHp * 0.45));
+        HERO.qi = Math.min(HERO.maxQi, HERO.qi + 35);
+        HERO.life.pillToxin = Math.min(100, HERO.life.pillToxin + 8);
+        saveState(); syncTopHud();
+        showOwToast(`💊 即时吞服【${it.name}】：气血与灵力大幅回复（丹毒+8）`);
+        return true;
+      },
       onToast: msg => showOwToast(msg)
     };
 
@@ -1467,6 +1515,12 @@
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
           <button id="ow-nearby-btn">[E] 交互</button>
         </div>
+        <div class="ow-skill-bar" id="ow-skill-bar">
+          <button class="ow-sk-btn" data-sk="strike">[F/1] ⚔️ 剑诀</button>
+          <button class="ow-sk-btn fire" data-sk="spell">[2] 🔥 天雷</button>
+          <button class="ow-sk-btn" data-sk="shield">[3] 🛡️ 灵盾</button>
+          <button class="ow-sk-btn" data-sk="pill">[4] 💊 丹药</button>
+        </div>
         <div class="ow-ctrl-bl">
           <div class="ow-dpad">
             <span></span><button data-dir="0,-1">▲</button><span></span>
@@ -1474,8 +1528,8 @@
             <span></span><button data-dir="0,1">▼</button><span></span>
           </div>
           <div class="ow-hint-box">
-            <div><b style="color:#6fd3a8;">WASD / 方向键 / 点击地面</b> 控制主角行走</div>
-            <div><b style="color:#f2daa0;">Space</b> 御剑 · <b style="color:#f2daa0;">E</b> 进建筑/对话/出城 · <b>右键</b>转视角 · <b>滚轮</b>缩放</div>
+            <div><b style="color:#6fd3a8;">WASD / 点地</b> 行走 · <b style="color:#ff9d95;">点怪 / F / 1-4</b> 即时斗法</div>
+            <div><b style="color:#f2daa0;">Space</b> 御剑 · <b style="color:#f2daa0;">E</b> 进建筑/对话 · <b>右键</b>转视角</div>
           </div>
         </div>
         <div class="ow-menu-br">
@@ -1491,6 +1545,12 @@
 
       hud.querySelectorAll('[data-ow-tab]').forEach(b => {
         b.onclick = () => openModalTab(b.dataset.owTab);
+      });
+      hud.querySelectorAll('[data-sk]').forEach(b => {
+        b.onclick = () => {
+          if (viewLayer === 'local' && window.LocalMap3D) window.LocalMap3D.castSkill(b.dataset.sk);
+          else showOwToast('请进入城镇/野外实景地图进行即时战斗');
+        };
       });
       hud.querySelectorAll('[data-dir]').forEach(b => {
         const [vx, vz] = b.dataset.dir.split(',').map(Number);

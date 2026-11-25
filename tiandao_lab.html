@@ -140,8 +140,9 @@
     <button id="btn-ds-step" class="ai-btn">🤖 DeepSeek 推演 +100年</button>
     <button id="btn-ds-auto" class="jade">▶ 连续调用 DeepSeek 至目标年</button>
     <button id="btn-ds-stop" class="primary" style="display:none;">⏹ 停止连续推演</button>
-    <button id="btn-export">💾 导出世界JSON</button>
-    <button id="btn-copy">📋 复制快照</button>
+    <button id="btn-export-md" class="jade">📥 下载完整报告(.md)</button>
+    <button id="btn-copy">📋 一键复制全部</button>
+    <button id="btn-export">💾 导出JSON</button>
   </div>
 </header>
 
@@ -1022,7 +1023,45 @@ function renderRightTab() {
 
 function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
-  return `# 《沧溟天道因果推演 v7.0》第 ${SIM.year} 年报告\n- 时代：${SIM.eraName} | 大航海：${SIM.seaTechUnlocked}\n- 能量守恒：总${m.en.total} = 核${m.en.core} + 表${m.en.surf} + 锁${m.en.locked} + 煞${m.en.shaE}\n- 人口/承载：${m.pop.toLocaleString()}/${m.cap.toLocaleString()} (${m.popLoadPct}%) | 在世势力：${m.aliveFac} (灭${m.deadFac}) | 均脉${m.avgLey}/矿${m.avgMin}/药${m.avgHerb}/煞${m.avgSha}\n- 物理裁判所：${SIM.redCards} 红牌 / ${SIM.yellowCards} 黄牌\n\n## 近期编年史\n` + SIM.chronicles.slice(0, 30).map(c=>`- [第${c.year}年·${c.tag}] ${c.text}`).join('\n');
+  const p = getParams();
+  const lines = [
+    `# 《沧溟天道因果推演 v7.0》全量世界报告（第 1 → ${SIM.year} 年）`,
+    ``,
+    `## 一、核心指标与创世参数`,
+    `- 时代：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海：${SIM.seaTechUnlocked ? '已连通' : '物理隔绝'}`,
+    `- 创世参数：破封第${p.awakeYear}年 / 首波喷涌${p.surgePct}% / 入道漏斗${p.entryBp}‱ / 采矿消耗${p.consumeLv}/10 / 净煞还灵${p.healLv}/10 / 妖海先发${p.yaoLv}/10 / 杀劫${p.chaosLv}/10${p.customLaw ? ` / 附加倾向：${p.customLaw}` : ''}`,
+    `- 能量守恒：总 ${m.en.total} = 地核 ${m.en.core} + 地表配额 ${m.en.surf} + 生物锁存 ${m.en.locked} + 怨煞 ${m.en.shaE}`,
+    `- 凡人人口：${m.pop.toLocaleString()} / 承载 ${m.cap.toLocaleString()} (${m.popLoadPct}%) | 在世关键人物：${m.cultCount} | 在世势力：${m.aliveFac} (已灭 ${m.deadFac})`,
+    `- 全界均值：灵脉 ${m.avgLey} / 灵矿 ${m.avgMin} / 灵药 ${m.avgHerb} / 怨煞 ${m.avgSha}`,
+    `- 物理裁判所统计：红牌 ${SIM.redCards} 次 / 黄牌 ${SIM.yellowCards} 次`,
+    ``,
+    `## 二、历轮演化趋势数据`,
+    `| 年份 | 凡人人口(负载%) | 在世势力(灭) | 关键人物 | 均脉 | 均矿 | 均药 | 均煞 | 地核/地表/锁存/煞能 |`,
+    `|---:|---:|---:|---:|---:|---:|---:|---:|---:|`,
+    ...SIM.historyMetrics.map(h => `| 第${h.year}年 | ${h.pop.toLocaleString()}(${h.popLoadPct}%) | ${h.aliveFac}(${h.deadFac}) | ${h.cultCount} | ${h.avgLey} | ${h.avgMin} | ${h.avgHerb} | ${h.avgSha} | ${h.en.core}/${h.en.surf}/${h.en.locked}/${h.en.shaE} |`),
+    ``,
+    `## 三、全量 24 处地理板块现状`,
+    ...SIM.nodes.map(n => `- **${n.id} ${n.name}**（原:${n.rawName} · ${n.climate}/${n.elem} · ${STAGE_CN[n.stage]||n.stage} · 归属:${n.owner||'无主'} · 邻接:[${n.neighbors.join(',')}]）｜ 凡人 ${n.pop.toLocaleString()}/${getNodeCap(n).toLocaleString()} · 脉${n.leyline} 矿${n.mineral} 药${n.herb} 煞${n.sha} · 生态:${n.flora}/${n.fauna}\n  - 碑文：${n.history.join('；')}`),
+    ``,
+    `## 四、全部势力列表（含存续与已灭）`,
+    ...(SIM.factions.length ? SIM.factions.map(f => {
+      const owned = SIM.nodes.filter(n => n.owner === f.name).map(n => `${n.id}:${n.name}`).join(', ') || '无';
+      return `- **${f.name}** [${f.kind}] ${f.alive ? '存续' : `已灭(第${f.fallen}年)`} · 建于第${f.born}年 · 掌舵:${f.leader} · 国策:${f.policy} · 控地:[${owned}] · 缘由:${f.reason||'-'}`;
+    }) : ['- （尚无势力）']),
+    ``,
+    `## 五、全部关键人物（含在世与已故）`,
+    ...(SIM.people.length ? SIM.people.map(c => `- **${c.name}** [${c.species}·${c.realm}] ${c.alive ? '在世' : '已故'} · 寿${c.age}/${c.maxAge} · 居:${c.plateId} · 属:${c.faction} · IQ:${c.iq}/EQ:${c.eq}/悟:${c.daoWit} · 性格:${c.persLabel} · 记忆:${(c.memories||[]).join('；')}`) : ['- （尚无入册人物）']),
+    ``,
+    `## 六、自创功法与传承`,
+    ...(SIM.createdArts.length ? SIM.createdArts.map(a => `- [第${a.year}年] ${a.name}（${a.creator}）：${a.origin}`) : ['- （尚无自创功法）']),
+    ``,
+    `## 七、物理裁判所完整纠偏日志`,
+    ...(SIM.refereeLogs.length ? SIM.refereeLogs.slice().reverse().map(r => `- [第${r.year}年·${r.level}] ${r.text}`) : ['- （无纠偏记录）']),
+    ``,
+    `## 八、完整编年史（按时间顺序）`,
+    ...SIM.chronicles.slice().reverse().map(c => `- [第${c.year}年·${c.tag}] ${c.text}`)
+  ];
+  return lines.join('\n');
 }
 
 // Slider bindings
@@ -1041,6 +1080,15 @@ document.getElementById('btn-ds-step').onclick = runOneDeepSeekEpoch;
 document.getElementById('btn-ds-auto').onclick = runAutoLoop;
 document.getElementById('btn-ds-stop').onclick = () => { autoRunning = false; updateAutoBtns(); toast('本轮返回后将停止连续推演'); };
 
+document.getElementById('btn-export-md').onclick = () => {
+  const md = buildSnapshot();
+  const blob = new Blob([md], { type:'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `沧溟天道推演完整报告_第${SIM.year}年.md`;
+  a.click();
+  toast('✔ 已下载完整 Markdown 报告 (.md)！');
+};
 document.getElementById('btn-export').onclick = () => {
   const blob = new Blob([JSON.stringify(SIM, null, 2)], { type:'application/json' });
   const a = document.createElement('a');
@@ -1049,7 +1097,20 @@ document.getElementById('btn-export').onclick = () => {
   a.click();
   toast('✔ 已导出完整世界账本 JSON！');
 };
-document.getElementById('btn-copy').onclick = async () => { try { await navigator.clipboard.writeText(buildSnapshot()); toast('✔ 已复制 v7.0 世界快照！'); } catch {} };
+document.getElementById('btn-copy').onclick = async () => {
+  const txt = buildSnapshot();
+  try {
+    await navigator.clipboard.writeText(txt);
+    toast(`✔ 已一键复制全部报告（${txt.length.toLocaleString()} 字），直接粘贴即可！`);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast(`✔ 已一键复制全部报告（${txt.length.toLocaleString()} 字）！`); }
+    catch { toast('浏览器拦截了剪贴板，请直接点击左侧「📥 下载完整报告(.md)」！'); }
+    document.body.removeChild(ta);
+  }
+};
 document.querySelectorAll('#right-tabs .tab').forEach(t => {
   t.onclick = () => {
     document.querySelectorAll('#right-tabs .tab').forEach(x=>x.classList.remove('active'));

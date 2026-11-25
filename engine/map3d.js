@@ -908,6 +908,12 @@
     if (tg && state.opts && state.opts.onInteract) state.opts.onInteract(tg);
   }
 
+  function walkTo(x, z) {
+    if (!state) return;
+    state.heroPos.tx = Math.max(-28, Math.min(32, x));
+    state.heroPos.tz = Math.max(-16, Math.min(16, z));
+  }
+
   function getMinimapData() {
     if (!state) return null;
     return {
@@ -925,7 +931,7 @@
     };
   }
 
-  const Map3D = { mount, dispose, moveToPlate, teleportToPlate, toggleFly, setZoomPreset, setJoystick, triggerInteract, getMinimapData, COORDS_3D };
+  const Map3D = { mount, dispose, moveToPlate, teleportToPlate, walkTo, toggleFly, setZoomPreset, setJoystick, triggerInteract, getMinimapData, COORDS_3D };
   if (typeof module !== 'undefined' && module.exports) module.exports = Map3D;
   root.Map3D = Map3D;
 })(typeof window !== 'undefined' ? window : globalThis);

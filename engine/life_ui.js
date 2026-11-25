@@ -921,19 +921,83 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
   }
 
+  const REALM_LADDER = [
+    { name: '炼气一层', maxExp: 100, hp: 120, qi: 80, lifespan: 110 },
+    { name: '炼气三层', maxExp: 180, hp: 180, qi: 130, lifespan: 120 },
+    { name: '炼气圆满', maxExp: 280, hp: 260, qi: 200, lifespan: 130 },
+    { name: '筑基初期', maxExp: 450, hp: 480, qi: 400, lifespan: 220 },
+    { name: '筑基圆满', maxExp: 700, hp: 720, qi: 620, lifespan: 250 },
+    { name: '金丹初期', maxExp: 1200, hp: 1400, qi: 1200, lifespan: 500 },
+    { name: '元婴初期', maxExp: 2200, hp: 3200, qi: 2800, lifespan: 1000 },
+    { name: '化神尊者', maxExp: 4000, hp: 7500, qi: 6800, lifespan: 2200 }
+  ];
+
+  function ensureHeroStats() {
+    if (!HERO) return;
+    if (typeof HERO.realmIdx !== 'number') HERO.realmIdx = 0;
+    const rl = REALM_LADDER[Math.min(HERO.realmIdx, REALM_LADDER.length - 1)];
+    if (typeof HERO.exp !== 'number') HERO.exp = 20;
+    HERO.maxExp = rl.maxExp;
+    HERO.maxHp = rl.hp;
+    HERO.maxQi = rl.qi;
+    if (typeof HERO.hp !== 'number') HERO.hp = rl.hp;
+    if (typeof HERO.qi !== 'number') HERO.qi = rl.qi;
+    HERO.lifespan = rl.lifespan;
+    HERO.realm = rl.name;
+  }
+
+  function attemptBreakthrough() {
+    ensureHeroStats();
+    if (HERO.realmIdx >= REALM_LADDER.length - 1) { showOwToast('✨ 你已臻化神之境，俯瞰沧溟！'); return; }
+    if (HERO.exp < HERO.maxExp) { showOwToast(`修为尚浅（${HERO.exp}/${HERO.maxExp}），请前往【聚灵蒲团】打坐吐纳！`); return; }
+    const nd = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+    const toxinPen = Math.floor((HERO.life.pillToxin || 0) * 0.35);
+    const demonPen = Math.floor((HERO.life.heartDemon || 0) * 0.4);
+    const injPen = (HERO.life.injuries || []).length * 8;
+    const leyBonus = Math.floor((nd.leyline || 40) * 0.25);
+    const rate = Math.max(15, Math.min(95, 72 + leyBonus - toxinPen - demonPen - injPen));
+    if (Math.random() * 100 < rate) {
+      HERO.realmIdx++;
+      HERO.exp = 0;
+      ensureHeroStats();
+      HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
+      HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 15);
+      pushLog(`⚡ 破境成功（成功率 ${rate}%）！你于【${nd.name}】引动天地灵潮，正式踏入【${HERO.realm}】，寿元增至 ${HERO.lifespan} 岁！`);
+      showOwToast(`⚡ 破境成功！恭喜踏入【${HERO.realm}】！（成功率 ${rate}%）`);
+    } else {
+      HERO.exp = Math.floor(HERO.maxExp * 0.65);
+      HERO.life.heartDemon = Math.min(100, HERO.life.heartDemon + 12);
+      pushLog(`💔 破境受挫（成功率 ${rate}%，受丹毒/心魔所累），修为跌回 ${HERO.exp}/${HERO.maxExp}，心魔+12！`);
+      showOwToast(`💔 破境失败（成功率 ${rate}%），丹毒或心魔过重！`);
+    }
+    saveState(); syncTopHud();
+  }
+
   function syncTopHud() {
     if (!WORLD || !HERO) return;
+    ensureHeroStats();
     const nd = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
     const rEl = document.getElementById('hud-realm-txt');
     const dEl = document.getElementById('hud-date');
     const sEl = document.getElementById('hud-stone');
     const aEl = document.getElementById('hud-age');
     const tEl = document.getElementById('hud-timeline');
+    const hpBar = document.getElementById('bar-hp');
+    const qiBar = document.getElementById('bar-qi');
+    const hpTxt = document.getElementById('bar-hp-txt');
+    const qiTxt = document.getElementById('bar-qi-txt');
     if (rEl) rEl.textContent = HERO.realm;
     if (dEl) dEl.textContent = `第${WORLD.year}年·${WORLD.month}月`;
     if (sEl) sEl.textContent = HERO.stones;
-    if (aEl) aEl.textContent = `${HERO.age}/120岁`;
+    if (aEl) aEl.textContent = `${HERO.age}/${HERO.lifespan}岁`;
+    if (hpBar) hpBar.style.width = Math.min(100, Math.round(HERO.hp / HERO.maxHp * 100)) + '%';
+    if (qiBar) qiBar.style.width = Math.min(100, Math.round(HERO.exp / HERO.maxExp * 100)) + '%';
+    if (hpTxt) hpTxt.textContent = `血${HERO.hp}/${HERO.maxHp}`;
+    if (qiTxt) qiTxt.textContent = `修为${HERO.exp}/${HERO.maxExp}`;
     if (tEl) tEl.textContent = `身在【${nd.name}】· 灵脉${nd.leyline} · 暗森${nd.darkForestIdx || 0}`;
+
+    const btBtn = document.getElementById('ow-btn-break');
+    if (btBtn) btBtn.style.display = HERO.exp >= HERO.maxExp ? 'inline-block' : 'none';
 
     const regEl = document.getElementById('ow-region-info');
     if (regEl) {
@@ -1011,6 +1075,21 @@
 
   function handleWorldInteract(target) {
     if (!target) return;
+    if (target.type === 'meditate') {
+      ensureHeroStats();
+      const nd = target.data || WORLD.nodeMap[HERO.locId];
+      const gain = Math.round(28 + (nd.leyline || 40) * 0.55 + (HERO.daoWit || 70) * 0.2);
+      HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
+      HERO.hp = HERO.maxHp;
+      HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);
+      window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclusion');
+      pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，引动地脉灵气，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
+      saveState(); syncTopHud();
+      showOwToast(HERO.exp >= HERO.maxExp
+        ? `✨ 吐纳圆满！修为已满（${HERO.exp}/${HERO.maxExp}），可点击顶部【⚡破境渡劫】！`
+        : `🧘 盘膝打坐一月：修为 +${gain}（${HERO.exp}/${HERO.maxExp}），气血回满`);
+      return;
+    }
     if (target.type === 'exit_world') {
       switchViewLayer('world');
       showOwToast('🌍 已走出城门！现处于【五洲七海 2.5D 大洲地图】，可跨洲御剑远行');
@@ -1175,12 +1254,14 @@
         <div class="ow-top-bar">
           <span id="ow-region-info">📍 加载沧溟山河……</span>
           <button class="ls-btn jade" id="ow-btn-layer" style="padding:3px 8px;font-weight:700;">🌍 出城·大洲地图</button>
+          <button class="ls-btn" id="ow-btn-tod" style="padding:3px 7px;">☀️ 昼</button>
           <button class="ls-btn" id="ow-btn-m1" style="padding:3px 7px;">⏱ +1月</button>
           <button class="ls-btn blue" id="ow-btn-y1" style="padding:3px 7px;">🧘 闭关1年</button>
+          <button class="ls-btn red" id="ow-btn-break" style="padding:3px 9px;font-weight:700;display:none;">⚡ 破境渡劫</button>
         </div>
         <div id="ow-minimap-box">
-          <div id="ow-minimap-head"><span id="ow-minimap-title">📍 小地图</span><span style="color:#6fd3a8;">雷达</span></div>
-          <canvas id="ow-minimap-cv" width="140" height="128"></canvas>
+          <div id="ow-minimap-head"><span id="ow-minimap-title">📍 小地图</span><span style="color:#6fd3a8;">点击寻路</span></div>
+          <canvas id="ow-minimap-cv" width="140" height="128" style="cursor:pointer;"></canvas>
           <div id="ow-minimap-legend"><span>🟢我</span><span>🟡建筑</span><span>🔵NPC</span><span>🔴妖</span></div>
         </div>
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
@@ -1228,15 +1309,41 @@
       document.getElementById('ow-btn-layer').onclick = () => {
         switchViewLayer(viewLayer === 'local' ? 'world' : 'local');
       };
+      document.getElementById('ow-btn-tod').onclick = () => {
+        if (viewLayer !== 'local' || !window.LocalMap3D) { showOwToast('昼夜灯火切换仅在局部城镇实景中生效'); return; }
+        const m = window.LocalMap3D.cycleTimeOfDay();
+        const lb = { day: '☀️ 昼', dusk: '🌇 暮', night: '🌙 夜' }[m];
+        document.getElementById('ow-btn-tod').textContent = lb;
+        showOwToast(m === 'night' ? '🌙 暮色四合，仙镇华灯初上，黑市暗巷鬼火幽幽…' : (m === 'dusk' ? '🌇 残阳如血，倦鸟归林…' : '☀️ 晨曦初照，灵气复苏'));
+      };
+      document.getElementById('ow-btn-break').onclick = () => attemptBreakthrough();
+      document.getElementById('ow-minimap-cv').onclick = e => {
+        const eng = activeMapEngine();
+        const d = eng && eng.getMinimapData ? eng.getMinimapData() : null;
+        if (!d || !eng.walkTo) return;
+        const rect = e.target.getBoundingClientRect();
+        const nx = (e.clientX - rect.left) / rect.width;
+        const ny = (e.clientY - rect.top) / rect.height;
+        const wx = (nx - 0.5) * d.w + (d.ox || 0);
+        const wz = (ny - 0.5) * d.h + (d.oz || 0);
+        eng.walkTo(wx, wz);
+        showOwToast('🧭 已按小地图坐标自动寻路前往…');
+      };
       document.getElementById('ow-btn-m1').onclick = () => {
         const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
         saveState(); syncTopHud();
         showOwToast(logs[0] || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
       };
       document.getElementById('ow-btn-y1').onclick = () => {
+        ensureHeroStats();
+        const nd = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+        const gain = Math.round(70 + (nd.leyline || 40) * 1.1);
+        HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
         const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 12, 'seclusion');
         saveState(); syncTopHud();
-        showOwToast(logs[0] || `闭关一年出关！当前第 ${WORLD.year} 年，寿 ${HERO.age} 岁`);
+        showOwToast(HERO.exp >= HERO.maxExp
+          ? `⚡ 闭关一年修为圆满(${HERO.exp}/${HERO.maxExp})！可点击顶部【⚡破境渡劫】`
+          : (logs[0] || `闭关一年出关！修为 +${gain}，当前第 ${WORLD.year} 年`));
       };
     }
 

@@ -106,9 +106,9 @@
 
   .log-item { background: var(--card); border: 1px solid rgba(212,184,122,0.14); padding: 5px 8px; border-radius: 3px; font-size: 10.5px; line-height: 1.48; display: flex; gap: 6px; align-items: flex-start; }
   .tag { font-size: 8.5px; padding: 1px 4px; border-radius: 2px; background: rgba(212,184,122,0.16); color: var(--gold-hi); flex-shrink: 0; margin-top: 2px; }
-  .tag.t-灭门, .tag.t-大劫, .tag.t-血祭, .tag.t-弑师 { background: rgba(224,98,88,0.26); color: #ffaaa3; }
-  .tag.t-秘宝, .tag.t-轮回盘, .tag.t-创法, .tag.t-考古, .tag.t-混血 { background: rgba(194,142,242,0.24); color: #e2c2ff; }
-  .tag.t-崛起, .tag.t-兴盛, .tag.t-化形, .tag.t-飞升, .tag.t-道侣 { background: rgba(111,211,168,0.24); color: #9ff2cf; }
+  .tag.t-灭门, .tag.t-大劫, .tag.t-血祭, .tag.t-弑师, .tag.t-受骗 { background: rgba(224,98,88,0.26); color: #ffaaa3; }
+  .tag.t-秘宝, .tag.t-轮回盘, .tag.t-创法, .tag.t-考古, .tag.t-混血, .tag.t-凡人奇才 { background: rgba(194,142,242,0.24); color: #e2c2ff; }
+  .tag.t-崛起, .tag.t-兴盛, .tag.t-化形, .tag.t-飞升, .tag.t-道侣, .tag.t-变故众生 { background: rgba(111,211,168,0.24); color: #9ff2cf; }
 
   .fac-card { background: var(--card); border: 1px solid rgba(212,184,122,0.2); padding: 6px 8px; border-radius: 3px; font-size: 10px; }
   .fac-card.dead { opacity: 0.48; border-style: dashed; }
@@ -124,8 +124,8 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道演化实验室 v3.5</h1>
-    <span>万物同心八维人格+事件记忆流 · 72%海权与万族起源 · 开放纪元自定义预设（规则恒定，极境皆可玩！）</span>
+    <h1>沧溟天道演化实验室 v4.0</h1>
+    <span>天赋三叉戟(IQ/EQ/道悟) · 合理化八维人格+出身记忆漂移 · 受骗/凡人奇才/同变故千人千面反应</span>
   </div>
   <div class="top-controls">
     <button id="btn-reset">重置第1年</button>
@@ -417,17 +417,27 @@ function genSectName(rng, arch, used) {
   return rng.pick(preL) + '新宗';
 }
 
-// 万物同心：八维连续人格光谱 (-100 ~ +100)，人族/陆妖/海族/鬼魔/混血 100% 共用！
-function genPersonality(rng) {
+// 万物同心：合理化八维连续人格光谱 (-100 ~ +100) + 出身烙印 + 天赋三叉戟 (IQ智商 / EQ情商 / 道悟)！
+const ORIGINS = [
+  { name:'寒门孤儿', mod:{ yi:10, ren:-10, ao:-25, cheng:-20 }, iqB:8,  eqB:4,  daoB:0 },
+  { name:'凡俗商贾', mod:{ yi:-30, kuang:-20, cheng:-25 },      iqB:14, eqB:18, daoB:-8 },
+  { name:'世家嫡子', mod:{ ao:30, dao:-15, pan:-15 },           iqB:6,  eqB:10, daoB:6 },
+  { name:'山林野修', mod:{ kuang:15, cheng:25, pan:20 },        iqB:-6, eqB:-18,daoB:14 },
+  { name:'宗门弃徒', mod:{ yi:-20, ren:-25, cheng:-35, pan:30 },iqB:8,  eqB:4,  daoB:6 },
+  { name:'书香寒士', mod:{ yi:25, ren:20, cheng:20, dao:15 },   iqB:16, eqB:6,  daoB:10 }
+];
+
+function genPersonality(rng, originMod = {}) {
+  const clamp = v => Math.max(-100, Math.min(100, v));
   return {
-    yi:    rng.int(-90, 90), // 义理(+) ↔ 功利(-)
-    kuang: rng.int(-90, 90), // 狂热(+) ↔ 苟道(-)
-    ren:   rng.int(-90, 90), // 仁慈(+) ↔ 狠辣(-)
-    chi:   rng.int(-90, 90), // 痴情(+) ↔ 凉薄(-)
-    ao:    rng.int(-90, 90), // 骄傲(+) ↔ 隐忍(-)
-    dao:   rng.int(-90, 90), // 求道(+) ↔ 权欲(-)
-    pan:   rng.int(-90, 90), // 叛逆(+) ↔ 守旧(-)
-    cheng: rng.int(-90, 90)  // 城府(+) ↔ 坦荡(-)
+    yi:    clamp(rng.int(-80, 80) + (originMod.yi || 0)),    // 义理(+) ↔ 功利(-)
+    kuang: clamp(rng.int(-80, 80) + (originMod.kuang || 0)), // 狂热(+) ↔ 苟道(-)
+    ren:   clamp(rng.int(-80, 80) + (originMod.ren || 0)),   // 仁慈(+) ↔ 狠辣(-)
+    chi:   clamp(rng.int(-80, 80) + (originMod.chi || 0)),   // 痴情(+) ↔ 凉薄(-)
+    ao:    clamp(rng.int(-80, 80) + (originMod.ao || 0)),    // 刚烈骄傲(+) ↔ 隐忍城府(-)
+    dao:   clamp(rng.int(-80, 80) + (originMod.dao || 0)),   // 求道超脱(+) ↔ 权欲贪嗔(-)
+    cheng: clamp(rng.int(-80, 80) + (originMod.cheng || 0)), // 赤诚轻信(+) ↔ 多疑偏执(-)
+    pan:   clamp(rng.int(-80, 80) + (originMod.pan || 0))    // 叛逆破局(+) ↔ 守礼传统(-)
   };
 }
 function describePers(p) {
@@ -435,9 +445,17 @@ function describePers(p) {
   tags.push(p.yi >= 25 ? '重义' : (p.yi <= -25 ? '功利' : '中庸'));
   tags.push(p.kuang >= 25 ? '狂进' : (p.kuang <= -25 ? '苟道' : '稳健'));
   tags.push(p.ren >= 25 ? '仁慈' : (p.ren <= -25 ? '狠辣' : '冷峻'));
-  tags.push(p.dao >= 25 ? '求道' : (p.dao <= -25 ? '权欲' : '随缘'));
-  tags.push(p.cheng >= 30 ? '城府' : (p.cheng <= -30 ? '坦荡' : '内敛'));
+  tags.push(p.ao >= 25 ? '刚烈' : (p.ao <= -25 ? '隐忍' : '沉静'));
+  tags.push(p.cheng >= 25 ? '赤诚' : (p.cheng <= -25 ? '多疑' : '审慎'));
   return tags.join('·');
+}
+function describeMindArchetype(iq, eq, daoWit, isMortal) {
+  if (isMortal && iq >= 78) return '无灵根·绝顶凡人鬼才';
+  if (iq >= 72 && eq >= 70 && daoWit <= 42) return '精明小聪明·难窥大道';
+  if (eq <= 38 && daoWit >= 78) return '憨厚赤子·大智若愚道痴';
+  if (iq >= 80 && daoWit >= 80) return '智道双绝·人杰';
+  if (iq <= 35 && eq <= 35) return '愚钝老实·易遭算计';
+  return '寻常心智';
 }
 function addMemory(c, year, text, mutations = {}) {
   c.memories = c.memories || [];
@@ -450,32 +468,43 @@ function addMemory(c, year, text, mutations = {}) {
 }
 
 function spawnCultivator(rng, seq, factions, nodes, opts = {}) {
-  const roll = rng.next();
-  const rootScore = opts.rootScore || (roll < 0.65 ? rng.int(18, 48) : (roll < 0.90 ? rng.int(55, 82) : rng.int(86, 100)));
-  const talentRank = rootScore >= 86 ? 2 : (rootScore >= 55 ? 1 : 0);
-  const speed = opts.speed || (talentRank === 2 ? 2.45 : (talentRank === 1 ? 1.35 : 0.65));
   const preset = document.getElementById('inp-preset')?.value || 'balanced';
   const yaoBias = preset === 'yao_sea' ? 0.52 : 0.72;
   const species = opts.species || (rng.next() < yaoBias ? '人族' : (rng.next() < 0.48 ? '海族' : (rng.next() < 0.72 ? '陆妖' : '鬼魔')));
+  const orig = opts.origin || rng.pick(ORIGINS);
+  const clamp100 = v => Math.max(8, Math.min(100, v));
+  const iq = clamp100(rng.int(22, 92) + (orig.iqB || 0));
+  const eq = clamp100(rng.int(18, 92) + (orig.eqB || 0));
+  const daoWit = clamp100(rng.int(18, 95) + (orig.daoB || 0));
+
+  // 10% 概率生成“无灵根但智商/情商极高的特殊凡人奇才”，也能在修仙世界走出精彩人生！
+  const isSpecialMortal = opts.isMortal !== undefined ? opts.isMortal : (species === '人族' && !opts.rootScore && rng.next() < 0.11);
+  const roll = rng.next();
+  const rootScore = isSpecialMortal ? 0 : (opts.rootScore || (roll < 0.65 ? rng.int(18, 48) : (roll < 0.90 ? rng.int(55, 82) : rng.int(86, 100))));
+  const talentRank = isSpecialMortal ? -1 : (rootScore >= 86 ? 2 : (rootScore >= 55 ? 1 : 0));
+  // 修行速度由 灵根 + 仙道悟性(daoWit) 共同决定！（高道悟呆子也能逆天，小聪明低道悟则慢！）
+  const speed = isSpecialMortal ? 0 : (opts.speed || +((talentRank === 2 ? 1.85 : (talentRank === 1 ? 1.05 : 0.55)) * (0.6 + daoWit / 110)).toFixed(2));
   const aliveF = factions.filter(f => f.alive);
   const seaFac = aliveF.find(f => f.arch === 'ocean');
-  const fac = opts.fac !== undefined ? opts.fac : (species === '海族' && seaFac ? seaFac : (species === '人族' && talentRank > 0 && aliveF.length ? rng.pick(aliveF) : null));
+  const fac = opts.fac !== undefined ? opts.fac : (isSpecialMortal ? null : (species === '海族' && seaFac ? seaFac : (species === '人族' && talentRank > 0 && aliveF.length ? rng.pick(aliveF) : null)));
   const nd = opts.nd || (species === '海族' ? rng.pick(nodes.filter(n => n.region === 'ocean')) : rng.pick(nodes));
-  const rIdx = opts.realmIdx !== undefined ? opts.realmIdx : (talentRank === 2 ? rng.int(1, 2) : (talentRank === 1 ? rng.int(0, 1) : 0));
-  const rDef = REALMS[rIdx];
-  const p = opts.pers || genPersonality(rng);
+  const rIdx = isSpecialMortal ? -1 : (opts.realmIdx !== undefined ? opts.realmIdx : (talentRank === 2 ? rng.int(1, 2) : (talentRank === 1 ? rng.int(0, 1) : 0)));
+  const rDef = rIdx >= 0 ? REALMS[rIdx] : { name:'凡人', maxAge:72, need:9999, lockE:0, fert:0.8 };
+  const p = opts.pers || genPersonality(rng, orig.mod);
   return {
-    id: 'c_' + seq, name: opts.name || genName(rng), species, rootScore, talentRank, speed,
-    talentName: opts.talentName || (talentRank === 2 ? '绝世天骄' : (talentRank === 1 ? '宗门良才' : '杂灵根散修')),
-    factionId: fac ? fac.id : null, factionName: fac ? fac.name : (species === '人族' ? '无门散修' : species + '独行客'),
-    locId: nd.id, realmIdx: rIdx, exp: rng.int(10, 70),
-    age: opts.age !== undefined ? opts.age : rng.int(16, Math.min(90, rDef.maxAge - 25)),
+    id: 'c_' + seq, name: opts.name || genName(rng), species, origin: orig.name, isMortal: isSpecialMortal,
+    iq, eq, daoWit, mindTag: describeMindArchetype(iq, eq, daoWit, isSpecialMortal),
+    rootScore, talentRank, speed,
+    talentName: opts.talentName || (isSpecialMortal ? '无灵根凡人' : (talentRank === 2 ? '绝世天骄' : (talentRank === 1 ? '宗门良才' : '杂灵根散修'))),
+    factionId: fac ? fac.id : null, factionName: fac ? fac.name : (isSpecialMortal ? '凡俗江湖/商界' : (species === '人族' ? '无门散修' : species + '独行客')),
+    locId: nd.id, realmIdx: rIdx, exp: rng.int(10, 70), wealth: rng.int(10, 80),
+    age: opts.age !== undefined ? opts.age : rng.int(16, Math.min(60, rDef.maxAge - 18)),
     maxAge: Math.round(rDef.maxAge * ((species === '陆妖' || species === '海族') ? 1.6 : (species === '半妖异胎' ? 1.5 : 1.0))),
     p, persLabel: describePers(p), stress: 0, karma: 0, isEvil: false,
     spouseId: null, spouseName: null, masterId: opts.masterId || null, masterName: opts.masterName || null,
     disciples: 0, children: 0, artBonus: 1.0, ownedArt: null,
-    memories: opts.memories || [`初入世：生于【${nd.name}】（${species}·灵根${rootScore}）`],
-    alive: true, motive: '潜心吐纳', hybridTrait: opts.hybridTrait || null
+    memories: opts.memories || [`初入世：${orig.name}出身，生于【${nd.name}】（IQ:${iq}/EQ:${eq}/道悟:${daoWit}）`],
+    alive: true, motive: isSpecialMortal ? '凡尘经商立业' : '潜心吐纳', hybridTrait: opts.hybridTrait || null
   };
 }
 
@@ -557,7 +586,7 @@ function getNodeCap(nd) {
 }
 
 function calcEnergyPool() {
-  const locked = SIM.cultivators.filter(c => c.alive).reduce((s, c) => s + (REALMS[c.realmIdx]?.lockE || 1), 0);
+  const locked = SIM.cultivators.filter(c => c.alive && c.realmIdx >= 0).reduce((s, c) => s + (REALMS[c.realmIdx]?.lockE || 1), 0);
   const shaDrain = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 1.4);
   const freeE = Math.max(2500, SIM.totalWorldEnergy - locked * 1.65 - shaDrain);
   return { locked, freePct: Math.max(25, Math.min(130, Math.round((freeE / SIM.totalWorldEnergy) * 100))) };
@@ -573,7 +602,7 @@ function recordMetric() {
   const maxOwn = Math.max(0, ...ownedCounts);
   const avgOwn = ownedCounts.reduce((s,v)=>s+v, 0) / Math.max(1, aliveF.length);
   const rDist = [0,0,0,0,0,0];
-  aliveC.filter(c=>c.species==='人族' || c.species==='半妖异胎').forEach(c => { rDist[Math.min(5, c.realmIdx)]++; });
+  aliveC.filter(c => c.realmIdx >= 0 && (c.species==='人族' || c.species==='半妖异胎')).forEach(c => { rDist[Math.min(5, c.realmIdx)]++; });
   const en = calcEnergyPool();
 
   SIM.historyMetrics.push({
@@ -691,6 +720,39 @@ function stepDecade() {
     const nd = SIM.nodeMap[c.locId] || SIM.nodes[0];
     const lifeRatio = c.age / c.maxAge;
 
+    // 0. 无灵根凡人奇才的精彩人生（经商成首富、凡俗军师、乃至以智反杀轻敌修士！）
+    if (c.isMortal) {
+      if (c.iq >= 75 || c.eq >= 75) {
+        c.wealth += Math.round((c.iq + c.eq) * 0.9);
+        c.motive = c.p.yi < -15 ? '操盘暗市·成凡俗首富' : '运筹帷幄·辅佐凡俗王朝';
+        if (c.wealth >= 220 && !c.mortalFame && rng.next() < 0.35) {
+          c.mortalFame = true;
+          addMemory(c, yr, `虽无灵根，凭绝顶智谋(IQ:${c.iq}/EQ:${c.eq})在【${nd.name}】成就无冕商王`, { ao: 15, cheng: -10 });
+          log('凡人奇才', `【凡人传奇】${c.origin}出身的无灵根凡人【${c.name}】(IQ:${c.iq}/EQ:${c.eq})在【${nd.name}】运筹帷幄掌控一城药材商路，连金丹执事皆以礼相待！`);
+        }
+      } else {
+        c.motive = '安分营生·凡尘度日';
+      }
+      if (c.age >= c.maxAge) c.alive = false;
+      return;
+    }
+
+    // 0.5 坊市欺骗与被骗动态人格漂移（精明功利骗子 坑害 赤诚低IQ/低EQ老实人或呆萌道痴！）
+    if (c.p.cheng >= 25 && (c.iq <= 48 || c.eq <= 42) && rng.next() < 0.06) {
+      const scammer = SIM.cultivators.find(x => x.alive && x.id !== c.id && x.p.yi <= -25 && x.eq >= 65);
+      if (scammer) {
+        scammer.wealth += 45;
+        const reaction = c.p.ao >= 25
+          ? '当场暴怒立下血仇'
+          : (c.p.ren <= -15 ? '隐忍记恨、心性渐趋冷酷多疑' : '叹世道凉薄、自此深居简出不再轻信他人');
+        addMemory(c, yr, `在坊市遭精明之徒【${scammer.name}】骗走灵石，${reaction}`, { cheng: -38, ao: c.p.ao >= 25 ? 10 : -10, ren: c.p.ren <= -15 ? -15 : 0 });
+        addMemory(scammer, yr, `巧舌如簧骗走老实修士【${c.name}】大批灵石`, { yi: -10 });
+        if (c.daoWit >= 75 || c.realmIdx >= 2) {
+          log('受骗', `【人情冷暖】${c.mindTag}【${c.name}】(EQ:${c.eq}/道悟:${c.daoWit})轻信他人，被精明功利的【${scammer.name}】(EQ:${scammer.eq})骗光灵石；【${c.name}】${reaction}！`);
+        }
+      }
+    }
+
     // Utility AI 效用动机（绝不靠出生随机贴坏人标签！坏人由寿元绝望/高狠辣/低资源正向催生！）
     if (lifeRatio >= 0.80) {
       c.motive = '大限将至·疯狂寻寿/夺宝';
@@ -762,7 +824,7 @@ function stepDecade() {
         addMemory(c, yr, `与${partner.species}【${partner.name}】结为双修道侣`, { chi: 15 });
         addMemory(partner, yr, `与${c.species}【${c.name}】结为双修道侣`, { chi: 15 });
         if (c.realmIdx >= 2 || partner.realmIdx >= 2) {
-          log('道侣', `【${c.name}】(${c.species}·${REALMS[c.realmIdx].name})与【${partner.name}】(${partner.species}·${REALMS[partner.realmIdx].name})结为双修道侣！`);
+          log('道侣', `【${c.name}】(${c.species}·${REALMS[c.realmIdx]?.name||'凡人'})与【${partner.name}】(${partner.species}·${REALMS[partner.realmIdx]?.name||'凡人'})结为双修道侣！`);
         }
       }
     }
@@ -770,7 +832,7 @@ function stepDecade() {
       const sp = SIM.cultivators.find(x => x.id === c.spouseId && x.alive);
       if (sp) {
         const isCrossSpecies = c.species !== sp.species;
-        const baseFert = Math.min(REALMS[c.realmIdx].fert, REALMS[sp.realmIdx].fert);
+        const baseFert = Math.min(REALMS[c.realmIdx]?.fert ?? 0.8, REALMS[sp.realmIdx]?.fert ?? 0.8);
         const hehuanBonus = (c.factionName.includes('合欢') || sp.factionName.includes('合欢')) ? 1.45 : 1.0;
         // 跨物种混血彩蛋概率仅 0.5%，但一旦诞子必定惊天动地！
         const prob = isCrossSpecies ? 0.005 : (baseFert * hehuanBonus * (c.p.chi > 0 ? 1.15 : 0.75) * 0.35);
@@ -888,7 +950,7 @@ function stepDecade() {
       }
     }
 
-    // 【灭门强制留遗址律】：灭门必将原祖山炸成【古宗遗址】并封存镇宗功法宝库！
+    // 【灭门强制留遗址律】+ 【同一变故·门下弟子千人千面差异化反应】！
     const curOwned = SIM.nodes.filter(n => n.owner === fac.id);
     if (!curOwned.length && !fac.fixed && fac.power <= 28) {
       fac.alive = false; fac.fallen = yr;
@@ -899,6 +961,30 @@ function stepDecade() {
         const sealedArt = fac.arts.length ? fac.arts[0] : `《${fac.name.slice(0,2)}遗脉残经》`;
         homeNd.vault.push(sealedArt);
         homeNd.history.push(`第${yr}年：【${fac.name}】护山大阵自爆灭门，原地化为【古宗遗址】，失传道统${sealedArt}封存宝库！`);
+      }
+      // 遍历该宗在世弟子：面对同一场灭门惨变，依八维人格与 IQ/EQ/道悟走出完全不同的命运！
+      const reactions = [];
+      SIM.cultivators.filter(c => c.alive && c.factionId === fac.id).slice(0, 4).forEach(d => {
+        d.factionId = null; d.factionName = `${fac.name}遗孤(散修)`;
+        if (d.p.yi >= 25 && d.p.ao >= 15) {
+          d.alive = false;
+          reactions.push(`重义刚烈的【${d.name}】死战护山门殉宗`);
+        } else if (d.p.kuang <= -20 && d.iq >= 65 && d.p.yi < 10) {
+          d.wealth += 120;
+          addMemory(d, yr, `察觉【${fac.name}】大势已去，提前搬空半库灵石连夜跑路`, { cheng: -20, yi: -15 });
+          reactions.push(`苟道高智的【${d.name}】(IQ:${d.iq})提前嗅出杀机卷款跑路`);
+        } else if (d.daoWit >= 72 && d.eq <= 48) {
+          d.exp += 260;
+          addMemory(d, yr, `于【${fac.name}】废墟大悲中顿悟无情大道，封心绝爱`, { chi: -35, dao: 25 });
+          reactions.push(`道痴【${d.name}】(道悟:${d.daoWit})在尸山废墟大悲顿悟破境`);
+        } else {
+          d.isEvil = d.p.ren < 0;
+          addMemory(d, yr, `目睹【${fac.name}】灭门，隐忍偷生立誓三十年后血债血偿`, { ao: -30, ren: -25, cheng: -30 });
+          reactions.push(`隐忍的【${d.name}】忍辱偷生暗立血誓`);
+        }
+      });
+      if (reactions.length) {
+        log('变故众生', `【${fac.name}】灭门众生相：${reactions.join('；')}！`);
       }
       log('灭门', `【${fac.name}】传承断绝爆阵除名，【${homeNd?.name||'祖山'}】彻底化为【古宗遗址】并封存镇宗道统！`);
       return;
@@ -1102,7 +1188,7 @@ function renderAll() {
 function renderRightTab() {
   const rb = document.getElementById('right-body');
   if (activeTab === 'chronicle') {
-    const tags = ['ALL','易主','分裂','灭门','化墟','考古','创法','血祭','弑师','道侣','混血','飞升','矿战','合纵','崛起','大劫','秘宝','轮回盘'];
+    const tags = ['ALL','变故众生','受骗','凡人奇才','易主','分裂','灭门','化墟','考古','创法','血祭','弑师','道侣','混血','飞升','矿战','合纵','崛起','大劫','秘宝'];
     const list = logFilter === 'ALL' ? SIM.chronicles : SIM.chronicles.filter(c => c.tag === logFilter);
     rb.innerHTML = `
       <div class="filter-bar">${tags.map(t => `<span class="pill ${logFilter===t?'active':''}" data-lf="${t}">${t==='ALL'?'全部':t}</span>`).join('')}</div>
@@ -1120,13 +1206,13 @@ function renderRightTab() {
       `;
     }).join('');
   } else if (activeTab === 'people') {
-    const topC = [...SIM.cultivators].filter(c=>c.alive).sort((a,b) => (b.realmIdx - a.realmIdx) || (b.rootScore - a.rootScore)).slice(0, 32);
+    const topC = [...SIM.cultivators].filter(c=>c.alive).sort((a,b) => (b.realmIdx - a.realmIdx) || ((b.iq + b.daoWit) - (a.iq + a.daoWit))).slice(0, 34);
     rb.innerHTML = `
-      <div style="font-size:10px;color:var(--gold);">万物同心活人谱系（人/海族/陆妖/鬼魔/混血 · 八维人格 · 个人事件记忆流）</div>
+      <div style="font-size:10px;color:var(--gold);">万物同心活人谱系（出身 · IQ/EQ/道悟三叉天赋 · 八维人格 · 个人事件记忆流）</div>
       ${topC.map(c => `
         <div class="fac-card">
-          <h4><span>${c.name} <em style="font-style:normal;color:var(--jade);font-size:9.5px;">[${c.species} · ${REALMS[c.realmIdx].name}]</em> ${c.isEvil?'<span class="tag t-血祭">魔头</span>':''}${c.hybridTrait?`<span class="tag t-混血">${c.hybridTrait}</span>`:''}</span><span style="color:var(--muted);font-size:9.5px;">灵根${c.rootScore} (${c.speed}x)</span></h4>
-          <p>${c.factionName} · 寿元 ${c.age}/${c.maxAge}岁 · 八维：${c.persLabel}${c.spouseName?` · 道侣:${c.spouseName}`:''}${c.masterName?` · 师:${c.masterName}`:''}${c.children?` · 子:${c.children}`:''}<br/><b>执念：${c.motive}</b>${c.ownedArt?` · 绝学:${c.ownedArt}`:''}<br/><span style="color:#b8b0a0;">记忆：${(c.memories || []).slice(0, 2).join(' ｜ ')}</span></p>
+          <h4><span>${c.name} <em style="font-style:normal;color:var(--jade);font-size:9.5px;">[${c.species}·${c.isMortal ? '无灵根凡人' : REALMS[c.realmIdx].name}]</em> ${c.isEvil?'<span class="tag t-血祭">魔头</span>':''}${c.mortalFame?'<span class="tag t-凡人奇才">商王</span>':''}${c.hybridTrait?`<span class="tag t-混血">${c.hybridTrait}</span>`:''}</span><span style="color:var(--gold-hi);font-size:9px;">IQ:${c.iq} EQ:${c.eq} 悟:${c.daoWit}</span></h4>
+          <p>出身：<b>${c.origin}</b>（${c.mindTag}） · ${c.factionName} · 寿 ${c.age}/${c.maxAge}岁<br/>八维：${c.persLabel}${c.spouseName?` · 道侣:${c.spouseName}`:''}${c.masterName?` · 师:${c.masterName}`:''}<br/><b>执念：${c.motive}</b>${c.ownedArt?` · 绝学:${c.ownedArt}`:''}<br/><span style="color:#b8b0a0;">记忆：${(c.memories || []).slice(0, 2).join(' ｜ ')}</span></p>
         </div>
       `).join('')}
     `;

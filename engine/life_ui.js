@@ -173,6 +173,12 @@
       #ow-minimap-legend {
         display:flex; justify-content:space-between; font-size:9px; color:#9d9586; margin-top:3px; padding:0 2px;
       }
+      #ow-goal-box {
+        position:absolute; right:16px; top:242px; pointer-events:auto;
+        width:186px; background:rgba(8,13,20,0.82); border:1px solid rgba(212,184,122,0.38);
+        border-radius:7px; padding:7px 9px; font-size:10px; line-height:1.5;
+        box-shadow:0 4px 16px rgba(0,0,0,0.55); backdrop-filter:blur(5px);
+      }
       #life-sim-modal {
         position:fixed; inset:0; z-index:9800; background:rgba(5,8,12,0.88);
         backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:10px;
@@ -395,6 +401,67 @@
         </div>
       `;
     }
+    if (activeScene.type === 'combat' && d.battle) {
+      const b = d.battle, h = b.hero, e = b.enemy;
+      const hPct = Math.round(h.hp / h.maxHp * 100);
+      const ePct = Math.round(e.hp / e.maxHp * 100);
+      const qPct = Math.round(h.qi / h.maxQi * 100);
+      const hasPill = (HERO.bag || []).some(i => i.kind === '丹药' && i.qty > 0);
+      return `
+        <div class="ls-scene-banner">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <b style="color:#ffd299;font-size:13.5px;">⚔️ 实时仙侠斗法 · 第 ${b.turn} 回合</b>
+            <span class="ls-pill warn">${e.intent}</span>
+          </div>
+          <div class="ls-grid-2" style="margin-bottom:8px;">
+            <div class="ls-card">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <img src="assets/chars/hero.webp" style="width:44px;height:44px;border-radius:50%;border:1.5px solid #6fd3a8;object-fit:cover;" />
+                <div style="flex:1;">
+                  <b style="color:#6fd3a8;">${h.name}</b> ${h.shield > 0 ? `<span class="ls-pill jade">盾 ${h.shield}</span>` : ''}
+                  <div style="background:#1c2430;height:8px;border-radius:4px;margin:3px 0;"><div style="background:#56c288;height:100%;width:${hPct}%;border-radius:4px;"></div></div>
+                  <div style="font-size:10px;">气血 ${h.hp}/${h.maxHp} ｜ 灵力 ${h.qi}/${h.maxQi} (${qPct}%)</div>
+                </div>
+              </div>
+            </div>
+            <div class="ls-card">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <img src="${e.avatar}" style="width:44px;height:44px;border-radius:50%;border:1.5px solid #e06258;object-fit:cover;" />
+                <div style="flex:1;">
+                  <b style="color:#ffaaa3;">${e.name}</b> <span class="ls-pill">${e.title}</span>
+                  <div style="background:#1c2430;height:8px;border-radius:4px;margin:3px 0;"><div style="background:#e06258;height:100%;width:${ePct}%;border-radius:4px;"></div></div>
+                  <div style="font-size:10px;">敌方气血 ${e.hp}/${e.maxHp} ｜ 攻势 ${e.atk}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            ${b.status === 'fighting' ? `
+              <button class="ls-btn jade" data-cb="strike">⚔️ 青云剑诀 (回气+16)</button>
+              <button class="ls-btn red" data-cb="spell" ${h.cdSpell > 0 ? 'disabled' : ''}>🔥 五行雷法 (耗28气${h.cdSpell > 0 ? ` · CD:${h.cdSpell}` : ''})</button>
+              <button class="ls-btn blue" data-cb="shield" ${h.cdShield > 0 ? 'disabled' : ''}>🛡️ 玄玉灵盾 (耗18气${h.cdShield > 0 ? ` · CD:${h.cdShield}` : ''})</button>
+              <button class="ls-btn" data-cb="pill" ${hasPill ? '' : 'disabled'}>💊 吞服丹药 (回血+气)</button>
+              <button class="ls-btn" data-cb="flee">💨 施展遁术</button>
+            ` : `<button class="ls-btn jade" data-cb="finish">✔ 结算战果并返回</button>`}
+          </div>
+          <div class="ls-log">${b.logs.join('<br/>')}</div>
+        </div>
+      `;
+    }
+    if (activeScene.type === 'birth_story' && window.LifeModules) {
+      const step = d.step || 0;
+      const ch = window.LifeModules.BIRTH_CHAPTERS[step];
+      if (!ch) return '';
+      return `
+        <div class="ls-scene-banner">
+          <div style="color:#f2daa0;font-size:13.5px;font-weight:700;margin-bottom:4px;">📜 0–18 岁童年少年开局手记 · ${ch.age} (${step + 1}/4)</div>
+          <div style="font-size:12px;margin-bottom:10px;">${ch.prompt}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${ch.choices.map((c, idx) => `<button class="ls-btn jade" style="text-align:left;padding:7px 10px;" data-birth="${idx}">${idx + 1}. ${c.label}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    }
     if (activeScene.type === 'beast_hunt') {
       const b = d.beast || { name: '幽林妖狼', plate: { name: '野外' } };
       return `
@@ -402,7 +469,7 @@
           <div style="color:#ffaaa3;font-size:13px;font-weight:700;margin-bottom:4px;">🐾 野外遇妖 · 【${b.name}】（出没于 ${b.plate ? b.plate.name : '荒野'}）</div>
           <div style="font-size:11.5px;margin-bottom:8px;">你在山林间与一头凶气逼人的【${b.name}】正面遭遇！它低伏身躯发出低吼，周身妖气翻涌。</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="ls-btn red" data-sc="beast_kill">⚔️ 祭剑搏杀（胜则获妖丹+灵石，有概率负伤）</button>
+            <button class="ls-btn red" data-sc="beast_combat">⚔️ 进入实时仙侠斗法（亲自出招斩妖夺丹）</button>
             <button class="ls-btn blue" data-sc="beast_trap">🕸️ 布阵智取（比拼 IQ:${HERO.iq} 稳妥斩妖）</button>
             <button class="ls-btn jade" data-sc="beast_tame">✨ 灵契驯服（收为伴生灵宠）</button>
             <button class="ls-btn" data-sc="close">💨 施展身法退避</button>
@@ -460,6 +527,15 @@
 
         if (activeScene.type === 'beast_hunt') {
           const b = d.beast || { name: '幽林妖狼' };
+          if (sc === 'beast_combat' && window.RealtimeCombat) {
+            ensureHeroStats();
+            const bt = window.RealtimeCombat.createBattle(HERO, {
+              name: b.name, title: '野外凶兽', kind: 'beast', avatar: 'assets/chars/wolf_boss.webp',
+              power: 1 + (HERO.realmIdx || 0) * 0.55
+            });
+            activeScene = { type: 'combat', data: { battle: bt } };
+            renderModal(); return;
+          }
           if (sc === 'beast_kill') {
             HERO.stones += 45;
             HERO.bag.push({ id: 'it_' + Date.now(), name: `${b.name}妖丹`, kind: '妖材', qty: 1, desc: '可炼丹或售卖换取灵石' });
@@ -499,6 +575,56 @@
           pushLog(`你耗费 150 灵石在【${nd.name}】正式开宗立派【${nm}】（占本地 35% 影响力），正式加入五洲七海势力博弈！`);
           activeScene = null; saveState(); renderModal(); return;
         }
+      };
+    });
+
+    // 实时斗法出招与结算
+    body.querySelectorAll('[data-cb]').forEach(btn => {
+      btn.onclick = () => {
+        const op = btn.dataset.cb;
+        const bt = activeScene.data.battle;
+        if (!bt) return;
+        if (window.SFX && window.SFX.play) { try { window.SFX.play('click'); } catch {} }
+        if (op === 'finish') {
+          HERO.hp = bt.hero.hp; HERO.qi = bt.hero.qi;
+          if (bt.status === 'win') {
+            HERO.stones += bt.enemy.rewardStones;
+            HERO.exp = Math.min(HERO.maxExp || 100, (HERO.exp || 0) + bt.enemy.rewardExp);
+            if (bt.enemy.dropItem) {
+              const ex = HERO.bag.find(i => i.name === bt.enemy.dropItem.name);
+              if (ex) ex.qty += 1;
+              else HERO.bag.push(Object.assign({ id: 'it_' + Date.now(), qty: 1 }, bt.enemy.dropItem));
+            }
+            pushLog(`⚔️ 你在斗法中击败【${bt.enemy.name}】，收获灵石 +${bt.enemy.rewardStones}、修为 +${bt.enemy.rewardExp} 与【${bt.enemy.dropItem.name}】！`);
+            showOwToast(`🏆 斩敌获胜！修为 +${bt.enemy.rewardExp}、灵石 +${bt.enemy.rewardStones}`);
+          } else if (bt.status === 'lose') {
+            HERO.life.injuries.push({ name: '斗法重创暗伤', penalty: '破境成功率-8%' });
+            pushLog(`🩸 你不敌【${bt.enemy.name}】，拼死脱身却留下暗伤，需尽快疗伤！`);
+          }
+          activeScene = null; saveState(); syncTopHud(); renderModal(); return;
+        }
+        window.RealtimeCombat.stepBattle(bt, op, HERO);
+        renderModal();
+      };
+    });
+
+    // 0-18 岁童年手记抉择
+    body.querySelectorAll('[data-birth]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = Number(btn.dataset.birth);
+        const picks = activeScene.data.picks || [];
+        picks.push(idx);
+        const nextStep = (activeScene.data.step || 0) + 1;
+        if (nextStep < window.LifeModules.BIRTH_CHAPTERS.length) {
+          activeScene = { type: 'birth_story', data: { step: nextStep, picks } };
+        } else {
+          window.LifeModules.applyBirthChoices(HERO, picks);
+          pushLog(`📜 你完成了 0–18 岁成长手记，携初始道心正式踏入沧溟修仙界！`);
+          activeScene = null;
+          saveState(); syncTopHud();
+          showOwToast('📜 0–18 岁成长手记已铸就你的初始根骨与道心！');
+        }
+        renderModal();
       };
     });
 
@@ -832,11 +958,14 @@
         };
       });
     } else if (activeTab === 'bag') {
+      const caveLv = HERO.caveLv || 1;
+      const recipes = (window.LifeModules && window.LifeModules.RECIPES) || [];
       body.innerHTML = `
+        ${sceneHtml}
         <div class="ls-grid-2">
           <div class="ls-card">
-            <h3><span>储物袋道具（统一占位图标槽）</span><span>灵石：${HERO.stones}</span></h3>
-            <div style="display:flex;flex-direction:column;gap:6px;">
+            <h3><span>储物袋道具与遗物</span><span>灵石：${HERO.stones}</span></h3>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;">
               ${HERO.bag.map((it, idx) => `
                 <div style="display:flex;gap:8px;align-items:center;padding:6px;background:rgba(10,14,20,0.85);border:1px solid rgba(212,184,122,0.18);border-radius:3px;">
                   <div class="ls-slot-box" style="width:36px;height:36px;" data-asset-slot="item_icon_${it.kind}"><img src="assets/items/spirit_stone.webp" alt="道具" /></div>
@@ -845,34 +974,82 @@
                 </div>
               `).join('')}
             </div>
+            <div style="margin-top:8px;border-top:1px dashed rgba(212,184,122,0.2);padding-top:6px;">
+              <b style="color:#f2daa0;">📜 已习得功法：</b>${HERO.arts.join(' · ')}
+            </div>
           </div>
           <div class="ls-card">
-            <h3><span>已习得功法与残卷</span></h3>
-            ${HERO.arts.map(a => `<div style="padding:5px 0;border-bottom:1px dashed rgba(212,184,122,0.15);color:#9ff2cf;">📜 ${a}</div>`).join('')}
+            <h3><span>🏔️ 洞府聚灵阵 (${caveLv}阶) · 炼丹炼器炉</span><button class="ls-btn jade" id="btn-up-cave" style="padding:2px 7px;">升级洞府(${caveLv*110}石)</button></h3>
+            <div style="font-size:10.5px;color:#938c7e;margin-bottom:6px;">消耗野外采集的【聚灵草】与斩妖获得的【妖丹】亲手炼丹铸剑！</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${recipes.map(r => `
+                <div style="padding:6px 8px;background:rgba(10,15,22,0.88);border:1px solid rgba(212,184,122,0.2);border-radius:4px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                  <div>
+                    <b style="color:#f2daa0;">${r.name}</b> <span class="ls-pill">${r.kind}</span>
+                    <div style="font-size:10px;color:#938c7e;">${r.desc}</div>
+                    <div style="font-size:9.5px;color:#70b8f0;">需：灵石${r.needStones}${r.needHerb?` + 灵草×${r.needHerb}`:''}${r.needCore?` + 妖丹×${r.needCore}`:''}</div>
+                  </div>
+                  <button class="ls-btn blue" data-craft="${r.id}">开炉炼制</button>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
       `;
       body.querySelectorAll('[data-use]').forEach(btn => {
         btn.onclick = () => {
+          ensureHeroStats();
           const it = HERO.bag[Number(btn.dataset.use)];
           if (!it) return;
-          HERO.life.pillToxin = Math.min(100, HERO.life.pillToxin + 12);
+          const ef = it.effect || { exp: 45, toxin: 12 };
+          if (ef.exp) HERO.exp = Math.min(HERO.maxExp, HERO.exp + ef.exp);
+          if (ef.toxin) HERO.life.pillToxin = Math.min(100, HERO.life.pillToxin + ef.toxin);
+          if (ef.detox) HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - ef.detox);
+          if (ef.calm) HERO.life.heartDemon = Math.max(0, HERO.life.heartDemon - ef.calm);
           it.qty--;
           if (it.qty <= 0) HERO.bag.splice(Number(btn.dataset.use), 1);
-          pushLog(`你服下【${it.name}】，灵力大涨，丹毒升至 ${HERO.life.pillToxin}/100！`);
-          saveState(); activeTab = 'life'; renderModal();
+          pushLog(`你服下【${it.name}】！当前修为 ${HERO.exp}/${HERO.maxExp}，丹毒 ${HERO.life.pillToxin}/100。`);
+          saveState(); syncTopHud(); renderModal();
         };
       });
+      body.querySelectorAll('[data-craft]').forEach(btn => {
+        btn.onclick = () => {
+          const res = window.LifeModules.craftRecipe(HERO, btn.dataset.craft);
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+          else showOwToast('⚠️ ' + res.msg);
+        };
+      });
+      const uc = document.getElementById('btn-up-cave');
+      if (uc) uc.onclick = () => {
+        const res = window.LifeModules.upgradeCave(HERO);
+        if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+        else showOwToast('⚠️ ' + res.msg);
+      };
     } else {
       const en = window.WorldCore.calcConservation(WORLD);
+      const myFac = HERO.myFactionId ? WORLD.factions.find(f => f.id === HERO.myFactionId && f.alive) : null;
       body.innerHTML = `
+        ${sceneHtml}
         <div class="ls-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <div><b>5 池守恒(20,000)</b>：核${en.core} / 游${en.ambient} / 表${en.surf} / 锁${en.locked} / 煞${en.shaE} · 遗迹 <b>${(WORLD.ruins||[]).length}</b> 座 · 涌现制度 <b>${(WORLD.institutions||[]).length}</b> 项</div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="ls-btn blue" id="ls-open-birth">📜 0–18 岁童年手记</button>
             <label class="ls-btn jade" style="display:inline-block;">📂 导入实验室 v7.4 JSON<input type="file" id="ls-import-file" accept=".json" style="display:none;" /></label>
             <button class="ls-btn" id="ls-regen-world">⚡ 25ms 重建新 1200 年社会</button>
           </div>
         </div>
+        ${myFac ? `
+          <div class="ls-card" style="border-color:#6fd3a8;">
+            <h3><span>🏯 我的宗门治理 · 【${myFac.name}】</span><span>门徒 ${myFac.disciples} 人 · 官僚 ${Math.round(myFac.bureaucracy||0)} · 不公 ${Math.round(myFac.inequality||0)} · 杂役 ${myFac.servants||0}</span></h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="ls-btn red" data-sect="exploit_servants">⛓️ 压榨杂役(+90石/不公↑)</button>
+              <button class="ls-btn jade" data-sect="treat_well">🤝 厚待放权(-45石/民心与掌控↑)</button>
+              <button class="ls-btn blue" data-sect="recruit">📣 招募散修(-55石/门徒+20)</button>
+              <button class="ls-btn" data-sect="host_inst">⚖️ 创办本宗十年交易盛会(-100石/写入世界制度)</button>
+              <button class="ls-btn jade" data-sect="expedition">🧭 派弟子探查周边灵脉(-40石/带回灵石灵草)</button>
+            </div>
+          </div>
+        ` : ''}
         <div class="ls-grid-2">
           <div class="ls-card" style="max-height:420px;overflow-y:auto;">
             <h3>自然涌现的社会制度（动态周期·腐化·停办）</h3>
@@ -901,7 +1078,16 @@
         } catch (err) { alert('导入失败：' + err.message); }
       };
       const rg = document.getElementById('ls-regen-world');
-      if (rg) rg.onclick = () => { freshWorld(Math.floor(Math.random() * 99999)); pushLog(`⚡ 已重建全新 1200 年世界！`); renderModal(); };
+      if (rg) rg.onclick = () => { freshWorld(Math.floor(Math.random() * 99999)); pushLog(`⚡ 已重建全新 1200 年世界！`); switchViewLayer('local', HERO.locId); renderModal(); };
+      const ob = document.getElementById('ls-open-birth');
+      if (ob) ob.onclick = () => { activeScene = { type: 'birth_story', data: { step: 0, picks: [] } }; renderModal(); };
+      body.querySelectorAll('[data-sect]').forEach(btn => {
+        btn.onclick = () => {
+          const res = window.LifeModules.manageSect(HERO, WORLD, btn.dataset.sect);
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+          else showOwToast('⚠️ ' + res.msg);
+        };
+      });
     }
 
     bindSceneActions(body);
@@ -1006,6 +1192,16 @@
         return f ? f.name : '';
       }).filter(Boolean).slice(0, 2).join('/') || '无主荒野';
       regEl.innerHTML = `<b style="color:#f2daa0;">📍 ${nd.name}</b> (${nd.id}) · 脉<b style="color:#6fd3a8;">${nd.leyline}</b> · 暗森<b style="color:${(nd.darkForestIdx||0)>=55?'#ff9d95':'#70b8f0'};">${nd.darkForestIdx||0}</b> · ${holds}`;
+    }
+    const goalEl = document.getElementById('ow-goal-txt');
+    if (goalEl) {
+      const hint = HERO.exp >= HERO.maxExp
+        ? '⚡ 修为已满！点击顶部【破境渡劫】'
+        : (!HERO.myFactionId && HERO.stones >= 150
+          ? '🏯 灵石充裕，可在宗门大殿开宗立派'
+          : '🧘 东南【聚灵蒲团】打坐 / 东北采草 / 城外斩妖');
+      const news = (WORLD.chronicles && WORLD.chronicles[0]) ? WORLD.chronicles[0].text.slice(0, 28) + '…' : '沧溟界灵潮涌动…';
+      goalEl.innerHTML = `<div style="color:#6fd3a8;margin-bottom:3px;">${hint}</div><div style="color:#9d9586;font-size:9.5px;">📰 ${news}</div>`;
     }
   }
 
@@ -1263,6 +1459,10 @@
           <div id="ow-minimap-head"><span id="ow-minimap-title">📍 小地图</span><span style="color:#6fd3a8;">点击寻路</span></div>
           <canvas id="ow-minimap-cv" width="140" height="128" style="cursor:pointer;"></canvas>
           <div id="ow-minimap-legend"><span>🟢我</span><span>🟡建筑</span><span>🔵NPC</span><span>🔴妖</span></div>
+        </div>
+        <div id="ow-goal-box">
+          <div style="color:#f2daa0;font-weight:700;border-bottom:1px solid rgba(212,184,122,0.22);padding-bottom:3px;margin-bottom:4px;">🧭 仙途风向与传闻</div>
+          <div id="ow-goal-txt" style="color:#d6cfc0;">探索城镇、打坐破境、结交众生…</div>
         </div>
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
           <button id="ow-nearby-btn">[E] 交互</button>

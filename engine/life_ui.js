@@ -6,7 +6,7 @@
   'use strict';
 
   const LS_KEY = 'qingyun_v87_world_life_v1';
-  const APP_VER = 'v11.3';
+  const APP_VER = 'v11.4';
   let WORLD = null;
   let HERO = null;
   let activeTab = 'map';
@@ -1239,22 +1239,35 @@
     } else if (activeTab === 'bag') {
       const caveLv = HERO.caveLv || 1;
       const recipes = (window.LifeModules && window.LifeModules.RECIPES) || [];
+      const ab = (window.LifeModules && window.LifeModules.getArtBonus) ? window.LifeModules.getArtBonus(HERO) : { art: HERO.arts[0], lv: 1, weaponAtk: 0, label: '吐纳流' };
+      const eq = (window.LifeModules && window.LifeModules.ensureEquipState) ? window.LifeModules.ensureEquipState(HERO) : { art: HERO.arts[0], weapon: null };
       body.innerHTML = `
         ${sceneHtml}
+        <div class="ls-card" style="border-color:rgba(212,184,122,0.52);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <b style="color:#f5e2b5;">主修功法：</b>${ab.art} <span class="ls-pill jade">第${ab.lv}层 · ${ab.label}</span>
+            <span style="margin-left:10px;"><b style="color:#f5e2b5;">本命法宝：</b>${eq.weapon ? `<span style="color:#9ff2cf;">${eq.weapon.name} (攻+${eq.weapon.atkBonus})</span>` : '<span style="color:#938c7e;">未装备（可在下方装备法宝/遗迹秘宝）</span>'}</span>
+          </div>
+          <button class="ls-btn jade" id="btn-lvup-art">参悟升阶主修功法 (${ab.lv * 45}石)</button>
+        </div>
         <div class="ls-grid-2">
           <div class="ls-card">
-            <h3><span>储物袋道具与遗物</span><span>灵石：${HERO.stones}</span></h3>
-            <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;">
+            <h3><span>储物袋道具 · 法宝与遗物</span><span>灵石：${HERO.stones}</span></h3>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;">
               ${HERO.bag.map((it, idx) => `
                 <div style="display:flex;gap:8px;align-items:center;padding:6px;background:rgba(10,14,20,0.85);border:1px solid rgba(212,184,122,0.18);border-radius:3px;">
                   <div class="ls-slot-box" style="width:36px;height:36px;" data-asset-slot="item_icon_${it.kind}"><img src="assets/items/spirit_stone.webp" alt="道具" /></div>
                   <div style="flex:1;"><b style="color:#f2daa0;">${it.name}</b> ×${it.qty} <span class="ls-pill">${it.kind}</span><div style="font-size:10px;color:#938c7e;">${it.desc}</div></div>
                   ${it.kind === '丹药' ? `<button class="ls-btn jade" data-use="${idx}">服用</button>` : ''}
+                  ${(it.kind === '法宝' || it.kind === '遗迹秘宝') ? `<button class="ls-btn blue" data-eqw="${idx}">装备</button>` : ''}
                 </div>
               `).join('')}
             </div>
             <div style="margin-top:8px;border-top:1px dashed rgba(212,184,122,0.2);padding-top:6px;">
-              <b style="color:#f2daa0;">📜 已习得功法：</b>${HERO.arts.join(' · ')}
+              <b style="color:#f2daa0;">已习得功法（点击切换主修）：</b>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;">
+                ${HERO.arts.map(a => `<button class="ls-btn ${eq.art===a?'jade':''}" data-eqa="${a}">${a} (L${(HERO.artLevels&&HERO.artLevels[a])||1})</button>`).join('')}
+              </div>
             </div>
           </div>
           <div class="ls-card">
@@ -1304,6 +1317,24 @@
         if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
         else showOwToast('⚠️ ' + res.msg);
       };
+      const la = document.getElementById('btn-lvup-art');
+      if (la) la.onclick = () => {
+        const res = window.LifeModules.levelUpArt(HERO, eq.art);
+        if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+        else showOwToast(res.msg);
+      };
+      body.querySelectorAll('[data-eqa]').forEach(b => {
+        b.onclick = () => {
+          const res = window.LifeModules.equipArt(HERO, b.dataset.eqa);
+          if (res.ok) { showOwToast(res.msg); saveState(); renderModal(); }
+        };
+      });
+      body.querySelectorAll('[data-eqw]').forEach(b => {
+        b.onclick = () => {
+          const res = window.LifeModules.equipWeapon(HERO, Number(b.dataset.eqw));
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); renderModal(); }
+        };
+      });
     } else {
       const en = window.WorldCore.calcConservation(WORLD);
       const myFac = HERO.myFactionId ? WORLD.factions.find(f => f.id === HERO.myFactionId && f.alive) : null;
@@ -1683,7 +1714,8 @@
       ensureHeroStats();
       const nd = target.data || WORLD.nodeMap[HERO.locId];
       const caveBonus = 1 + ((HERO.caveLv || 1) - 1) * 0.25;
-      const gain = Math.round((28 + (nd.leyline || 40) * 0.55 + (HERO.daoWit || 70) * 0.2) * caveBonus);
+      const artMedMul = (window.LifeModules && window.LifeModules.getArtBonus) ? window.LifeModules.getArtBonus(HERO).meditateMul : 1;
+      const gain = Math.round((28 + (nd.leyline || 40) * 0.55 + (HERO.daoWit || 70) * 0.2) * caveBonus * artMedMul);
       HERO.exp = Math.min(HERO.maxExp, HERO.exp + gain);
       HERO.hp = HERO.maxHp; HERO.qi = HERO.maxQi;
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);

@@ -858,7 +858,11 @@
 
     const castSkill = slot => {
       const rIdx = (hero && hero.realmIdx) || 0;
-      const baseAtk = 20 + rIdx * 16 + ((hero && hero.bonusAtk) || 0);
+      const ab = (window.LifeModules && window.LifeModules.getArtBonus && hero)
+        ? window.LifeModules.getArtBonus(hero)
+        : { atkMul: 1, spellMul: 1, weaponAtk: 0 };
+      const baseAtk = Math.round((20 + rIdx * 16 + ((hero && hero.bonusAtk) || 0) + ab.weaponAtk) * ab.atkMul);
+      const spellBaseAtk = Math.round((20 + rIdx * 16 + ((hero && hero.bonusAtk) || 0) + ab.weaponAtk) * ab.spellMul);
       if (slot === 'strike') {
         if (combatState.cdStrike > 0) return;
         combatState.cdStrike = 0.42;
@@ -896,7 +900,7 @@
         spawnLightningVfx(tg.x, tg.z);
         hostileActors.forEach(en => {
           if (!en.alive) return;
-          if (Math.hypot(en.x - tg.x, en.z - tg.z) < 4.0) damageEnemy(en, Math.round(baseAtk * 1.95), true, (en.x - heroPos.x) * 0.2, (en.z - heroPos.z) * 0.2);
+          if (Math.hypot(en.x - tg.x, en.z - tg.z) < 4.0) damageEnemy(en, Math.round(spellBaseAtk * 1.95), true, (en.x - heroPos.x) * 0.2, (en.z - heroPos.z) * 0.2);
         });
         return;
       }

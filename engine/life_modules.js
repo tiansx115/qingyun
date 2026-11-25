@@ -212,7 +212,64 @@
     return { ok: false, msg: '未知宗门指令' };
   }
 
-  const LifeModules = { BIRTH_CHAPTERS, applyBirthChoices, RECIPES, craftRecipe, upgradeCave, manageSect };
+  // ===== 功法参悟升阶 + 本命法宝装备系统（让遗迹/拍卖/炼器所得真正产生战力与流派差异！） =====
+  function ensureEquipState(hero) {
+    if (!hero) return null;
+    if (!hero.equipped) {
+      hero.equipped = { art: (hero.arts && hero.arts[0]) || '《吐纳引气基础篇》', weapon: null };
+    }
+    if (!hero.artLevels) hero.artLevels = {};
+    if (hero.equipped.art && !hero.artLevels[hero.equipped.art]) hero.artLevels[hero.equipped.art] = 1;
+    return hero.equipped;
+  }
+
+  function getArtBonus(hero) {
+    const eq = ensureEquipState(hero);
+    const art = (eq && eq.art) || '';
+    const lv = (hero.artLevels && hero.artLevels[art]) || 1;
+    const isSword = art.includes('剑') || art.includes('斩') || art.includes('兵');
+    const isSpell = art.includes('雷') || art.includes('火') || art.includes('经') || art.includes('残');
+    return {
+      art, lv,
+      atkMul: 1 + (isSword ? 0.16 : 0.08) * lv,
+      spellMul: 1 + (isSpell ? 0.20 : 0.10) * lv,
+      meditateMul: 1 + (!isSword && !isSpell ? 0.18 : 0.08) * lv,
+      weaponAtk: eq && eq.weapon ? (eq.weapon.atkBonus || 18) : 0,
+      label: isSword ? `剑修流(剑攻+${Math.round(16*lv)}%)` : (isSpell ? `法修流(雷法+${Math.round(20*lv)}%)` : `养气吐纳流(打坐+${Math.round(18*lv)}%)`)
+    };
+  }
+
+  function equipArt(hero, artName) {
+    const eq = ensureEquipState(hero);
+    eq.art = artName;
+    if (!hero.artLevels[artName]) hero.artLevels[artName] = 1;
+    return { ok: true, msg: `已切换主修功法为【${artName}】(第 ${hero.artLevels[artName]} 层)` };
+  }
+
+  function levelUpArt(hero, artName) {
+    ensureEquipState(hero);
+    const lv = hero.artLevels[artName] || 1;
+    if (lv >= 5) return { ok: false, msg: `【${artName}】已参悟至第五层圆满！` };
+    const cost = lv * 45;
+    if ((hero.stones || 0) < cost) return { ok: false, msg: `参悟第 ${lv + 1} 层需消耗 ${cost} 灵石辅助聚灵` };
+    hero.stones -= cost;
+    hero.artLevels[artName] = lv + 1;
+    return { ok: true, msg: `悟性爆发！【${artName}】晋升至第 ${lv + 1} 层，流派加成大幅提升！` };
+  }
+
+  function equipWeapon(hero, bagIdx) {
+    const eq = ensureEquipState(hero);
+    const it = hero.bag && hero.bag[bagIdx];
+    if (!it) return { ok: false, msg: '未找到该法宝' };
+    const bonus = it.kind === '遗迹秘宝' ? 28 : 18;
+    eq.weapon = { name: it.name, atkBonus: bonus };
+    return { ok: true, msg: `已祭炼装备本命法宝【${it.name}】（实时剑气与法术攻击 +${bonus}）！` };
+  }
+
+  const LifeModules = {
+    BIRTH_CHAPTERS, applyBirthChoices, RECIPES, craftRecipe, upgradeCave, manageSect,
+    ensureEquipState, getArtBonus, equipArt, levelUpArt, equipWeapon
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = LifeModules;
   root.LifeModules = LifeModules;
 })(typeof window !== 'undefined' ? window : globalThis);

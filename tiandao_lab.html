@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>《沧溟界》天道因果推演引擎 v7.0 · 因果律契约 × DeepSeek 真主导 × 物理裁判所</title>
+<title>《沧溟界》天道因果推演引擎 v7.1 · 因果律契约 × DeepSeek 真主导 × 物理裁判所</title>
 <style>
   :root {
     --bg:#080b0f; --panel:rgba(14,18,24,0.94); --card:rgba(20,25,34,0.88);
@@ -132,7 +132,7 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道因果推演引擎 v7.0</h1>
+    <h1>沧溟天道因果推演引擎 v7.1</h1>
     <span>零本地假剧情脚本 · 明文因果方向契约 · DeepSeek 唯一推演大脑 · 本地物理裁判所红黄牌校验</span>
   </div>
   <div class="top-controls">
@@ -352,7 +352,11 @@ const CAUSAL_LAWS = [
   },
   {
     id:'L6', title:'杀戮积煞 → 生态魔化与人格演化',
-    rule:'战争、屠城、妖兽食人会将纯净灵气转化为怨煞（sha↑）；当板块煞气 ≥ 55 时，凡人锐减、灵草异变为毒瘴魔花、野兽化凶妖、催生鬼魔邪修；低煞环境下草木与阵法会按净煞速度缓慢还灵。关键人物的 8 维人格、智商/情商/悟性与既往记忆将真实左右其历史抉择。'
+    rule:'战争、屠城、妖兽食人会将纯净灵气转化为怨煞（sha↑）；当板块煞气 ≥ 55 时，凡人锐减、灵草异变为毒瘴魔花、野兽化凶妖、催生鬼魔邪修。关键人物的 8 维人格、智商/情商/悟性与既往记忆将真实左右其历史抉择。'
+  },
+  {
+    id:'L7', title:'自然负反馈恢复 & 破而后立（打破热寂死局）',
+    rule:'任何板块一旦无人无妖且停战荒废，煞气会按净煞还灵率缓慢还原为纯净灵脉，百年地质变动与野生草木会逐步再生灵矿与野药；同时，古宗遗址发掘、末法绝境催生新流派/新势力、以及百年积淀冲击元婴解锁大航海，皆是推动历史滚滚向前的合法因果。'
   }
 ];
 
@@ -384,6 +388,8 @@ function getParams() {
 }
 
 function getNodeCap(nd) {
+  // 深海沟/暴海/极渊等无陆地海域，凡人承载上限为 0（修复空深海 5,000 承载漏洞）
+  if (nd.isSea && nd.arable < 15) return 0;
   const mul = nd.stage === 'immortal_city' ? 2.4 : (nd.stage === 'town' ? 1.35 : 1.0);
   return Math.max(5000, Math.round((nd.arable / 100) * 190000 * mul));
 }
@@ -392,8 +398,9 @@ function calcConservation() {
   const locked = SIM.people.filter(c => c.alive).reduce((s, c) => s + ((REALM_LIFESPAN[c.realm]?.lockE) || 0), 0);
   const shaE = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 3.5);
   const rawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
-  const availableSurf = Math.max(0, SIM.totalEnergy - SIM.coreEnergy - locked - shaE);
-  return { total: SIM.totalEnergy, core: SIM.coreEnergy, surf: availableSurf, rawSurf, locked, shaE };
+  // 零幽灵灵能：地核池严格承接沉降回流的全部剩余灵能，确保 core + rawSurf + locked + shaE === 20,000！
+  const core = Math.max(0, SIM.totalEnergy - rawSurf - locked - shaE);
+  return { total: SIM.totalEnergy, core, surf: rawSurf, rawSurf, locked, shaE };
 }
 
 function initSim() {
@@ -412,7 +419,7 @@ function initSim() {
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
   SIM = {
-    version:'7.0',
+    version:'7.1',
     year:1, maxYears:p.maxYears,
     awakened:false, seaTechUnlocked:false,
     eraName:'第一纪·混元凡尘',
@@ -463,24 +470,27 @@ function buildEpochPrompt(startY, endY, p) {
 
   const peopleLines = SIM.people.filter(c=>c.alive).slice(0, 18).map(c =>
     `- ${c.name} [${c.species}·${c.realm}] 龄:${c.age}/${c.maxAge} 居:${c.plateId} 属:${c.faction} IQ:${c.iq}/EQ:${c.eq}/悟:${c.daoWit} 性格:${c.persLabel} 记忆:${(c.memories||[]).slice(-2).join('；')}`
-  ).join('\n') || '（当前尚无载入史册的修仙关键人物）';
+  ).join('\n') || '（当前尚无载入史册的在世关键人物）';
 
-  const recentHist = SIM.chronicles.slice(0, 10).map(c => `[第${c.year}年·${c.tag}] ${c.text}`).join('\n');
+  const deadList = SIM.people.filter(c=>!c.alive).slice(-28).map(c => `${c.name}(${c.realm}·已故)`).join('、') || '无';
+  const vacantFacs = SIM.factions.filter(f=>f.alive && f.leader.includes('空缺')).map(f=>f.name).join('、');
+
+  const recentHist = SIM.chronicles.slice(0, 8).map(c => `[第${c.year}年·${c.tag}] ${c.text}`).join('\n');
   const lawsText = CAUSAL_LAWS.map(l => `${l.id}. ${l.title}：${l.rule}`).join('\n');
 
   const awakeHint = (!SIM.awakened && endY >= p.awakeYear)
     ? `【本轮核心节点】：本时段（第 ${startY}~${endY} 年）跨过了设定的地核破封年份（第 ${p.awakeYear} 年）！请将 core_release 设为约 ${Math.round(20000 * p.surgePct / 100)}，并在 plate_updates 中为各地块合理分配破封后的灵脉、灵矿、灵药及万物开智变化！`
     : (!SIM.awakened
       ? `【本轮红线】：尚未到达地核破封年份（第 ${p.awakeYear} 年）！core_release 必须为 0，所有板块的 leyline/mineral/herb/sha 必须保持 0，只允许凡人自然繁衍、迁徙、聚落成镇、严寒饥荒等纯凡俗演化！`
-      : `【本轮状态】：灵气已破封，剩余地核池 ${SIM.coreEnergy}。请严格根据当前矿/药/煞/邻接关系推演势力兴衰、资源枯竭、生态异变、人物生老病死与跨物种演化。`);
+      : `【本轮状态】：灵气已破封，当前地核沉睡池 ${en.core}（地表灵脉衰退时能量会回流地核，必要时可再次微泄或引发小灵潮）。请严格依据因果推演新变局！`);
 
   return `你是《沧溟界》唯一的天道推演引擎。本地代码不会编造任何剧情，只充当“物理裁判所”校验你的输出是否违背因果与红线。
 请严格根据下方【创世基础参数】、【明文因果方向契约】与【当前全量 24 板块客观账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的真实世界演化！
 
-【一、创世基础参数（玩家设定）】
-- 地核灵气破封年份：第 ${p.awakeYear} 年 | 首波喷涌烈度：${p.surgePct}%
-- 凡人入道漏斗率：${p.entryBp}‱ (${(p.entryBp/100).toFixed(2)}%)
-- 灵矿消耗烈度：${p.consumeLv}/10 | 草木净煞还灵速度：${p.healLv}/10
+【一、创世基础参数（1~10 刻度中 1=极低/缓慢，5=均衡，10=极高/剧烈）】
+- 地核灵气破封年份：第 ${p.awakeYear} 年 | 首波喷涌烈度：${p.surgePct}% (占总灵能 20,000 的百分比)
+- 凡人入道漏斗率：${p.entryBp}‱ (${(p.entryBp/100).toFixed(2)}%，凡人新生儿成功踏入仙途的比例)
+- 灵矿消耗烈度：${p.consumeLv}/10 | 草木净煞还灵速度：${p.healLv}/10（荒废/低战乱板块会自动净煞还灵并缓慢再生野药与地质新矿）
 - 妖族/海族开智先发优势：${p.yaoLv}/10 | 天道杀劫与争斗烈度：${p.chaosLv}/10
 ${p.customLaw ? `- 玩家附加天道倾向：${p.customLaw}` : ''}
 
@@ -489,10 +499,11 @@ ${lawsText}
 
 【三、当前世界客观状态（第 ${startY} 年）】
 - 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海连通：${SIM.seaTechUnlocked ? '已连通（允许跨洲）' : '未解锁（严格仅限 neighbors 邻接交互！）'}
-- 能量账本：总灵能 ${en.total} = 地核池 ${en.core} + 地表灵脉池 ${en.surf} + 生物锁存 ${en.locked} + 怨煞池 ${en.shaE}
+- 严格能量账本（零幽灵灵能）：总灵能 ${en.total} = 地核回流池 ${en.core} + 地表实际灵脉 ${en.surf} + 生物锁存 ${en.locked} + 怨煞池 ${en.shaE}
 - ${awakeHint}
+${vacantFacs ? `- 【掌舵空缺提醒】：以下在世势力掌舵者已故，请本轮为它们推举全新在世继任者（先在 people_ops 中 birth，再在 faction_ops 中 update），或让其内乱分裂/覆灭：${vacantFacs}` : ''}
 
-【四、全量 24 处地理板块账本】
+【四、全量 24 处地理板块账本（深海无土板块凡人承载为 0）】
 ${plateLines}
 
 【五、当前在世势力】
@@ -501,12 +512,18 @@ ${facLines}
 【六、当前在世关键人物】
 ${peopleLines}
 
-【七、近期编年史】
+【七、已故禁写黑名单（绝对禁止复活、掌舵、创法或继续出现在事件中！）】
+${deadList}
+
+【八、近期编年史（仅供参考背景，严禁逐字复读！）】
 ${recentHist}
 
-【输出要求】
-1. 允许演化出极端世界（如妖族/海族称霸、魔道煞土、宗门垄断或全界末法矿竭），完全尊重因果，不要强行写成套路化“正邪平衡”。
-2. 仅输出**严格合法的纯 JSON 对象**（不要 markdown 代码块，不要额外解释），字段结构如下：
+【输出铁律】
+1. 允许演化出极端世界（如妖海称霸、魔道煞土、末法孤岛、宗门垄断），完全尊重因果，不要强行写成套路化“正邪平衡”。
+2. **严禁复读机**：严禁照搬上轮的编年史或碑文原话！每轮必须推进至少 1~2 项**实质性历史转折**（例如：新势力/新流派诞生、古宗遗址被发掘复兴、旧妖庭内裂、荒废煞土自然净煞回暖、高阶修士冲击金丹/元婴、尝试渡海解锁大航海、跨种族混血或凡人奇才破局等）。
+3. **严禁写活死人**：严禁让【已故禁写黑名单】里的任何名字继续掌舵、创法或参战！请持续诞生新一代有血有肉的人物。
+4. **功法不重名**：不要反复创建《某诀·续篇》之类的重复功法，除非诞生真正全新的流派。
+5. 仅输出**严格合法的纯 JSON 对象**（不要 markdown 代码块，不要额外解释），字段结构如下：
 {
   "era_name": "当前纪元名称（如第二纪·灵潮初涌妖海崛起）",
   "core_release": 0,
@@ -578,6 +595,39 @@ function applyAndValidatePatch(patch, startY, endY, p) {
   SIM.year = endY;
   if (patch.era_name) SIM.eraName = String(patch.era_name).slice(0, 24);
 
+  // 0. 辅助：已故人员名集合 & 死亡同步清空势力掌舵人
+  const isDeadName = nm => SIM.people.some(c => c.name === nm && !c.alive);
+  const vacateLeaderIfDead = (deadName, cause) => {
+    SIM.factions.forEach(f => {
+      if (f.alive && f.leader === deadName) {
+        f.leader = '【空缺·待推举新主】';
+        addRef('黄牌', `【掌舵更迭】${deadName} ${cause}，【${f.name}】掌舵自动置为空缺，下轮须推举新主或内裂。`);
+      }
+    });
+  };
+
+  // 0.5 自然生态负反馈物理结算（仅破封后生效：打破单向热寂死局！无人荒废板块自动净煞还灵+野药/地质矿再生）
+  if (SIM.awakened) {
+    const spanMul = stepSpan / 50;
+    SIM.nodes.forEach(nd => {
+      const isQuietWaste = !nd.owner && nd.pop === 0;
+      if (nd.sha > 0) {
+        const healRate = p.healLv * 0.018 * (isQuietWaste ? 1.45 : 0.85) * spanMul;
+        const purified = Math.max(1, Math.round(nd.sha * healRate));
+        nd.sha = Math.max(0, nd.sha - purified);
+        nd.leyline = Math.min(98, nd.leyline + Math.max(1, Math.round(purified * 0.35)));
+      }
+      if (nd.sha < 65) {
+        const herbRegen = Math.max(1, Math.round(p.healLv * 0.65 * spanMul));
+        nd.herb = Math.min(95, nd.herb + herbRegen);
+      }
+      if (!nd.owner || nd.mineral < 15) {
+        const minRegen = Math.max(1, Math.round((11 - p.consumeLv) * 0.45 * spanMul));
+        nd.mineral = Math.min(95, nd.mineral + minRegen);
+      }
+    });
+  }
+
   // 1. 校验地核破封红线
   let reqRelease = Math.max(0, Math.round(Number(patch.core_release) || 0));
   if (!SIM.awakened && endY < p.awakeYear) {
@@ -629,16 +679,28 @@ function applyAndValidatePatch(patch, startY, endY, p) {
           addRef('红牌', `第${endY}年尚未灵气破封，驳回提前建立修仙势力【${name}】！`);
           return;
         }
+        let initLeader = op.leader || '无名先祖';
+        if (isDeadName(initLeader)) {
+          addRef('红牌', `驳回已故人物【${initLeader}】担任新势力【${name}】掌舵！`);
+          initLeader = '【空缺·待推举新主】';
+        }
         SIM.factions.push({
           name, kind:op.kind || 'sect', homePlate:home ? home.id : null,
-          leader:op.leader || '无名先祖', policy:op.policy || '初立',
+          leader:initLeader, policy:op.policy || '初立',
           born:endY, fallen:null, alive:true, reason:op.reason || ''
         });
         if (home && !home.owner) home.owner = name;
         addRef('绿牌', `登记新势力【${name}】(${op.kind || 'sect'}) 于 ${home ? home.name : '未知域'}。`);
       }
     } else if (op.op === 'update' && existing && existing.alive) {
-      if (op.leader) existing.leader = op.leader;
+      if (op.leader) {
+        if (isDeadName(op.leader)) {
+          addRef('红牌', `驳回已故人物【${op.leader}】继续担任【${name}】掌舵！`);
+          if (existing.leader === op.leader) existing.leader = '【空缺·待推举新主】';
+        } else {
+          existing.leader = op.leader;
+        }
+      }
       if (op.policy) existing.policy = op.policy;
       if (op.reason) existing.reason = op.reason;
     } else if (op.op === 'destroy' && existing && existing.alive) {
@@ -770,9 +832,11 @@ function applyAndValidatePatch(patch, startY, endY, p) {
       if (op.op === 'die') {
         existing.alive = false;
         if (op.memory) existing.memories.push(`第${endY}年陨落：${op.memory}`);
+        vacateLeaderIfDead(existing.name, '陨落');
       } else if (op.op === 'ascend') {
         existing.realm = '飞升'; existing.alive = false;
         existing.memories.push(`第${endY}年白日飞升：${op.memory || '破界飞升'}`);
+        vacateLeaderIfDead(existing.name, '白日飞升');
       } else {
         existing.realm = realm;
         existing.maxAge = maxAge;
@@ -784,27 +848,47 @@ function applyAndValidatePatch(patch, startY, endY, p) {
     }
   });
 
-  // 寿元超限硬核销
+  // 寿元超限硬核销 + 同步清空对应势力掌舵
   SIM.people.forEach(c => {
     if (c.alive && c.age > c.maxAge) {
       c.alive = false;
       c.memories.push(`第${endY}年：寿元耗尽(${c.age}/${c.maxAge}岁)，坐化于【${SIM.nodeMap[c.plateId]?.name || c.plateId}】。`);
       addRef('黄牌', `【寿元硬红线】${c.name}(${c.realm}) 达 ${c.age} 岁超出寿限 ${c.maxAge}，裁判所自动核销坐化。`);
+      vacateLeaderIfDead(c.name, '寿终坐化');
     }
   });
 
-  // 6. 总灵能绝对守恒校验（防止 DeepSeek 凭空多给地表灵脉）
-  const enCheck = calcConservation();
-  if (enCheck.rawSurf > enCheck.surf && enCheck.rawSurf > 0) {
-    const ratio = enCheck.surf / enCheck.rawSurf;
+  // 6. 总灵能绝对守恒闭环校验（彻底消灭“幽灵灵能”！）
+  const lockedNow = SIM.people.filter(c => c.alive).reduce((s, c) => s + ((REALM_LIFESPAN[c.realm]?.lockE) || 0), 0);
+  const shaENow = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 3.5);
+  const maxSurfAllowed = Math.max(0, SIM.totalEnergy - lockedNow - shaENow);
+  const rawSurfNow = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
+  if (rawSurfNow > maxSurfAllowed && rawSurfNow > 0) {
+    const ratio = maxSurfAllowed / rawSurfNow;
     SIM.nodes.forEach(n => { n.leyline = Math.floor(n.leyline * ratio); });
-    addRef('黄牌', `【能量守恒纠偏】DeepSeek 推演地表总灵能(${enCheck.rawSurf})超出守恒配额(${enCheck.surf})，已按比例(${(ratio*100).toFixed(1)}%)归一化守恒至 20,000！`);
+    addRef('黄牌', `【能量守恒纠偏】地表总灵能(${rawSurfNow})超出总守恒上限(${maxSurfAllowed})，已按 ${(ratio*100).toFixed(1)}% 归一化！`);
   }
+  // 将地表衰退或未释放的剩余能量严格回流地核池，保证 core + rawSurf + locked + shaE === 20,000！
+  const finalRawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
+  SIM.coreEnergy = Math.max(0, SIM.totalEnergy - finalRawSurf - lockedNow - shaENow);
 
-  // 7. 录入功法与编年史
+  // 7. 录入功法（拦截已故者创法 + 功法重名/续篇刷屏去重）与编年史
+  const normArt = s => String(s || '').replace(/[《》\s]/g, '').replace(/[·・\-—]?(续篇|残篇|续|二|三|新篇)$/g, '');
   if (Array.isArray(patch.new_arts)) {
     patch.new_arts.forEach(a => {
-      if (a && a.name) SIM.createdArts.push({ year:endY, name:a.name, creator:a.creator || '无名先贤', origin:a.origin || '' });
+      if (!a || !a.name) return;
+      const creator = String(a.creator || '无名先贤').trim();
+      if (isDeadName(creator)) {
+        addRef('红牌', `驳回已故人物【${creator}】死后创法${a.name}！`);
+        return;
+      }
+      const base = normArt(a.name);
+      const dup = SIM.createdArts.some(x => normArt(x.name) === base);
+      if (dup) {
+        addRef('黄牌', `拦截重复/续篇刷屏功法${a.name}（同类功法已存录）。`);
+        return;
+      }
+      SIM.createdArts.push({ year:endY, name:a.name, creator, origin:a.origin || '' });
     });
   }
   if (Array.isArray(patch.chronicle_events)) {
@@ -1025,7 +1109,7 @@ function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
   const p = getParams();
   const lines = [
-    `# 《沧溟天道因果推演 v7.0》全量世界报告（第 1 → ${SIM.year} 年）`,
+    `# 《沧溟天道因果推演 v7.1》全量世界报告（第 1 → ${SIM.year} 年）`,
     ``,
     `## 一、核心指标与创世参数`,
     `- 时代：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海：${SIM.seaTechUnlocked ? '已连通' : '物理隔绝'}`,

@@ -452,8 +452,8 @@
     // 6. 活着的 NPC 修士实体（在 3D 地形上真实巡逻游历！）
     const npcActors = [];
     const npcPortraits = ['assets/chars/sister_full.webp', 'assets/chars/elder.webp', 'assets/chars/hero.webp'];
-    (world.agents || []).filter(a => a.alive).slice(0, 26).forEach((ag, idx) => {
-      const c3 = COORDS_3D[ag.locId] || COORDS_3D.E2;
+    (world.people || world.agents || []).filter(a => a.alive).slice(0, 26).forEach((ag, idx) => {
+      const c3 = COORDS_3D[ag.plateId || ag.locId] || COORDS_3D.E2;
       const ox = (srand() - 0.5) * 4.5;
       const oz = (srand() - 0.5) * 4.5;
       const x = c3[0] + ox, z = c3[1] + oz;
@@ -582,6 +582,8 @@
 
     const onKeyDown = e => {
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      const md = document.getElementById('life-sim-modal');
+      if (md && md.classList.contains('open')) return;
       const k = e.key.toLowerCase();
       keys[k] = true;
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();

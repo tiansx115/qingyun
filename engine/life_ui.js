@@ -620,8 +620,8 @@
             if (sc === 'ruin_force') HERO.life.injuries.push({ name: '古阵雷煞反噬', penalty: '修炼-10%' });
             pushLog(`你${sc==='ruin_wit'?'以悟性巧破残阵':'强行轰开古阵'}，从【${r.name}】夺得【${loot}】！`);
           } else if (sc === 'ruin_sellmap') {
-            HERO.stones += 120; HERO.life.reputation.demonic += 8;
-            pushLog(`你将【${r.name}】绘成真假参半的残图高价售出，净赚 120 灵石，坐看三家仇敌入阵互残！`);
+            HERO.stones += 120; HERO.life.reputation.demonic += 8; HERO.wanted = (HERO.wanted || 0) + 15;
+            pushLog(`你将【${r.name}】绘成真假参半的残图高价售出，净赚 120 灵石，但恶名传开已遭宗门通缉（通缉+15，黑市戴面具可避祸）！`);
           }
           activeScene = null; saveState(); renderModal(); return;
         }
@@ -850,7 +850,7 @@
     const body = document.getElementById('ls-body');
     const title = document.getElementById('ls-title');
     const curPlate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-    title.textContent = `沧溟修仙模拟人生 v10.3 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
+    title.textContent = `沧溟修仙模拟人生 v10.5 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
 
     document.querySelectorAll('.ls-tab').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === activeTab);
@@ -954,7 +954,7 @@
     } else if (activeTab === 'life') {
       const life = HERO.life;
       const lin = window.Lineage ? window.Lineage.ensureLineage(HERO) : { generation: 1, companion: null, heirs: [], ancestors: [] };
-      const candNpc = (WORLD.agents || []).find(a => a.alive) || { id: 'npc_0', name: '苏清婉', realm: '筑基初期' };
+      const candNpc = (WORLD.people || []).find(a => a.alive) || { id: 'npc_0', name: '苏清婉', realm: '筑基初期' };
       body.innerHTML = `
         ${sceneHtml}
         <div class="ls-card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
@@ -1046,7 +1046,7 @@
         btn.onclick = () => {
           if (!window.Lineage) return;
           const res = window.Lineage.passTorchToHeir(HERO, WORLD, btn.dataset.inherit);
-          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+          if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); switchViewLayer(viewLayer, HERO.locId, currentRoom); renderModal(); }
           else showOwToast(res.msg);
         };
       });
@@ -1502,10 +1502,17 @@
       return;
     }
     if (target.type === 'refugee') {
+      const ym = WORLD.year * 12 + WORLD.month;
+      if (HERO._lastRefugeeYm === ym) {
+        showOwToast('本月已施舍过此地流民，待下月再来探望吧');
+        return;
+      }
       if (HERO.stones >= 20) {
+        HERO._lastRefugeeYm = ym;
         HERO.stones -= 20;
         HERO.life.reputation.mortal += 12;
         HERO.life.heartDemon = Math.max(0, HERO.life.heartDemon - 10);
+        HERO.wanted = Math.max(0, (HERO.wanted || 0) - 5);
         pushLog('你在桥畔施舍 20 灵石救助落魄流民，凡人功德 +12，心魔 -10！');
         saveState(); syncTopHud();
         showOwToast('施舍 20 灵石救助流民：凡人名声 +12、心魔 -10！');
@@ -1617,6 +1624,14 @@
       return;
     }
     if (target.type === 'gather') {
+      const nowMs = Date.now();
+      const ym = WORLD.year * 12 + WORLD.month;
+      if (HERO._lastGatherYm === ym && HERO._lastGatherMs && (nowMs - HERO._lastGatherMs) < 18000) {
+        const left = Math.ceil((18000 - (nowMs - HERO._lastGatherMs)) / 1000);
+        showOwToast(`灵草正在灵脉滋养再生中（剩余 ${left} 秒，或推进一月立即重生）`);
+        return;
+      }
+      HERO._lastGatherYm = ym; HERO._lastGatherMs = nowMs;
       const nd = target.data;
       const gain = 12 + Math.floor((nd.leyline || 30) * 0.25);
       HERO.stones += gain;
@@ -1968,6 +1983,12 @@
       modal.classList.remove('open');
       syncTopHud();
     };
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) {
+        modal.classList.remove('open');
+        syncTopHud();
+      }
+    });
     modal.querySelectorAll('.ls-tab').forEach(t => {
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });

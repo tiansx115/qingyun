@@ -161,6 +161,7 @@
       fac.inequality = Math.min(100, (fac.inequality || 25) + 16);
       fac.bureaucracy = Math.min(100, (fac.bureaucracy || 20) + 8);
       hero.stones += 90;
+      hero.wanted = (hero.wanted || 0) + 12;
       return { ok: true, msg: `你收紧【${fac.name}】杂役月俸，账房入账 +90 灵石，但宗门不公升至 ${Math.round(fac.inequality)}（小心杂役叛逃！）` };
     }
     if (op === 'treat_well') {

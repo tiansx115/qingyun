@@ -221,7 +221,7 @@
         const tb = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.85, 1.6), new THREE.MeshStandardMaterial({ color: 0x593622 }));
         tb.position.y = 0.42; tg.add(tb);
         if (idx === 0) {
-          const ag = (world.agents || []).find(a => a.alive) || { id: 'a0', name: '青衫散修', realm: '炼气圆满' };
+          const ag = (world.people || world.agents || []).find(a => a.alive) || { id: 'a0', name: '青衫散修', realm: '炼气圆满' };
           const guest = makeChar('assets/chars/sister_full.webp', '', '', 0x70b8f0);
           guest.group.position.set(0, 0, -1.2); tg.add(guest.group);
           addPropPoi(tx, -1.5, tg, `结交【${ag.name}】`, `${ag.realm} · 煮茶论道`, 'npc', ag, '#70b8f0');
@@ -271,6 +271,8 @@
     let nearbyTarget = null, pendingInteract = null;
     const onKeyDown = e => {
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      const md = document.getElementById('life-sim-modal');
+      if (md && md.classList.contains('open')) return;
       const k = e.key.toLowerCase(); keys[k] = true;
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
       if (k === 'e' && nearbyTarget && opts.onInteract) opts.onInteract(nearbyTarget);

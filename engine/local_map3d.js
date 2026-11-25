@@ -674,8 +674,9 @@
       world.chronicles && world.chronicles[0] ? world.chronicles[0].text.slice(0, 16) + '…' : '沧溟灵潮起伏，不知又能出几位大能。'
     ];
     const npcActors = [];
-    const localAgents = (world.agents || []).filter(a => a.alive && a.locId === plate.id);
-    const fallbackAgents = (world.agents || []).filter(a => a.alive).slice(0, 5);
+    const allPeople = (world.people || world.agents || []).filter(a => a.alive);
+    const localAgents = allPeople.filter(a => (a.plateId || a.locId) === plate.id);
+    const fallbackAgents = allPeople.slice(0, 6);
     const showAgents = (localAgents.length >= 3 ? localAgents : localAgents.concat(fallbackAgents)).slice(0, 6);
     const portraits = ['assets/chars/sister_full.webp', 'assets/chars/elder.webp', 'assets/chars/hero.webp'];
 
@@ -932,6 +933,8 @@
 
     const onKeyDown = e => {
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      const md = document.getElementById('life-sim-modal');
+      if (md && md.classList.contains('open')) return;
       const k = e.key.toLowerCase();
       keys[k] = true;
       if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();

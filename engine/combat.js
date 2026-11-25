@@ -315,6 +315,17 @@ window.COMBAT = {
     this._spawnFloat('.c-actor.enemy', `${isCrit ? '会心 ' : ''}-${dmg}`, isCrit ? '#ffe49c' : '#fff');
     S.ticker = `${synerTag}${isCrit ? '【会心】' : ''}施展【${sk.name}】造成 ${dmg} 点伤害${addPois ? `（噬心蛊+${addPois}）` : ''}！`;
 
+    // 斗法重伤破功：敌方 NPC 气血跌破 15% 时【太素驻颜术】溃散，当场显露苍老真容！
+    if (e.hp > 0 && e.npcRef && window.APPEARANCE) {
+      const sh = window.APPEARANCE.checkCombatShatter(e.npcRef, e.hp / Math.max(1, e.maxHp), G.totalDays);
+      if (sh) {
+        const eImg = document.querySelector('.c-actor.enemy img');
+        if (eImg) eImg.className = window.APPEARANCE.getProfile(e.npcRef, G.totalDays).cssClasses;
+        this._spawnFloat('.c-actor.enemy', `驻颜破功·显${sh.naturalAge}岁真容!`, '#e89668');
+        S.ticker = `【破功现形】${e.name}护体真元溃散，太素驻颜术当场破碎，显露出 ${sh.naturalAge} 岁（${sh.stage.name}）真实容颜！`;
+      }
+    }
+
     if (e.hp <= 0) { this._handleWin(); return; }
     this._syncBars();
   },
@@ -407,6 +418,17 @@ window.COMBAT = {
     G.hp = Math.max(0, G.hp - dmg);
     if (dmg > 0) this._spawnFloat('.c-actor.hero', `-${dmg}`, '#ff8080');
     S.ticker = `${e.name} 攻势袭来造成 ${dmg} 点伤害${counterMsg}。`;
+
+    // 主角重伤破功：气血跌破 15% 时【太素驻颜术】护体真元溃散！
+    if (G.hp > 0 && window.APPEARANCE) {
+      const hSh = window.APPEARANCE.checkCombatShatter(G, G.hp / Math.max(1, G.maxHp), G.totalDays);
+      if (hSh) {
+        const hImg = document.querySelector('.c-actor.hero img');
+        if (hImg) hImg.className = window.APPEARANCE.getProfile(G, G.totalDays).cssClasses;
+        this._spawnFloat('.c-actor.hero', `驻颜术破功!`, '#f07676');
+        S.ticker = `【濒死破功】重创之下真元溃散，你的【太素驻颜术】当场破碎，容貌恢复 ${hSh.naturalAge} 岁（${hSh.stage.name}）！`;
+      }
+    }
 
     // Cheat death unique item!
     if (G.hp <= 0 && !S.cheatDeathUsed && eq.uniqueEffects.includes('cheat_death')) {
@@ -519,12 +541,12 @@ window.COMBAT = {
       </div>
       <div class="combat-stage">
         <div class="c-party">
-          <div class="c-actor hero"><img src="${ASSETS.hero}" /></div>
+          <div class="c-actor hero"><img class="${window.APPEARANCE ? window.APPEARANCE.getProfile(G, G.totalDays).cssClasses : ''}" src="${window.APPEARANCE ? window.APPEARANCE.getHeroPortrait(G, ASSETS, false).src : ASSETS.hero}" /></div>
           ${allyHtml}
           ${beastHtml}
           <div class="float-tr-wrap">${floatBadges}</div>
         </div>
-        <div class="c-actor enemy"><img src="${e.asset || ASSETS.wolf_boss}" /></div>
+        <div class="c-actor enemy"><img class="${(e.npcRef && window.APPEARANCE) ? window.APPEARANCE.getProfile(e.npcRef, G.totalDays).cssClasses : ''}" src="${e.asset || ASSETS.wolf_boss}" /></div>
       </div>
       <div class="combat-bottom">
         <div class="combat-ticker" id="cb-ticker">${S.ticker}</div>

@@ -1093,3 +1093,25 @@ html, body {
   .talisman-btn .t-ico { width: 22px; height: 22px; }
   .talisman-btn .t-ico svg { width: 20px; height: 20px; }
 }
+
+/* ===== v8.2.0 FIVE-STAGE LIFESPAN APPEARANCE & YOUTH PRESERVATION VISUALS ===== */
+img.age-stage-1 { filter: brightness(1.06) saturate(1.10) contrast(0.98); transition: filter 0.6s ease; }
+img.age-stage-2 { filter: brightness(1.02) saturate(1.04) contrast(1.02); transition: filter 0.6s ease; }
+img.age-stage-3 { filter: brightness(0.97) saturate(0.95) contrast(1.06); transition: filter 0.6s ease; }
+img.age-stage-4 { filter: brightness(0.93) saturate(0.76) contrast(1.08) sepia(0.10); transition: filter 0.6s ease; }
+img.age-stage-5 { filter: brightness(0.88) saturate(0.42) contrast(1.12) sepia(0.18); transition: filter 0.6s ease; }
+img.youth-locked { filter: brightness(1.05) saturate(1.12) drop-shadow(0 0 14px rgba(111, 211, 168, 0.32)); }
+img.five-decay { filter: brightness(0.78) saturate(0.28) contrast(1.14) drop-shadow(0 0 16px rgba(120, 120, 130, 0.55)) !important; }
+
+.age-stage-badge {
+  position: absolute; top: 10px; left: 0; z-index: 46;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 6px 10px; max-width: 92%;
+  background: rgba(11, 14, 18, 0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(200, 176, 122, 0.42); border-left: 3px solid var(--gold-bright);
+  font-size: 10.5px; color: var(--text);
+}
+.age-stage-badge.locked { border-left-color: var(--jade); }
+.age-stage-badge.decay { border-left-color: var(--vermilion); background: rgba(40, 12, 14, 0.85); }
+.age-stage-badge b { color: var(--gold-bright); font-size: 11.5px; letter-spacing: 0.8px; }
+.age-stage-badge span { font-size: 9.5px; color: var(--muted); }

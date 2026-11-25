@@ -32,8 +32,8 @@ window.WORLD_SIM = (function () {
     { id: 'ruthless', name: '狠辣枭雄', tradeMul: 1.60, aggro: 0.35, desc: '杀人夺宝，睚眦必报' }
   ];
   const DAO_KEYS = ['sword', 'spell', 'body', 'array', 'soul', 'pact'];
-  const LOOT_POOL_LOW = ['heal_pill', 'qi_pill', 'condense_pill', 'beast_fruit', 'eq_qingyun_sword', 'eq_cloud_robe', 'eq_iron_wrist', 'tr_poison_needle', 'tr_spirit_banner'];
-  const LOOT_POOL_HIGH = ['marrow_pill', 'lightning_plate', 'eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell', 'longevity_peach', 'dao_tea'];
+  const LOOT_POOL_LOW = ['heal_pill', 'qi_pill', 'condense_pill', 'beast_fruit', 'zhuyan_pill', 'eq_qingyun_sword', 'eq_cloud_robe', 'eq_iron_wrist', 'tr_poison_needle', 'tr_spirit_banner'];
+  const LOOT_POOL_HIGH = ['marrow_pill', 'lightning_plate', 'zhuyan_pill', 'bingji_pill', 'manual_zhuyan_art', 'eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell', 'longevity_peach', 'dao_tea'];
 
   const RIFT_PREFIX = ['太古青莲', '紫霄雷陨', '玄冥沉船', '赤帝遗蜕', '九曲星河', '无垢丹圣', '太初剑墟', '万古鲲鹏'];
   const RIFT_SUFFIX = ['浮空秘岛', '地脉裂谷', '海底仙坟', '古修士洞天', '幻境残阵'];
@@ -81,6 +81,20 @@ window.WORLD_SIM = (function () {
     };
     const title = pick(factionTitles[pwr.id] || ['四海散修']);
 
+    const realAge = Math.max(16, Math.min(maxAge - 8, baseAge));
+    // 高龄/高阶修士有约 32% 概率服过驻颜丹或运转太素驻颜术伪装青年皮相（扮猪吃老虎！）
+    let youthLock = null;
+    if ((realAge >= 90 || usedR >= 3) && Math.random() < 0.32) {
+      const useArt = Math.random() < 0.55;
+      youthLock = {
+        type: useArt ? 'art' : 'pill',
+        name: useArt ? '太素驻颜术' : '驻颜定容丹',
+        lockedVisualAge: randInt(20, 26),
+        expireDay: randInt(12, 55) * 360,
+        mpSealPct: useArt ? 0.05 : 0
+      };
+    }
+
     return {
       id: 'pnpc_' + seq + '_' + randInt(100, 999),
       name,
@@ -91,8 +105,9 @@ window.WORLD_SIM = (function () {
       dao,
       realmIdx: usedR,
       exp: randInt(10, 120),
-      age: Math.max(16, Math.min(maxAge - 8, baseAge)),
+      age: realAge,
       maxAge,
+      youthLock,
       loc: startLoc,
       destLoc: null,
       travelDaysLeft: 0,
@@ -252,6 +267,23 @@ window.WORLD_SIM = (function () {
         return { elapsed, interrupted: true, reason: '大限已至' };
       }
 
+      // 主角驻颜丹 / 太素驻颜术到期反噬检查
+      if (G.youthLock && window.APPEARANCE) {
+        const expRes = window.APPEARANCE.checkExpiration(G, G.totalDays);
+        if (expRes) {
+          if (ctx.recalcDerivedStats) ctx.recalcDerivedStats(false);
+          const msg = expRes.dramatic
+            ? `【驻颜散尽·岁月反噬】${expRes.expiredName}药力耗尽，青丝寸寸化雪，容颜瞬间沧桑回 ${expRes.naturalAge} 岁真容（${expRes.stage.name}）！`
+            : `【驻颜到期】${expRes.expiredName}效用已尽，容貌归真（约 ${expRes.naturalAge} 岁·${expRes.stage.name}）。`;
+          if (showToast) showToast(msg);
+          if (opts.seclusion && expRes.dramatic && i < wholeDays - 1) {
+            interrupted = true;
+            reason = msg;
+            break;
+          }
+        }
+      }
+
       // 【第1级 · 每日微脉冲】NPC 在途天数倒计时、抵达与启程 + 错峰分桶（每天仅算 1/5 NPC 的机缘决策！）
       const bucket = G.totalDays % 5;
       const urgentMsg = runDailyBucketedSim(G, D, locs, locById, bucket, G.totalDays > prevYearIdx * 360 + 360);
@@ -356,6 +388,14 @@ window.WORLD_SIM = (function () {
         continue;
       }
 
+      // 1.5 NPC 驻颜到期反噬
+      if (npc.youthLock && window.APPEARANCE) {
+        const nExp = window.APPEARANCE.checkExpiration(npc, G.totalDays);
+        if (nExp && nExp.dramatic) {
+          pushNews(G, '奇闻', `${npc.title}【${npc.name}】体表【${nExp.expiredName}】效用散尽，当众青丝成雪，露出 ${nExp.naturalAge} 岁老怪真容！`);
+        }
+      }
+
       // 2. 修为精进与渡劫生死
       npc.exp = (npc.exp || 0) + 4 + Math.floor((npc.luck || 50) * 0.06);
       const curR = D.REALMS && D.REALMS[npc.realmIdx];
@@ -363,11 +403,14 @@ window.WORLD_SIM = (function () {
       if (curR && nextR && npc.exp >= curR.exp && npc.realmIdx < 6) {
         npc.exp = 0;
         if (Math.random() < Math.min(0.84, 0.46 + (npc.luck || 50) * 0.004)) {
+          const prevMax = npc.maxAge;
           npc.realmIdx += 1;
           npc.maxAge += nextR.ageBonus || 90;
           npc.stones += 120;
+          const rejuv = window.APPEARANCE && window.APPEARANCE.checkBreakthroughRejuv(npc, prevMax);
           if (npc.realmIdx >= 3) {
-            pushNews(G, '破境', `${npc.title}【${npc.name}】于【${locById[npc.loc]?.name || '灵山'}】成功渡劫，晋升【${nextR.name}】！`);
+            const rejuvStr = rejuv ? `，洗髓返春由 ${rejuv.oldAge} 岁鹤发重化 ${rejuv.newAge} 岁青丝` : '';
+            pushNews(G, '破境', `${npc.title}【${npc.name}】于【${locById[npc.loc]?.name || '灵山'}】成功渡劫，晋升【${nextR.name}】${rejuvStr}！`);
           }
         } else if (Math.random() < 0.30) {
           npc.alive = false;
@@ -462,8 +505,10 @@ window.WORLD_SIM = (function () {
       const choices = locals.slice(0, 6).map(n => {
         const rName = D.REALMS[n.realmIdx]?.name || '炼气';
         const holdsRelic = G.worldRelic?.holder === 'npc' && G.worldRelic?.npcId === n.id;
+        const prof = window.APPEARANCE ? window.APPEARANCE.getProfile(n, G.totalDays) : null;
+        const appTag = prof ? ` · 观之约${prof.displayAge}岁(${prof.stage.short})` : '';
         return {
-          text: `上前搭话【${n.name}】（${n.title} · ${rName} · ${n.persName}）${holdsRelic ? '【怀揣轮回盘!】' : ''}`,
+          text: `上前搭话【${n.name}】（${n.title} · ${rName}${appTag}）${holdsRelic ? '【怀揣轮回盘!】' : ''}`,
           hint: `交情 ${n.favor || 0}`,
           action: () => openLocalNpcsModal(ctx, locId, n.id)
         };
@@ -540,7 +585,7 @@ window.WORLD_SIM = (function () {
       action: () => {
         advanceDays(ctx, 1, { seclusion: false });
         startBattle({
-          name: `${npc.name}（切磋）`, asset: ASSETS.elder, bg: 'sect_plaza', enemyType: 'cultivator',
+          name: `${npc.name}（切磋）`, asset: ASSETS.elder, bg: 'sect_plaza', enemyType: 'cultivator', npcRef: npc,
           hp, maxHp: hp, atk, expReward: 65 + npc.realmIdx * 40, stoneReward: 20,
           onWin: () => {
             npc.favor = Math.min(100, (npc.favor || 0) + 10);
@@ -559,7 +604,7 @@ window.WORLD_SIM = (function () {
       action: () => {
         npc.favor = -100;
         startBattle({
-          name: `${npc.title}·${npc.name}`, asset: ASSETS.elder, bg: 'world_map', enemyType: 'cultivator',
+          name: `${npc.title}·${npc.name}`, asset: ASSETS.elder, bg: 'world_map', enemyType: 'cultivator', npcRef: npc,
           hp: killHp, maxHp: killHp, atk: killAtk, expReward: 140 + npc.realmIdx * 75, stoneReward: 0,
           onWin: () => {
             npc.alive = false;
@@ -586,9 +631,21 @@ window.WORLD_SIM = (function () {
 
     choices.push({ text: '← 返回在场修士列表', action: () => openLocalNpcsModal(ctx, locId, null) });
 
+    const nProf = window.APPEARANCE ? window.APPEARANCE.getProfile(npc, G.totalDays) : null;
+    let ageLine = `寿元 ${npc.age}/${npc.maxAge} 岁`;
+    if (nProf) {
+      if (nProf.locked) {
+        ageLine = canSenseBag
+          ? `外显容貌：约 ${nProf.displayAge} 岁（${nProf.stage.name}）· 【神识看破】系【${nProf.lockName}】驻颜伪装，真实骨龄已逾 ${npc.age}/${npc.maxAge} 载（本相约 ${nProf.naturalAge} 岁）！`
+          : `外显容貌：约 ${nProf.displayAge} 岁（${nProf.stage.name} · ${nProf.stage.hair}）· 神识尚浅，难辨其真实骨龄深浅`;
+      } else {
+        ageLine = `外显容貌：约 ${nProf.displayAge} 岁（${nProf.stage.name} · ${nProf.stage.hair}）· 寿元 ${npc.age}/${npc.maxAge} 岁${nProf.fiveDecay ? '【天人五衰】' : ''}`;
+      }
+    }
+
     setDialogue({
       speaker: `${npc.name}（${npc.title} · ${rDef.name}）`, asset: ASSETS.elder,
-      text: `性情：【${npc.persName}】（${pObj.desc}）· 寿元 ${npc.age}/${npc.maxAge} 岁 · 预计在此再驻留 ${npc.stayDaysLeft || 3} 日。\n神识探查储物袋：${bagDesc}${holdsRelic ? '\n【惊天异象】其怀中正藏着天地唯一【造化轮回盘】！' : ''}`,
+      text: `性情：【${npc.persName}】（${pObj.desc}）· 预计在此再驻留 ${npc.stayDaysLeft || 3} 日。\n${ageLine}\n神识探查储物袋：${bagDesc}${holdsRelic ? '\n【惊天异象】其怀中正藏着天地唯一【造化轮回盘】！' : ''}`,
       choices
     });
     renderAll();

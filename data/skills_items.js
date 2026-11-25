@@ -128,9 +128,12 @@ window.GAME_DATA.ITEMS = {
     desc:'天地间仅存一件的太古轮回至宝！寿尽洞府兵解可高额继承天赋、造诣并洗练灵根；战死瞬间亦可护住残魂仓促转生。触发后立即破空遁走，重藏世间未知处。'
   },
 
-  // ===== 丹药、灵果、悟道仙珍 =====
+  // ===== 丹药、灵果、驻颜秘珍、悟道仙珍 =====
   dao_tea:        { id:'dao_tea',        name:'悟道古茶树叶', icon:'item_osmanthus_cake', price:180, type:'dao_item', tier:'地品', daoPts:15, desc:'中州悟道神树所结奇叶，服之可任选一条仙道法则直接参悟 +15 点本源！' },
   longevity_peach:{ id:'longevity_peach',name:'千年延寿蟠桃', icon:'item_osmanthus_cake', price:220, type:'consumable', tier:'地品', addMaxAge:40, hp:300, desc:'海外仙岛灵桃，服下可逆天增补 40 载寿元上限！' },
+  zhuyan_pill:    { id:'zhuyan_pill',    name:'驻颜定容丹',   icon:'item_elixir_pill',    price:85,  type:'youth_pill', tier:'灵品', youthYears:40, desc:'【限时驻颜】定格当前外显容貌 40 载不衰（只锁皮相不增寿元；若寿元将尽时药力散尽，青丝将瞬间化雪苍老）。' },
+  bingji_pill:    { id:'bingji_pill',    name:'冰肌返春仙丹', icon:'item_elixir_pill',    price:240, type:'youth_pill', tier:'地品', youthYears:120, rejuvAge:22, desc:'【丹鼎神谷秘丹】洗去岁月铅华，容颜立返二十二岁青年鼎盛并定格 120 载！药效到期后仍受真实寿元反噬。' },
+  manual_zhuyan_art:{ id:'manual_zhuyan_art', name:'《太素驻颜诀》', icon:'item_jade_ring', price:160, type:'youth_manual', tier:'玄品', desc:'【辅助驻颜秘术】参悟后可随时开关【太素驻颜术】：常驻封印 5% 法力上限，将外显容貌定格青年 20 载；但斗法濒死(气血<15%)时将破功显露真容！' },
   heal_pill:      { id:'heal_pill',      name:'百草回春丹',   icon:'item_elixir_pill',    price:15, type:'consumable', hp:105, desc:'恢复 105 点气血，药力温润绵长。' },
   qi_pill:        { id:'qi_pill',        name:'寒泉聚灵散',   icon:'item_elixir_pill',    price:15, type:'consumable', qi:80,  desc:'恢复 80 点灵力，清冽提神。' },
   condense_pill:  { id:'condense_pill',  name:'破境凝元丹',   icon:'item_elixir_pill',    price:55, type:'consumable', exp:85, fullRestore:true, desc:'修为 +85 且气血灵力瞬间圆满。' },

@@ -277,8 +277,13 @@ function recalcDerivedStats(fullHeal = false) {
   const sets = getActiveSets();
   const prevMaxHp = G.maxHp || realm.maxHp;
   const prevMaxQi = G.maxQi || realm.maxQi;
-  G.maxHp = Math.max(50, realm.maxHp + ((G.body || 10) + eq.body) * 5 + (ha.hpBonus || 0) + eq.hpMax + (sets.iron >= 2 ? 80 : 0));
-  G.maxQi = Math.max(40, realm.maxQi + ((G.sense || 10) + eq.sense) * 3 + (ha.qiBonus || 0) + eq.qiMax);
+  const appProf = window.APPEARANCE ? window.APPEARANCE.getProfile(G, G.totalDays || 1) : null;
+  let rawHp = Math.max(50, realm.maxHp + ((G.body || 10) + eq.body) * 5 + (ha.hpBonus || 0) + eq.hpMax + (sets.iron >= 2 ? 80 : 0));
+  let rawQi = Math.max(40, realm.maxQi + ((G.sense || 10) + eq.sense) * 3 + (ha.qiBonus || 0) + eq.qiMax);
+  if (appProf && appProf.fiveDecay) rawHp = Math.max(40, Math.round(rawHp * 0.92));
+  if (appProf && appProf.mpSealPct > 0) rawQi = Math.max(30, Math.round(rawQi * (1 - appProf.mpSealPct)));
+  G.maxHp = rawHp;
+  G.maxQi = rawQi;
   if (fullHeal) {
     G.hp = G.maxHp; G.qi = G.maxQi;
   } else {
@@ -440,12 +445,19 @@ function tryRealmUp(fromAltar) {
   const gateErr = checkRealmDaoGate(next);
   if (gateErr) return showToast(gateErr);
   if (next.tribulation && !fromAltar) return showToast('大境界突破需前往【中州·九霄雷池渡劫台】引雷破境！');
+  const prevMaxAge = G.maxAge;
   G.exp -= D.REALMS[G.realmIdx].exp;
   G.realmIdx++;
   G.maxAge += next.ageBonus;
+  const rejuv = window.APPEARANCE ? window.APPEARANCE.checkBreakthroughRejuv(G, prevMaxAge) : null;
   recalcDerivedStats(true);
   SFX.play('levelup'); FX.burst('235,210,155', 45, 0.5, 0.5);
-  showToast(`突破成功！证道【${next.name}】，寿元上限增至 ${G.maxAge} 岁！`);
+  if (rejuv) {
+    if (window.WORLD_SIM) window.WORLD_SIM.pushNews(G, '返春', `【${G.name}】破境晋升【${next.name}】，洗髓伐毛枯木逢春，容颜自 ${rejuv.oldAge} 岁重返 ${rejuv.newAge} 岁（${rejuv.newStage.name}）！`);
+    showToast(`突破【${next.name}】！寿元增至 ${G.maxAge} 岁 · 【洗髓返春】容颜重返 ${rejuv.newAge} 岁（${rejuv.newStage.name}）！`);
+  } else {
+    showToast(`突破成功！证道【${next.name}】，寿元上限增至 ${G.maxAge} 岁！`);
+  }
 }
 
 // Dynamic SVG Five-Element Star Chart
@@ -841,8 +853,8 @@ function getEventCtx() {
 function openEquipShop() {
   const unlockedHigh = (G.factions?.wanbao || 0) >= 1;
   const stockIds = unlockedHigh
-    ? ['eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_venom_circlet', 'eq_iron_wrist', 'eq_venom_sachet', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell']
-    : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_qingyun_crown', 'eq_wind_boots', 'eq_iron_wrist', 'eq_qiankun_ring', 'tr_poison_needle', 'tr_spirit_banner'];
+    ? ['eq_frost_blade', 'eq_iron_staff', 'eq_xuan_armor', 'eq_venom_circlet', 'eq_iron_wrist', 'eq_venom_sachet', 'eq_qiankun_ring', 'tr_flying_sword', 'tr_soul_bell', 'zhuyan_pill', 'bingji_pill', 'manual_zhuyan_art']
+    : ['eq_qingyun_sword', 'eq_cloud_robe', 'eq_qingyun_crown', 'eq_wind_boots', 'eq_iron_wrist', 'eq_qiankun_ring', 'tr_poison_needle', 'tr_spirit_banner', 'zhuyan_pill', 'manual_zhuyan_art'];
   const choices = [];
 
   // 若前世野外遗骸超30年被路人斩妖取走，珍品会流落至此供高价赎回！
@@ -1309,10 +1321,22 @@ function renderSplitPanel() {
 
     const el = G.elements || {};
     const hasRelicNow = window.REINCARNATION && window.REINCARNATION.hasRelic(G);
+    const heroArt = window.APPEARANCE ? window.APPEARANCE.getHeroPortrait(G, ASSETS, true) : { src: ASSETS.hero_full, prof: null };
+    const aProf = heroArt.prof;
+    const badgeCls = aProf ? (aProf.fiveDecay ? 'decay' : (aProf.locked ? 'locked' : '')) : '';
+    const youthBtnTxt = (aProf && aProf.lockType === 'art') ? '散去驻颜术' : '运转驻颜术';
     main.innerHTML = `
       <div class="fullbody-col">
         <div class="fullbody-wrap">
-          <img class="full-char" src="${ASSETS.hero_full}" />
+          <img class="full-char ${aProf ? aProf.cssClasses : ''}" src="${heroArt.src}" />
+          ${aProf ? `
+            <div class="age-stage-badge ${badgeCls}">
+              <b>外显 ${aProf.displayAge} 岁 · ${aProf.stage.name}</b>
+              <span>${aProf.stage.hair} · ${aProf.stage.desc}</span>
+              ${aProf.locked ? `<span style="color:var(--jade);">【${aProf.lockName}】余 ${aProf.remainYears} 载${aProf.lockType === 'art' ? '（封5%法力）' : '（只锁皮相）'}</span>` : ''}
+              ${aProf.fiveDecay ? `<span style="color:#ff8a8a;">【天人五衰】寿元已耗 ${aProf.lifePct}% · 气血-8%</span>` : ''}
+            </div>
+          ` : ''}
           <div class="dantian-waist"></div>
           <div class="lifespan-ring">第 ${G.lifeCount || 1} 世 · 寿元 ${G.age}/${G.maxAge} 岁 · ${hasRelicNow ? '怀揣轮回盘' : '无轮回至宝'}</div>
         </div>
@@ -1327,6 +1351,7 @@ function renderSplitPanel() {
             </div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0;">
+            ${G.hasYouthArt ? `<button class="sleek-btn ghost" id="btn-youth-art">${youthBtnTxt}</button>` : ''}
             <button class="sleek-btn" id="btn-med">择期闭关</button>
             ${canBreak ? `<button class="sleek-btn jade" id="btn-break">破境突破</button>` : ''}
           </div>
@@ -1375,6 +1400,8 @@ function renderSplitPanel() {
     };
     const brk = main.querySelector('#btn-break');
     if (brk) brk.onclick = () => { tryRealmUp(false); renderAll(); };
+    const yaBtn = main.querySelector('#btn-youth-art');
+    if (yaBtn && window.APPEARANCE) yaBtn.onclick = () => window.APPEARANCE.toggleYouthArt(getEventCtx());
   }
   // 2. 行囊装备页（v6.1 方案A）：左侧9格对称环绕穿戴 + 中置暗金道纹 + 2格神识外物法宝；右侧图文卡片流 + 独立详情对比卡
   else if (curTab === 'bag') {
@@ -1587,10 +1614,30 @@ function renderSplitPanel() {
             <div class="det-title"><b>${it.name}</b> <span style="font-size:11px;color:var(--muted);">×${G.bag[selectedBagItem]}</span></div>
             <div class="det-desc">${it.desc}</div>
           </div>
-          ${(it.type==='consumable'||it.type==='box'||it.type==='dao_item') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">${it.type==='dao_item'?'参悟服用':'使用'}</button>` : `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
+          ${(it.type==='consumable'||it.type==='box'||it.type==='dao_item'||it.type==='youth_pill'||it.type==='youth_manual') ? `<button class="sleek-btn" id="bag-use" style="flex-shrink:0;">${it.type==='dao_item'?'参悟服用':(it.type==='youth_manual'?'参悟秘术':'使用')}</button>` : `<span style="font-size:10.5px;color:var(--muted);flex-shrink:0;">特定场合使用</span>`}
         `;
         const ub = det.querySelector('#bag-use');
         if (ub) ub.onclick = () => {
+          if (it.type === 'youth_manual') {
+            if (G.hasYouthArt) return showToast('你已习得【太素驻颜术】，可于角色状态面板随时运转或散去。');
+            G.bag[selectedBagItem]--;
+            if (G.bag[selectedBagItem] <= 0) delete G.bag[selectedBagItem];
+            G.hasYouthArt = true;
+            SFX.play('levelup');
+            showToast('参悟【太素驻颜诀】！现可在【角色状态】页随时开关太素驻颜术（封5%法力，重伤破功）。');
+            saveGame('auto', true); renderAll();
+            return;
+          }
+          if (it.type === 'youth_pill' && window.APPEARANCE) {
+            G.bag[selectedBagItem]--;
+            if (G.bag[selectedBagItem] <= 0) delete G.bag[selectedBagItem];
+            const res = window.APPEARANCE.applyYouthPill(G, it);
+            recalcDerivedStats(false);
+            SFX.play('levelup');
+            showToast(`服下【${it.name}】！${res.rejuvenated ? '洗髓返春，' : ''}外显容貌定格于 ${res.lockedAge} 岁（${res.stageName}），持续 ${res.durYears} 载！`);
+            saveGame('auto', true); renderAll();
+            return;
+          }
           if (it.type === 'dao_item') {
             activePanel = null;
             activeDialogue = {
@@ -2366,7 +2413,7 @@ function renderAll() {
   if (activeDialogue && !inBattle) {
     const wrap = document.createElement('div'); wrap.className = 'dlg-layer';
     wrap.innerHTML = `
-      <img class="dlg-portrait" src="${activeDialogue.asset || ASSETS.hero}" />
+      <img class="dlg-portrait ${(!activeDialogue.asset || activeDialogue.asset === ASSETS.hero) && window.APPEARANCE ? window.APPEARANCE.getProfile(G, G.totalDays).cssClasses : ''}" src="${(!activeDialogue.asset || activeDialogue.asset === ASSETS.hero) && window.APPEARANCE ? window.APPEARANCE.getHeroPortrait(G, ASSETS, false).src : (activeDialogue.asset || ASSETS.hero)}" />
       <div class="dlg-choices-float" id="dlg-ch"></div>
       <div class="dlg-bar">
         <div class="dlg-speaker-name">${activeDialogue.speaker}</div>

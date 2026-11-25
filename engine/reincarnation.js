@@ -181,6 +181,7 @@ window.REINCARNATION = (function () {
     }
     G.lifeCount = prevLife + 1;
     G.age = 16;
+    delete G.youthLock;
     G.realmIdx = 0;
     G.exp = 0;
     G.karma = 0;

@@ -156,6 +156,23 @@
         opacity:0; transition:opacity 0.25s; box-shadow:0 6px 22px rgba(0,0,0,0.65);
       }
       #ow-toast.show { opacity:1; }
+      #ow-minimap-box {
+        position:absolute; right:16px; top:68px; pointer-events:auto;
+        width:152px; background:rgba(8,13,20,0.86); border:1.5px solid rgba(212,184,122,0.55);
+        border-radius:8px; padding:5px; box-shadow:0 6px 20px rgba(0,0,0,0.65);
+        backdrop-filter:blur(5px);
+      }
+      #ow-minimap-head {
+        display:flex; justify-content:space-between; align-items:center;
+        font-size:10px; color:#f2daa0; margin-bottom:4px; padding:0 2px;
+      }
+      #ow-minimap-cv {
+        display:block; width:140px; height:128px; border-radius:4px;
+        background:#0b1522; border:1px solid rgba(212,184,122,0.25);
+      }
+      #ow-minimap-legend {
+        display:flex; justify-content:space-between; font-size:9px; color:#9d9586; margin-top:3px; padding:0 2px;
+      }
       #life-sim-modal {
         position:fixed; inset:0; z-index:9800; background:rgba(5,8,12,0.88);
         backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:10px;
@@ -935,8 +952,112 @@
     renderModal();
   }
 
+  let viewLayer = 'local'; // 'local' (正常视角局部城镇/宗门/野外实景) | 'world' (五洲七海大洲地图)
+  let minimapTimer = null;
+
+  function activeMapEngine() {
+    return viewLayer === 'local' ? window.LocalMap3D : window.Map3D;
+  }
+
+  function renderMinimap() {
+    const cv = document.getElementById('ow-minimap-cv');
+    const head = document.getElementById('ow-minimap-title');
+    if (!cv) return;
+    const eng = activeMapEngine();
+    const d = eng && eng.getMinimapData ? eng.getMinimapData() : null;
+    if (!d) return;
+    if (head) head.textContent = d.mode === 'local' ? `📍 ${d.title}` : '🌍 五洲七海';
+    const ctx = cv.getContext('2d');
+    const W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = d.mode === 'local' ? '#132421' : '#091a2c';
+    ctx.fillRect(0, 0, W, H);
+
+    const ox = d.ox || 0, oz = d.oz || 0;
+    const sx = x => ((x - ox) / d.w + 0.5) * W;
+    const sy = z => ((z - oz) / d.h + 0.5) * H;
+
+    if (d.mode === 'local') {
+      // 十字主街 & 灵溪简图
+      ctx.fillStyle = 'rgba(190,175,140,0.28)';
+      ctx.fillRect(W * 0.44, 6, W * 0.12, H - 12);
+      ctx.fillRect(10, H * 0.43, W - 20, H * 0.12);
+      ctx.fillStyle = 'rgba(42,130,175,0.45)';
+      ctx.fillRect(0, H * 0.70, W, H * 0.10);
+    }
+
+    // 建筑 / 板块点
+    (d.pois || []).forEach(p => {
+      const px = sx(p.x), py = sy(p.z);
+      ctx.fillStyle = p.type === 'exit' ? '#ffcf6e' : (p.type === 'ruin' ? '#f7d070' : (p.type === 'sea' ? 'rgba(70,130,180,0.35)' : '#d4b87a'));
+      ctx.fillRect(px - 3, py - 3, 6, 6);
+    });
+    // NPC（蓝点）
+    ctx.fillStyle = '#70b8f0';
+    (d.npcs || []).forEach(n => {
+      ctx.beginPath(); ctx.arc(sx(n.x), sy(n.z), 2.3, 0, Math.PI * 2); ctx.fill();
+    });
+    // 妖兽（红点）
+    ctx.fillStyle = '#e06258';
+    (d.beasts || []).forEach(b => {
+      ctx.beginPath(); ctx.arc(sx(b.x), sy(b.z), 2.8, 0, Math.PI * 2); ctx.fill();
+    });
+    // 主角（亮绿光点）
+    const hx = sx(d.hero.x), hy = sy(d.hero.z);
+    ctx.fillStyle = '#6fd3a8';
+    ctx.beginPath(); ctx.arc(hx, hy, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4; ctx.stroke();
+  }
+
   function handleWorldInteract(target) {
     if (!target) return;
+    if (target.type === 'exit_world') {
+      switchViewLayer('world');
+      showOwToast('🌍 已走出城门！现处于【五洲七海 2.5D 大洲地图】，可跨洲御剑远行');
+      return;
+    }
+    if (target.type === 'teahouse') {
+      const sp = target.data.plate || WORLD.nodeMap[HERO.locId];
+      const hist = WORLD.chronicles[Math.floor(Math.random() * Math.min(20, WORLD.chronicles.length))];
+      HERO.life.loneliness = Math.max(0, HERO.life.loneliness - 15);
+      pushLog(`你在【${sp.name}】仙缘茶馆听评书：“${hist ? hist.text : '太古灵潮初开之时……'}”`);
+      saveState(); syncTopHud();
+      showOwToast(`🍵 茶馆听书：${hist ? hist.text.slice(0, 38) + '…' : '孤寂大幅缓解！'}`);
+      return;
+    }
+    if (target.type === 'market') {
+      const sp = target.data.plate || WORLD.nodeMap[HERO.locId];
+      const inst = target.data.inst || { name: `${sp.name}·万宝坊市`, status: 'thriving' };
+      const corrupt = inst.status === 'corrupt';
+      activeTab = 'map';
+      activeScene = {
+        type: 'auction',
+        data: {
+          inst,
+          lots: [
+            { name: '二阶筑基灵丹', kind: '丹药', price: Math.round(95 * sp.priceIndex.pill), desc: '突破筑基关键灵丹', isFake: corrupt && Math.random() < 0.5, checked: false },
+            { name: '太古陨星灵矿', kind: '灵材', price: Math.round(70 * sp.priceIndex.mineral), desc: '炼制高阶飞剑主材', isFake: false, checked: false },
+            { name: '古宗残缺剑诀', kind: '功法', price: 110, desc: '疑似某覆灭大宗流出', isFake: corrupt, checked: false }
+          ]
+        }
+      };
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
+    if (target.type === 'black_market') {
+      HERO.masked = !HERO.masked;
+      saveState(); syncTopHud();
+      showOwToast(HERO.masked ? `🎭 黑市易容：你戴上【${HERO.maskName}】，江湖身份已隐藏！` : '🎭 你在暗巷卸下易容，恢复真容');
+      return;
+    }
+    if (target.type === 'sect_hall') {
+      selectedPlateId = target.data.plate.id;
+      activeTab = 'map'; activeScene = null;
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
     if (target.type === 'gather') {
       const nd = target.data;
       const gain = 12 + Math.floor((nd.leyline || 30) * 0.25);
@@ -974,20 +1095,66 @@
     if (target.type === 'plate') {
       selectedPlateId = target.data.id;
       HERO.locId = target.data.id;
-      activeTab = 'map';
-      activeScene = null;
-      document.getElementById('life-sim-modal').classList.add('open');
-      renderModal();
+      switchViewLayer('local', target.data.id);
+      showOwToast(`🏘️ 已步入【${target.data.name}】正常视角城镇实景！`);
     }
+  }
+
+  function switchViewLayer(layer, plateId) {
+    ensureInit();
+    if (plateId) { HERO.locId = plateId; selectedPlateId = plateId; }
+    viewLayer = layer;
+    const host = document.getElementById('main-map3d-host');
+    if (!host) return;
+    if (window.LocalMap3D) window.LocalMap3D.dispose();
+    if (window.Map3D) window.Map3D.dispose();
+
+    const wrap = document.getElementById('ow-nearby-wrap');
+    if (wrap) wrap.classList.remove('show');
+    const swBtn = document.getElementById('ow-btn-layer');
+    if (swBtn) swBtn.textContent = viewLayer === 'local' ? '🌍 出城·大洲地图' : '🏘️ 进入本地实景';
+
+    const commonOpts = {
+      onRegionChange: pid => {
+        selectedPlateId = pid;
+        syncTopHud();
+        const nd = WORLD.nodeMap[pid];
+        if (nd) showOwToast(`🗺️ 踏入【${nd.name}】地界（灵脉 ${nd.leyline} · 暗森 ${nd.darkForestIdx || 0}）`);
+      },
+      onNearbyChange: target => {
+        const w = document.getElementById('ow-nearby-wrap');
+        const b = document.getElementById('ow-nearby-btn');
+        if (!w || !b) return;
+        if (target) { b.textContent = `[E] ${target.label}（${target.sub}）`; w.classList.add('show'); }
+        else w.classList.remove('show');
+      },
+      onInteract: target => handleWorldInteract(target),
+      onFlyToggle: flying => {
+        const fb = document.getElementById('ow-btn-fly');
+        if (fb) fb.textContent = flying ? '🗡️' : '🚶';
+        showOwToast(flying ? '🗡️ 已祭出飞剑！进入【御剑飞行】状态' : '🚶 已收剑落地，恢复【徒步漫游】');
+      },
+      onToast: msg => showOwToast(msg)
+    };
+
+    syncTopHud();
+    requestAnimationFrame(() => {
+      if (viewLayer === 'local' && window.LocalMap3D) {
+        const plate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+        window.LocalMap3D.mount(host, WORLD, HERO, plate, commonOpts);
+      } else if (window.Map3D) {
+        window.Map3D.mount(host, WORLD, HERO, commonOpts);
+      }
+      renderMinimap();
+    });
   }
 
   function mountMainBg3D() {
     ensureInit();
-    if (!window.Map3D || !window.THREE) return;
+    if (!window.THREE) return;
     const app = document.getElementById('app');
     if (!app) return;
 
-    // 隐藏旧 2D 图层与冲突的底栏按钮，让 2.5D 可操控世界成为唯一主画面
     ['world-layer', 'hud-bl', 'hud-br', 'hud-tc'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -1001,16 +1168,20 @@
       app.appendChild(host);
     }
 
-    let zoomMode = 'close';
     if (!document.getElementById('ow-hud')) {
       const hud = document.createElement('div');
       hud.id = 'ow-hud';
       hud.innerHTML = `
         <div class="ow-top-bar">
           <span id="ow-region-info">📍 加载沧溟山河……</span>
-          <button class="ls-btn jade" id="ow-btn-m1" style="padding:3px 7px;">⏱ +1月</button>
+          <button class="ls-btn jade" id="ow-btn-layer" style="padding:3px 8px;font-weight:700;">🌍 出城·大洲地图</button>
+          <button class="ls-btn" id="ow-btn-m1" style="padding:3px 7px;">⏱ +1月</button>
           <button class="ls-btn blue" id="ow-btn-y1" style="padding:3px 7px;">🧘 闭关1年</button>
-          <button class="ls-btn" id="ow-btn-zoom" style="padding:3px 7px;">🔭 俯瞰全景</button>
+        </div>
+        <div id="ow-minimap-box">
+          <div id="ow-minimap-head"><span id="ow-minimap-title">📍 小地图</span><span style="color:#6fd3a8;">雷达</span></div>
+          <canvas id="ow-minimap-cv" width="140" height="128"></canvas>
+          <div id="ow-minimap-legend"><span>🟢我</span><span>🟡建筑</span><span>🔵NPC</span><span>🔴妖</span></div>
         </div>
         <div class="ow-nearby-wrap" id="ow-nearby-wrap">
           <button id="ow-nearby-btn">[E] 交互</button>
@@ -1023,7 +1194,7 @@
           </div>
           <div class="ow-hint-box">
             <div><b style="color:#6fd3a8;">WASD / 方向键 / 点击地面</b> 控制主角行走</div>
-            <div><b style="color:#f2daa0;">Space</b> 御剑飞行 · <b style="color:#f2daa0;">E</b> 靠近交互 · <b>右键</b>转视角 · <b>滚轮</b>缩放</div>
+            <div><b style="color:#f2daa0;">Space</b> 御剑 · <b style="color:#f2daa0;">E</b> 进建筑/对话/出城 · <b>右键</b>转视角 · <b>滚轮</b>缩放</div>
           </div>
         </div>
         <div class="ow-menu-br">
@@ -1042,22 +1213,20 @@
       });
       hud.querySelectorAll('[data-dir]').forEach(b => {
         const [vx, vz] = b.dataset.dir.split(',').map(Number);
-        const start = () => window.Map3D && window.Map3D.setJoystick(vx, vz);
-        const stop = () => window.Map3D && window.Map3D.setJoystick(0, 0);
+        const start = () => { const e = activeMapEngine(); if (e) e.setJoystick(vx, vz); };
+        const stop = () => { const e = activeMapEngine(); if (e) e.setJoystick(0, 0); };
         b.addEventListener('pointerdown', start);
         b.addEventListener('pointerup', stop);
         b.addEventListener('pointerleave', stop);
       });
       document.getElementById('ow-btn-fly').onclick = () => {
-        if (window.Map3D) window.Map3D.toggleFly();
+        const e = activeMapEngine(); if (e) e.toggleFly();
       };
       document.getElementById('ow-nearby-btn').onclick = () => {
-        if (window.Map3D) window.Map3D.triggerInteract();
+        const e = activeMapEngine(); if (e) e.triggerInteract();
       };
-      document.getElementById('ow-btn-zoom').onclick = () => {
-        zoomMode = zoomMode === 'close' ? 'world' : 'close';
-        if (window.Map3D) window.Map3D.setZoomPreset(zoomMode);
-        document.getElementById('ow-btn-zoom').textContent = zoomMode === 'close' ? '🔭 俯瞰全景' : '🎯 拉近主角';
+      document.getElementById('ow-btn-layer').onclick = () => {
+        switchViewLayer(viewLayer === 'local' ? 'world' : 'local');
       };
       document.getElementById('ow-btn-m1').onclick = () => {
         const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
@@ -1071,35 +1240,10 @@
       };
     }
 
-    syncTopHud();
-    requestAnimationFrame(() => {
-      window.Map3D.mount(host, WORLD, HERO, {
-        onRegionChange: pid => {
-          selectedPlateId = pid;
-          syncTopHud();
-          const nd = WORLD.nodeMap[pid];
-          if (nd) showOwToast(`🗺️ 踏入【${nd.name}】地界（灵脉 ${nd.leyline} · 暗森 ${nd.darkForestIdx || 0}）`);
-        },
-        onNearbyChange: target => {
-          const wrap = document.getElementById('ow-nearby-wrap');
-          const btn = document.getElementById('ow-nearby-btn');
-          if (!wrap || !btn) return;
-          if (target) {
-            btn.textContent = `[E] ${target.label}（${target.sub}）`;
-            wrap.classList.add('show');
-          } else {
-            wrap.classList.remove('show');
-          }
-        },
-        onInteract: target => handleWorldInteract(target),
-        onFlyToggle: flying => {
-          const fb = document.getElementById('ow-btn-fly');
-          if (fb) fb.textContent = flying ? '🗡️' : '🚶';
-          showOwToast(flying ? '🗡️ 已祭出飞剑！进入【御剑飞行】状态（速度×2.3，可越海穿山）' : '🚶 已收剑落地，恢复【徒步漫游】');
-        },
-        onToast: msg => showOwToast(msg)
-      });
-    });
+    // 默认直接进入【正常视角局部城镇/宗门实景地图】！
+    switchViewLayer('local', HERO.locId);
+    if (minimapTimer) clearInterval(minimapTimer);
+    minimapTimer = setInterval(renderMinimap, 120);
   }
 
   function mount() {

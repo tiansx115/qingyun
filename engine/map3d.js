@@ -858,6 +858,7 @@
     state = {
       renderer, scene, camera, raf: null, cleanupListeners,
       heroPos, camState, swordMesh, joyVec,
+      npcActors, beastActors, world,
       getNearby: () => nearbyTarget,
       opts
     };
@@ -907,7 +908,24 @@
     if (tg && state.opts && state.opts.onInteract) state.opts.onInteract(tg);
   }
 
-  const Map3D = { mount, dispose, moveToPlate, teleportToPlate, toggleFly, setZoomPreset, setJoystick, triggerInteract, COORDS_3D };
+  function getMinimapData() {
+    if (!state) return null;
+    return {
+      mode: 'world',
+      title: '五洲七海大洲图',
+      w: 64, h: 36,
+      ox: 4.0, oz: 1.2,
+      hero: { x: state.heroPos.x, z: state.heroPos.z },
+      pois: (state.world.nodes || []).map(nd => {
+        const c = COORDS_3D[nd.id] || [0, 0];
+        return { x: c[0], z: c[1], label: nd.id, type: nd.isSea ? 'sea' : 'plate' };
+      }),
+      npcs: (state.npcActors || []).map(a => ({ x: a.x, z: a.z })),
+      beasts: (state.beastActors || []).map(b => ({ x: b.x, z: b.z }))
+    };
+  }
+
+  const Map3D = { mount, dispose, moveToPlate, teleportToPlate, toggleFly, setZoomPreset, setJoystick, triggerInteract, getMinimapData, COORDS_3D };
   if (typeof module !== 'undefined' && module.exports) module.exports = Map3D;
   root.Map3D = Map3D;
 })(typeof window !== 'undefined' ? window : globalThis);

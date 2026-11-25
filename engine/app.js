@@ -415,7 +415,8 @@ function gainExp(amt) {
   const ha = D.HEART_ARTS[G.heartArt] || { expBonus: 0, elem: 'none' };
   const apt = window.REINCARNATION ? window.REINCARNATION.getElemAptitude(G, ha.elem) : { rate: 1.0 };
   const eq = getEquipStats();
-  const bonus = Math.max(2, Math.floor(amt * apt.rate * (1 + G.wit * 0.03 + (ha.expBonus || 0) + (eq.expRate || 0))));
+  const regBonus = window.WORLD_SIM ? window.WORLD_SIM.getRegionBonus(G, D).mul : 1.0;
+  const bonus = Math.max(2, Math.floor(amt * apt.rate * regBonus * (1 + G.wit * 0.03 + (ha.expBonus || 0) + (eq.expRate || 0))));
   G.exp += bonus;
   const need = D.REALMS[G.realmIdx].exp;
   if (G.exp >= need && !D.REALMS[G.realmIdx + 1]?.tribulation) tryRealmUp(false);
@@ -2025,26 +2026,29 @@ function renderSplitPanel() {
     };
     }
   }
-  // 5. 天下邸报 · 飞剑传书 · 九大势力与活跃修士名录
+  // 5. 天下邸报 · 飞剑传书 · 本纪元随机宗门政局、天骄谱与江湖小组织
   else if (curTab === 'news') {
     if (window.WORLD_SIM) window.WORLD_SIM.initWorldState(G);
     (G.letters || []).forEach(l => { l.read = true; });
-    const powers = window.WORLD_SIM ? window.WORLD_SIM.NINE_POWERS : [];
+    const powers = G.factionsDyn || [];
+    const minors = G.minorOrgs || [];
     const npcs = G.simNpcs || [];
+    const tianjiaos = npcs.filter(n => n.isTianjiao);
     const newsList = G.worldNews || [];
     const letters = G.letters || [];
     const openRifts = (G.randomRifts || []).filter(rf => rf.expireDay > G.totalDays);
+    const regInfo = window.WORLD_SIM ? window.WORLD_SIM.getRegionBonus(G, D) : { mul: 1, tide: { name: '寻常年景', desc: '' }, regNote: '' };
 
     main.innerHTML = `
       <div class="dual-left">
         <div class="sec-head">
-          <span>众生百态 · 限时秘境 · 九大势力</span>
-          <span style="font-size:10px;color:var(--jade);">物价 ${(G.worldState?.priceMul || 1).toFixed(2)}x · 业煞 ${G.karma || 0}</span>
+          <span>沧溟势力志 · 灵潮天象 · 天骄众生</span>
+          <span style="font-size:10px;color:var(--jade);">${regInfo.tide.name} (${regInfo.mul}x) · 物价 ${(G.worldState?.priceMul || 1).toFixed(2)}x</span>
         </div>
         <div class="gp-body">
           <div class="glass-card active" style="padding:7px 10px;">
             <div>
-              <h4>当前天下大势</h4>
+              <h4>天象：【${regInfo.tide.name}】 · 地脉：${regInfo.regNote}</h4>
               <p>${G.worldState?.warDesc || '五洲四海风平浪静'}</p>
             </div>
           </div>
@@ -2068,38 +2072,57 @@ function renderSplitPanel() {
               ${lt.locId ? `<button class="sleek-btn" data-goto="${lt.locId}" style="padding:4px 10px;font-size:10.5px;flex-shrink:0;">动身前往</button>` : ''}
             </div>
           `).join('')}
-          <div class="sub-cap gold">随机众生名录（共 ${npcs.filter(x=>x.alive).length} 人在世 · 每日真实赶路与更替）</div>
+          <div class="sub-cap gold">本纪元十大势力政局（掌门陨落将由新天骄继位变政！）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            ${npcs.slice(0, 26).map(n => {
-              const rName = D.REALMS[n.realmIdx]?.name || '炼气';
-              const lName = D.LOCATIONS.find(l => l.id === n.loc)?.name || '未知海域';
-              const dName = n.destLoc && D.LOCATIONS.find(l => l.id === n.destLoc)?.name;
-              const moveTxt = (n.travelDaysLeft > 0 && dName) ? `正赶往【${dName}】(余${n.travelDaysLeft}日)` : `驻留【${lName}】`;
-              const holdsRelic = G.worldRelic?.holder === 'npc' && G.worldRelic?.npcId === n.id;
+            ${powers.map(p => {
+              let bestAlly = null, worstFoe = null, maxD = -999, minD = 999;
+              powers.forEach(o => {
+                if (o.id === p.id) return;
+                const d = window.WORLD_SIM.getDiplomacy(G, p.id, o.id);
+                if (d > maxD) { maxD = d; bestAlly = o; }
+                if (d < minD) { minD = d; worstFoe = o; }
+              });
+              const dipLine = `${bestAlly && maxD >= 15 ? `交好:${bestAlly.name.slice(0,4)}(+${maxD})` : '暂无铁盟'} · ${worstFoe && minD <= -15 ? `交恶:${worstFoe.name.slice(0,4)}(${minD})` : '四海竞合'}`;
               return `
-                <div class="glass-card ${holdsRelic ? 'active' : ''}" style="padding:6px 10px;opacity:${n.alive ? 1 : 0.45};">
-                  <div style="flex:1;min-width:0;">
-                    <h4>${n.name} <span style="font-size:10px;color:var(--muted);">(${n.title} · ${n.persName || '散修'})</span> ${holdsRelic ? '<span class="mini-seal">怀揣轮回盘!</span>' : ''}</h4>
-                    <p>${n.alive ? `${rName} · ${n.age}/${n.maxAge}岁 · ${moveTxt}` : '已于雷劫或寿尽中陨落'}</p>
+                <div class="glass-card" style="padding:6px 10px;">
+                  <div>
+                    <h4>${p.name} <span class="mini-set">第${p.genCount || 1}代掌门：${p.leaderName}</span> <span style="font-size:10px;color:var(--jade);">[${p.policyName} · 声望 ${G.factionRep?.[p.id] || 0}]</span></h4>
+                    <p>命脉：${p.monopoly} · ${dipLine}</p>
                   </div>
                 </div>
               `;
             }).join('')}
           </div>
-          <div class="sub-cap gold" style="margin-top:4px;">九大势力声望与门风</div>
+          <div class="sub-cap gold" style="margin-top:4px;">江湖小组织暗流（共 ${minors.length} 个草根帮会）</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            ${powers.map(p => `
-              <div class="glass-card" style="padding:6px 10px;">
-                <div><h4>${p.name} <span style="font-size:10px;color:var(--jade);">[${p.zone} · 声望 ${G.factionRep?.[p.id] || 0}]</span></h4><p>${p.desc}</p></div>
+            ${minors.map(m => `
+              <div class="glass-card ${m.allyPlayer ? 'active' : ''}" style="padding:5px 10px;">
+                <div><h4>${m.name} <span style="font-size:10px;color:var(--muted);">[${m.zone} · 帮主:${m.leaderName} · 声势 ${m.power}]</span> ${m.allyPlayer ? '<span class="mini-set">已效忠</span>' : ''}</h4><p>${m.role}</p></div>
               </div>
             `).join('')}
+          </div>
+          <div class="sub-cap gold" style="margin-top:4px;">五洲当代天骄谱（共 ${tianjiaos.filter(x=>x.alive).length} 人在世 · 含经典命格）</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${tianjiaos.map(n => {
+              const rName = D.REALMS[n.realmIdx]?.name || '炼气';
+              const lName = D.LOCATIONS.find(l => l.id === n.loc)?.name || '外域';
+              const holdsRelic = G.worldRelic?.holder === 'npc' && G.worldRelic?.npcId === n.id;
+              return `
+                <div class="glass-card active" style="padding:6px 10px;opacity:${n.alive ? 1 : 0.45};">
+                  <div style="flex:1;min-width:0;">
+                    <h4>${n.name} <span class="mini-seal">${n.tianjiaoTag || '天骄'}</span> <span style="font-size:10px;color:var(--muted);">(${n.title})</span> ${holdsRelic ? '<span class="mini-seal">轮回盘!</span>' : ''}</h4>
+                    <p>${n.alive ? `${rName} · ${n.age}/${n.maxAge}岁 · 现处【${lName}】 · ${n.tianjiaoDesc || ''}` : '已于大劫中陨落'}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       </div>
       <div class="dual-right">
         <div class="sec-head">
           <span>《沧溟风物邸报》编年史</span>
-          <span style="font-size:10.5px;color:var(--muted);">每跨满 30 日自动推演天下变局</span>
+          <span style="font-size:10.5px;color:var(--muted);">在世众生 ${npcs.filter(x=>x.alive).length} 人 · 每日同步演化</span>
         </div>
         <div class="gp-body">
           ${newsList.map(nw => `
@@ -2382,6 +2405,18 @@ function renderAll() {
         nb.textContent = `在场修士 (${localNpcs.length}人 · 探查/交易/夺宝)`;
         nb.onclick = () => window.WORLD_SIM.openLocalNpcsModal(getEventCtx(), locObj.id, null);
         bl.appendChild(nb);
+      }
+      // 经典修仙奇遇游历按钮（随时随地触发合欢宗、退婚少年、残魂夺舍、宗门八卦、红尘炼心等海量奇遇！）
+      if (window.ENCOUNTERS) {
+        const eb = document.createElement('button');
+        eb.className = 'sleek-btn ghost';
+        eb.textContent = '游历奇遇 (耗2日)';
+        eb.onclick = () => {
+          SFX.play('click');
+          if (window.WORLD_SIM) window.WORLD_SIM.advanceDays(getEventCtx(), 2, {});
+          window.ENCOUNTERS.triggerRandomEncounter(getEventCtx(), locObj.id);
+        };
+        bl.appendChild(eb);
       }
       // 动态展示当前地点刷出的限时天降随机秘境！
       const localRift = (G.randomRifts || []).find(rf => rf.loc === locObj.id && rf.expireDay > G.totalDays);

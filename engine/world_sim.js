@@ -9,15 +9,52 @@ window.WORLD_SIM = (function () {
   const CN_MONTHS = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '冬', '腊'];
 
   const NINE_POWERS = [
-    { id: 'juntian', name: '钧天正道仙盟', zone: '东洲/中洲', desc: '执掌跨洲古传送阵（声望≥40享半价）与正统六道传承，严惩高业煞魔修。' },
-    { id: 'daqian',  name: '大乾仙朝·千年世家', zone: '中洲皇都', desc: '皇朝龙气与崔/卢/姬千年世家；结下深厚世家恩义后，下世转生高概率投胎为世家嫡子！' },
-    { id: 'danding', name: '隐世丹鼎神谷', zone: '南洲秘谷', desc: '超然中立的药王与天工圣谷，可求取延寿圣丹与重铸强化随身法器。' },
-    { id: 'wanbao',  name: '四海万宝商盟', zone: '四海商港', desc: '垄断跨洋巨舰航线、年度大拍与四海天机情报网。' },
-    { id: 'zhurong', name: '祝融古巫殿',   zone: '南赤瘴洲', desc: '执掌地肺真火、奇虫巫蛊与古炼体术，不看灵根高低，唯敬强者。' },
-    { id: 'lindong', name: '凛冬剑冢',     zone: '北俱寒洲', desc: '镇守永冻冰川与陨仙古坑，极道杀伐剑阵圣地。' },
-    { id: 'jiuyou',  name: '九幽魔道诸脉', zone: '暗坊/北渊', desc: '掌握燃寿速成魔功与夺魄秘术，修之涨【业煞】。' },
-    { id: 'longting',name: '沧溟海族龙庭', zone: '七成深海', desc: '统御浩瀚沧海，滥捕海兽引动【兽潮封海】，交好可得【通海龙珠】直入深渊。' },
-    { id: 'penglai', name: '碎星散修盟·瀛洲古族', zone: '群岛/彼岸', desc: '近海散修自由港与十万里黑水洋彼岸【先天道果母树】守护者。' }
+    { id: 'juntian', archetype: 'sword',   fixed: false, zone: '东洲/中洲', monopoly: '跨洲古传送阵与正统道统', desc: '执掌跨洲古传送阵（声望≥40享半价），表面标榜秩序，暗中凭传送阵税敛财。' },
+    { id: 'daqian',  archetype: 'dynasty', fixed: false, zone: '中洲皇都',  monopoly: '十亿凡俗龙气与世家血脉', desc: '仙朝龙气与千年世家门阀；结下世家恩义后，下世转生高概率投胎为世家嫡子！' },
+    { id: 'danding', archetype: 'alchemy', fixed: false, zone: '南洲秘谷',  monopoly: '延寿圣丹、返春丹与古宝重铸', desc: '超然中立的药王与天工圣地，全界老祖皆有求于它，谁动它便遭天下共诛。' },
+    { id: 'hehuan',  archetype: 'hehuan',  fixed: false, zone: '东洲/中洲', monopoly: '阴阳双修秘法与高层情丝情报网', desc: '风流情丝大宗！明面遭名门口诛笔伐，暗地里无数老祖与世家公子重金求缘联姻。' },
+    { id: 'wanbao',  archetype: 'trade',   fixed: true,  fixedName: '四海万宝商盟', zone: '四海商港', monopoly: '跨洋灵舟造船术与年度鉴宝大拍', desc: '黑白通吃的超级商业巨鳄，连魔脉与海族皆与之交易。' },
+    { id: 'zhurong', archetype: 'body',    fixed: false, zone: '南赤瘴洲',  monopoly: '地肺真火淬体与奇虫巫蛊', desc: '不看灵根高低、唯敬强者的南荒古脉，废灵根逆袭圣地。' },
+    { id: 'lindong', archetype: 'frost',   fixed: false, zone: '北俱寒洲',  monopoly: '永冻极道剑意与北渊妖魔猎场', desc: '民风彪悍的极北武疯子剑修，常年与北渊异族及魔脉血战。' },
+    { id: 'jiuyou',  archetype: 'nether',  fixed: false, zone: '暗坊/北渊', monopoly: '燃寿速成秘法与地下悬赏暗市', desc: '崇尚弱肉强食的激进修仙流派，讲求等价交换，庇护无根狠人。' },
+    { id: 'longting',archetype: 'ocean',   fixed: true,  fixedName: '沧溟海族龙庭', zone: '七成深海', monopoly: '72% 深海仙矿与归墟海眼', desc: '海洋原住民霸权，滥捕海兽必引兽潮封海，交好可得【通海龙珠】自由潜渊。' },
+    { id: 'penglai', archetype: 'ancient', fixed: true,  fixedName: '瀛洲太古遗族', zone: '黑水洋彼岸', monopoly: '先天道果母树与太初雷池', desc: '孤悬十万里绝灵黑水洋外的太古遗民，不涉四洲争端，唯敬满道强者。' }
+  ];
+
+  // 宗门命名定律词库（绝不乱拼，按流派特征严格组合！）
+  const SECT_NAME_LAWS = {
+    sword:   { pre: ['太白', '青冥', '天枢', '玄霄', '凌云', '紫阳', '苍梧', '玉虚'], suf: ['剑宗', '道门', '剑阁', '玄宗', '圣宗'] },
+    dynasty: { pre: ['大乾', '大虞', '大胤', '大昭', '大景', '大周'], suf: ['崔氏世家', '卢氏世家', '姬氏世家', '萧氏世家', '谢氏世家'] },
+    alchemy: { pre: ['丹鼎', '药王', '神农', '百草', '灵炉', '玄火'], suf: ['神谷', '丹宗', '药阁', '圣山'] },
+    hehuan:  { pre: ['云梦', '霓裳', '红尘', '醉月', '青鸾', '瑶池'], suf: ['合欢宗', '情丝宫', '妙音坊', '胭脂阁'] },
+    body:    { pre: ['祝融', '九黎', '赤焰', '蛮神', '撼岳', '镇荒'], suf: ['古巫殿', '炼体宗', '战神宫', '蛊王窟'] },
+    frost:   { pre: ['凛冬', '玄冰', '北冥', '寒霜', '太阴', '飞雪'], suf: ['剑冢', '寒宫', '冰渊阁', '雪原宗'] },
+    nether:  { pre: ['九幽', '血煞', '冥渊', '天魔', '黄泉', '森罗'], suf: ['魔宫', '圣教', '鬼宗', '冥殿'] }
+  };
+
+  const POLICIES = [
+    { id: 'expand', name: '强硬扩土', desc: '四处争夺灵矿地盘，对外强硬易起战火' },
+    { id: 'trade',  name: '务实通商', desc: '广结商缘、以利为先，缓和各方矛盾' },
+    { id: 'turtle', name: '韬光养晦', desc: '闭山苦修、不惹是非，暗中积蓄底蕴' },
+    { id: 'charm',  name: '纵情合纵', desc: '借联姻与密使拉拢强援、挑拨强敌' },
+    { id: 'purge',  name: '铁血肃清', desc: '整顿内部、严打异己，对宿敌绝不姑息' }
+  ];
+
+  const TIANJIAO_ARCHETYPES = [
+    { tag: '退婚逆袭·燃火少年', dao: 'spell', pers: 'zealot',   desc: '曾遭世家退婚羞辱，身怀古戒残火隐忍崛起' },
+    { tag: '苟道老六·稳健长生', dao: 'array', pers: 'cautious', desc: '从不露锋芒，储物袋塞满保命丹与阵盘，十成把握才出手' },
+    { tag: '天生剑骨·孤绝剑子', dao: 'sword', pers: 'upright',  desc: '视权势如浮云，唯求极道一剑，最喜四海寻强敌论剑' },
+    { tag: '合欢圣女·红尘情丝', dao: 'soul',  pers: 'greedy',   desc: '游走各大仙朝世家与宗门之间，手握密闻与双修机缘', forceFac: 'hehuan' },
+    { tag: '世家嫡子·气运皇胄', dao: 'sword', pers: 'ruthless', desc: '出身仙朝顶级门阀，资源丰厚、自带护道重宝', forceFac: 'daqian' },
+    { tag: '寒门狠人·独行夺宝', dao: 'body',  pers: 'ruthless', desc: '无门无派全凭厮杀搏命，以狠辣老辣闻名五洲' },
+    { tag: '丹道妖孽·少年药王', dao: 'pact',  pers: 'upright',  desc: '一眼辨识灵药年份，各大老祖争相重金拉拢', forceFac: 'danding' }
+  ];
+
+  const WORLD_TIDES = [
+    { id: 'surge',  name: '灵潮勃发', expMul: 1.20, priceMul: 0.95, desc: '归墟海眼喷吐太古灵机，全界修炼效率 +20%，限时秘境频现！' },
+    { id: 'normal', name: '寻常年景', expMul: 1.00, priceMul: 1.00, desc: '五洲七海灵脉平和，各方势力暗流涌动。' },
+    { id: 'winter', name: '末法寒冬', expMul: 0.85, priceMul: 1.25, desc: '灵气暂时枯竭（修炼 -15%），各派因争抢灵矿频发摩擦，丹药涨价。' },
+    { id: 'demon',  name: '归墟魔潮', expMul: 1.05, priceMul: 1.15, desc: '海眼与北渊煞气倒灌，妖魔狂暴但战利丰厚，各方发布高额悬赏！' }
   ];
 
   // 随机姓名、道号、性格与随机秘境词库
@@ -41,11 +78,108 @@ window.WORLD_SIM = (function () {
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
-  function genProceduralNpc(seq, realmTierHint, D) {
+  function buildDynamicWorldPowers() {
+    return NINE_POWERS.map(p => {
+      let name = p.fixedName || p.id;
+      if (!p.fixed) {
+        const law = SECT_NAME_LAWS[p.archetype];
+        if (p.archetype === 'dynasty') {
+          name = `${pick(law.pre)}仙朝·${pick(law.suf)}`;
+        } else if (law) {
+          const pre = pick(law.pre);
+          const goodSuf = law.suf.filter(s => ![...pre].some(ch => s.includes(ch)));
+          name = pre + pick(goodSuf.length ? goodSuf : law.suf);
+        }
+      }
+      const pol = pick(POLICIES);
+      return {
+        id: p.id,
+        archetype: p.archetype,
+        fixed: !!p.fixed,
+        name,
+        zone: p.zone,
+        monopoly: p.monopoly,
+        desc: p.desc,
+        policyId: pol.id,
+        policyName: pol.name,
+        leaderNpcId: null,
+        leaderName: '待选新主',
+        genCount: 1
+      };
+    });
+  }
+
+  function buildMinorOrgs() {
+    const pre = ['青竹', '听雨', '血衣', '黑水', '百花', '碎星', '飞鹰', '长乐', '千机', '孤舟'];
+    const suf = [
+      { t: '散修互助会', role: '底层散修抱团求生' },
+      { t: '情报暗楼',   role: '兜售各派掌门秘闻与黑料' },
+      { t: '黑水走私帮', role: '绕过商盟封海偷渡海域' },
+      { t: '采药互助盟', role: '深入绝地采摘百年灵草' },
+      { t: '赏金暗坊',   role: '承接私下仇杀与截镖悬赏' },
+      { t: '百花茶社',   role: '牵线搭桥与风流雅聚' }
+    ];
+    const zones = ['东栖霞洲', '南赤瘴洲', '北俱寒洲', '中钧天洲', '近海群岛'];
+    const used = new Set();
+    const out = [];
+    for (let i = 0; i < 6; i++) {
+      let pn = pick(pre);
+      while (used.has(pn)) pn = pick(pre);
+      used.add(pn);
+      const sf = suf[i % suf.length];
+      out.push({
+        id: 'minor_' + (i + 1),
+        name: pn + sf.t,
+        role: sf.role,
+        zone: pick(zones),
+        leaderName: pick(SURNAMES) + pick(GIVEN_A) + pick(GIVEN_B),
+        power: randInt(15, 45),
+        alive: true,
+        allyPlayer: false
+      });
+    }
+    return out;
+  }
+
+  function getDipKey(a, b) { return a < b ? `${a}|${b}` : `${b}|${a}`; }
+
+  function initDiplomacy(factions) {
+    const dip = {};
+    for (let i = 0; i < factions.length; i++) {
+      for (let j = i + 1; j < factions.length; j++) {
+        const a = factions[i], b = factions[j];
+        let val = randInt(-35, 35);
+        if (a.archetype === 'alchemy' || b.archetype === 'alchemy' || a.archetype === 'trade' || b.archetype === 'trade') {
+          val = randInt(5, 45); // 丹谷与商盟靠命脉天然吃香
+        }
+        if (a.archetype === 'hehuan' || b.archetype === 'hehuan') {
+          val = randInt(-25, 40); // 合欢宗爱恨交织、暗通款曲
+        }
+        dip[getDipKey(a.id, b.id)] = val;
+      }
+    }
+    return dip;
+  }
+
+  function getDiplomacy(G, aId, bId) {
+    if (!G || !G.diplomacy || aId === bId) return 0;
+    return G.diplomacy[getDipKey(aId, bId)] || 0;
+  }
+
+  function shiftDiplomacy(G, aId, bId, delta) {
+    if (!G || !aId || !bId || aId === bId) return 0;
+    G.diplomacy = G.diplomacy || {};
+    const k = getDipKey(aId, bId);
+    G.diplomacy[k] = Math.max(-100, Math.min(100, (G.diplomacy[k] || 0) + delta));
+    return G.diplomacy[k];
+  }
+
+  function genProceduralNpc(seq, realmTierHint, D, factionsDyn, opts = {}) {
+    const facs = (factionsDyn && factionsDyn.length) ? factionsDyn : NINE_POWERS;
     const usedR = realmTierHint != null ? realmTierHint : (Math.random() < 0.42 ? randInt(0, 2) : (Math.random() < 0.72 ? randInt(3, 4) : randInt(4, 6)));
-    const pwr = pick(NINE_POWERS);
-    const pers = pick(PERSONALITIES);
-    const dao = pick(DAO_KEYS);
+    const pwr = opts.forceFacId ? (facs.find(f => f.id === opts.forceFacId) || pick(facs)) : pick(facs);
+    const pers = opts.forcePers ? (PERSONALITIES.find(p => p.id === opts.forcePers) || pick(PERSONALITIES)) : pick(PERSONALITIES);
+    const dao = opts.forceDao || pick(DAO_KEYS);
     const sname = pick(SURNAMES);
     const gname = pick(GIVEN_A) + (Math.random() < 0.72 ? pick(GIVEN_B) : '');
     const name = sname + gname;
@@ -59,7 +193,6 @@ window.WORLD_SIM = (function () {
     const validLocs = locs.filter(l => (l.seaZone || 0) <= Math.max(0, usedR - 2));
     const startLoc = (pick(validLocs.length ? validLocs : locs) || locs[0]).id;
 
-    // 随机随身行囊宝物（1~3件，高阶修士有概率揣着延寿桃、悟道茶甚至古宝！）
     const bag = {};
     const itemPool = usedR >= 4 ? LOOT_POOL_HIGH : LOOT_POOL_LOW;
     const itemCnt = randInt(1, 3);
@@ -69,22 +202,23 @@ window.WORLD_SIM = (function () {
     }
 
     const factionTitles = {
-      juntian: ['正道真传', '巡山剑修', '仙盟执事'],
+      juntian: ['真传剑修', '巡山执事', '传法长老'],
       daqian:  ['世家贵胄', '仙朝供奉', '皇城靖夜司'],
       danding: ['游方丹师', '寻药客', '天工铸师'],
+      hehuan:  ['霓裳真传', '情丝使者', '红尘客卿'],
       wanbao:  ['四海行商', '鉴宝师', '护船客卿'],
       zhurong: ['南荒巫祝', '百战体修', '控火祭司'],
       lindong: ['苦寒剑客', '守冢人', '冰原阵师'],
-      jiuyou:  ['九幽魔修', '暗巷邪修', '炼魂散魔'],
-      longting:['化形海修', '沧溟巡使', '近海散妖'],
-      penglai: ['海外散修', '孤岛奇人', '寻仙游侠']
+      jiuyou:  ['幽冥暗使', '炼魂客', '地下悬赏客'],
+      longting:['化形海修', '沧溟巡使', '深海龙裔'],
+      penglai: ['瀛洲遗民', '古岛行者', '太古守道人']
     };
-    const title = pick(factionTitles[pwr.id] || ['四海散修']);
+    const roleTitle = opts.isLeader ? '现任掌门' : pick(factionTitles[pwr.id] || ['四海散修']);
+    const facShort = (pwr.name || '散修').slice(0, 4);
 
     const realAge = Math.max(16, Math.min(maxAge - 8, baseAge));
-    // 高龄/高阶修士有约 32% 概率服过驻颜丹或运转太素驻颜术伪装青年皮相（扮猪吃老虎！）
     let youthLock = null;
-    if ((realAge >= 90 || usedR >= 3) && Math.random() < 0.32) {
+    if ((realAge >= 90 || usedR >= 3 || pwr.id === 'hehuan') && Math.random() < (pwr.id === 'hehuan' ? 0.65 : 0.32)) {
       const useArt = Math.random() < 0.55;
       youthLock = {
         type: useArt ? 'art' : 'pill',
@@ -98,8 +232,12 @@ window.WORLD_SIM = (function () {
     return {
       id: 'pnpc_' + seq + '_' + randInt(100, 999),
       name,
-      title: `${pwr.name.slice(0, 2)}·${title}`,
+      title: `${facShort}·${roleTitle}`,
       faction: pwr.id,
+      isLeader: !!opts.isLeader,
+      isTianjiao: !!opts.isTianjiao,
+      tianjiaoTag: opts.tianjiaoTag || null,
+      tianjiaoDesc: opts.tianjiaoDesc || null,
       persId: pers.id,
       persName: pers.name,
       dao,
@@ -113,22 +251,112 @@ window.WORLD_SIM = (function () {
       travelDaysLeft: 0,
       stayDaysLeft: randInt(4, 14),
       alive: true,
-      luck: randInt(25, 95),
+      luck: opts.isTianjiao ? randInt(78, 99) : randInt(25, 95),
       sense: 12 + usedR * 9 + randInt(0, 8),
-      favor: 0, // 与主角交情 (-100 死仇 ~ +100 生死之交)
+      favor: 0,
       stones: 25 + usedR * usedR * 35 + randInt(0, 60),
       bag
     };
   }
 
-  function buildProceduralWorldRoster(D) {
+  function buildProceduralWorldRoster(D, factionsDyn) {
     const list = [];
-    // 生成 34 名完全随机的天下修士，覆盖炼气～化神各梯队！
-    for (let i = 0; i < 34; i++) {
-      const tier = i < 12 ? randInt(0, 2) : (i < 24 ? randInt(3, 4) : randInt(4, 6));
-      list.push(genProceduralNpc(i + 1, tier, D));
+    let seq = 1;
+    // 1. 为每个大势力生成 1 名真实存活的「现任掌门」（有寿元会老死/渡劫失败/被杀，死后新天骄继位变政！）
+    (factionsDyn || []).forEach(fac => {
+      const leader = genProceduralNpc(seq++, randInt(4, 6), D, factionsDyn, { forceFacId: fac.id, isLeader: true });
+      fac.leaderNpcId = leader.id;
+      fac.leaderName = leader.name;
+      list.push(leader);
+    });
+    // 2. 生成 7 名各具修仙小说经典命格的「天骄」
+    TIANJIAO_ARCHETYPES.forEach(tj => {
+      const n = genProceduralNpc(seq++, randInt(1, 4), D, factionsDyn, {
+        forceFacId: tj.forceFac || null,
+        forceDao: tj.dao,
+        forcePers: tj.pers,
+        isTianjiao: true,
+        tianjiaoTag: tj.tag,
+        tianjiaoDesc: tj.desc
+      });
+      list.push(n);
+    });
+    // 3. 再生成 20 名五洲四海随机游历修士
+    for (let i = 0; i < 20; i++) {
+      const tier = i < 9 ? randInt(0, 2) : (i < 16 ? randInt(3, 4) : randInt(4, 5));
+      list.push(genProceduralNpc(seq++, tier, D, factionsDyn));
     }
     return list;
+  }
+
+  // 掌门陨落 → 该宗修为最高的新天骄/长老继位，并根据新掌门性格彻底转向对外政策与外交关系！
+  function handleLeaderSuccession(G, deadLeader, D) {
+    if (!deadLeader || !deadLeader.isLeader) return;
+    const fac = (G.factionsDyn || []).find(f => f.id === deadLeader.faction);
+    if (!fac) return;
+    let candidates = (G.simNpcs || []).filter(n => n.alive && n.faction === fac.id && n.id !== deadLeader.id);
+    candidates.sort((a, b) => (b.realmIdx - a.realmIdx) || ((b.isTianjiao ? 1 : 0) - (a.isTianjiao ? 1 : 0)) || (b.luck - a.luck));
+    let nextLeader = candidates[0];
+    if (!nextLeader) {
+      G._npcSeq = (G._npcSeq || 60) + 1;
+      nextLeader = genProceduralNpc(G._npcSeq, Math.max(3, deadLeader.realmIdx - 1), D, G.factionsDyn, { forceFacId: fac.id, isLeader: true });
+      G.simNpcs.push(nextLeader);
+    }
+    nextLeader.isLeader = true;
+    nextLeader.title = `${fac.name.slice(0, 4)}·新任掌门`;
+    fac.leaderNpcId = nextLeader.id;
+    fac.leaderName = nextLeader.name;
+    fac.genCount = (fac.genCount || 1) + 1;
+
+    // 根据新掌门性格转向宗门大政！
+    const polMap = { ruthless: 'expand', greedy: 'trade', cautious: 'turtle', zealot: 'purge', upright: 'charm' };
+    const newPol = POLICIES.find(p => p.id === polMap[nextLeader.persId]) || pick(POLICIES);
+    fac.policyId = newPol.id;
+    fac.policyName = newPol.name;
+
+    // 随机牵动 2 个其他大势力的外交风云！
+    const others = (G.factionsDyn || []).filter(f => f.id !== fac.id);
+    const f1 = pick(others);
+    const f2 = pick(others.filter(f => f.id !== f1?.id));
+    let dipNote = '';
+    if (f1) {
+      const d1 = newPol.id === 'expand' || newPol.id === 'purge' ? -randInt(25, 45) : randInt(20, 40);
+      shiftDiplomacy(G, fac.id, f1.id, d1);
+      dipNote = d1 < 0 ? `并立刻对【${f1.name}】采取强硬封锁` : `随即向【${f1.name}】抛出橄榄枝示好`;
+    }
+    if (f2) {
+      shiftDiplomacy(G, fac.id, f2.id, randInt(-25, 25));
+    }
+    pushNews(G, '易主', `【掌门更替】${fac.name}原主【${deadLeader.name}】陨落，${nextLeader.isTianjiao ? `天骄【${nextLeader.name}】(${nextLeader.tianjiaoTag})` : `强修【${nextLeader.name}】`}登位第 ${fac.genCount} 代掌门，改行「${newPol.name}」国策，${dipNote}！`);
+  }
+
+  // 五洲地脉与天地灵潮修炼加成
+  function getRegionBonus(G, D) {
+    initWorldState(G);
+    const tide = WORLD_TIDES.find(t => t.id === (G.worldTide?.id || 'normal')) || WORLD_TIDES[1];
+    const locObj = (D && D.LOCATIONS || []).find(l => l.id === G.loc) || { region: 'east' };
+    const reg = locObj.region || 'east';
+    const ha = (D && D.HEART_ARTS && D.HEART_ARTS[G.heartArt]) || { elem: 'none' };
+    let regMul = 1.0;
+    let regNote = '东栖霞洲(平和)';
+    if (reg === 'south') {
+      regMul = (ha.elem === 'fire' || ha.elem === 'earth') ? 1.25 : 1.05;
+      regNote = ha.elem === 'fire' || ha.elem === 'earth' ? '南赤瘴洲(火土+25%)' : '南赤瘴洲(+5%)';
+    } else if (reg === 'north') {
+      regMul = (ha.elem === 'gold' || ha.elem === 'water') ? 1.25 : 1.05;
+      regNote = ha.elem === 'gold' || ha.elem === 'water' ? '北俱寒洲(金水+25%)' : '北俱寒洲(+5%)';
+    } else if (reg === 'central') {
+      regMul = 1.20; regNote = '中钧天洲(祖脉+20%)';
+    } else if (reg === 'ocean') {
+      regMul = ha.elem === 'water' ? 1.20 : 1.05; regNote = '沧溟大洋';
+    } else if (reg === 'yingzhou') {
+      regMul = 1.35; regNote = '东极瀛洲(太古+35%)';
+    }
+    return {
+      mul: +(tide.expMul * regMul).toFixed(2),
+      tide,
+      regNote
+    };
   }
 
   function initWorldState(G) {
@@ -145,19 +373,31 @@ window.WORLD_SIM = (function () {
     G.karma = G.karma || 0;
     G.seaHostility = G.seaHostility || 0;
     G.nobleClanBond = G.nobleClanBond || 0;
-    G._npcSeq = G._npcSeq || 40;
+    G._npcSeq = G._npcSeq || 45;
+    if (!Array.isArray(G.factionsDyn) || !G.factionsDyn.length) {
+      G.factionsDyn = buildDynamicWorldPowers();
+    }
+    if (!Array.isArray(G.minorOrgs) || !G.minorOrgs.length) {
+      G.minorOrgs = buildMinorOrgs();
+    }
+    if (!G.diplomacy || !Object.keys(G.diplomacy).length) {
+      G.diplomacy = initDiplomacy(G.factionsDyn);
+    }
+    if (!G.worldTide) {
+      G.worldTide = { id: 'normal', name: '寻常年景', nextChangeDay: G.totalDays + randInt(900, 1500) };
+    }
     G.factionRep = Object.assign({
-      juntian: 0, daqian: 0, danding: 0, wanbao: 0, zhurong: 0, lindong: 0, jiuyou: 0, longting: 0, penglai: 0
+      juntian: 0, daqian: 0, danding: 0, hehuan: 0, wanbao: 0, zhurong: 0, lindong: 0, jiuyou: 0, longting: 0, penglai: 0
     }, G.factionRep || {});
     G.worldState = Object.assign({
       priceMul: 1.0,
       seaBlockadeUntilDay: 0,
       warRegion: null,
-      warDesc: '五洲七海众生竞渡，机缘暗涌',
+      warDesc: '本纪元宗门与江湖小势力皆随机衍化，诸雄竞逐灵脉、无绝对正邪',
       lastHeadline: '沧溟纪元开启，百舸争流各觅长生'
     }, G.worldState || {});
     if (!Array.isArray(G.simNpcs) || !G.simNpcs.length) {
-      G.simNpcs = buildProceduralWorldRoster(D);
+      G.simNpcs = buildProceduralWorldRoster(D, G.factionsDyn);
     }
     // 兼容旧存档 NPC 补充行程字段
     G.simNpcs.forEach(n => {
@@ -384,6 +624,7 @@ window.WORLD_SIM = (function () {
         } else {
           npc.alive = false;
           pushNews(G, '坐化', `${npc.title}【${npc.name}】寿元耗尽坐化于【${locById[npc.loc]?.name || '荒野'}】（享寿 ${npc.age} 岁）。`);
+          if (npc.isLeader) handleLeaderSuccession(G, npc, D);
         }
         continue;
       }
@@ -419,6 +660,7 @@ window.WORLD_SIM = (function () {
             urgentWake = `【天机急讯】持有造化轮回盘的 ${npc.name} 渡劫身死，至宝遗落于【${locById[npc.loc]?.name || '原处'}】！`;
           }
           pushNews(G, '劫灭', `${npc.title}【${npc.name}】强冲【${nextR.name}】雷劫失败，不幸身死道消！`);
+          if (npc.isLeader) handleLeaderSuccession(G, npc, D);
           continue;
         }
       }
@@ -451,11 +693,11 @@ window.WORLD_SIM = (function () {
       }
     }
 
-    // C) 众生新陈代谢：若在世修士少于 30 人，自动从五洲寒门/世家涌现新一代随机少年修士！
-    if (bucket === 0 && aliveCount < 30 && D) {
+    // C) 众生新陈代谢：若在世修士少于 32 人，自动从五洲寒门/世家涌现新一代随机少年修士！
+    if (bucket === 0 && aliveCount < 32 && D) {
       G._npcSeq = (G._npcSeq || 50) + 1;
-      const fresh = genProceduralNpc(G._npcSeq, randInt(0, 2), D);
-      G.simNpcs = G.simNpcs.filter(n => n.alive || (G.worldRelic?.npcId === n.id)).slice(-38);
+      const fresh = genProceduralNpc(G._npcSeq, randInt(0, 2), D, G.factionsDyn);
+      G.simNpcs = G.simNpcs.filter(n => n.alive || (G.worldRelic?.npcId === n.id)).slice(-42);
       G.simNpcs.push(fresh);
       if (fresh.luck >= 85) {
         pushNews(G, '新秀', `五洲涌现后起之秀：【${fresh.name}】(${fresh.title})初入仙途便显露惊人天资！`);
@@ -622,6 +864,7 @@ window.WORLD_SIM = (function () {
               relicTxt = ' 并搜出天地唯一至宝【造化轮回盘】！';
             }
             pushNews(G, '血案', `${npc.title}【${npc.name}】在【${D.LOCATIONS.find(l=>l.id===locId)?.name||'外域'}】遭神秘狠人截杀灭口，随身储物袋被洗劫一空！`);
+            if (npc.isLeader) handleLeaderSuccession(G, npc, D);
             showToast(`击杀【${npc.name}】，搜刮 ${gotTypes} 种宝物与 ${npc.stones} 灵石！${relicTxt}`);
             saveGame('auto', true);
           }
@@ -693,32 +936,55 @@ window.WORLD_SIM = (function () {
 
   function runQuarterlyFactionPulse(ctx) {
     const { G } = ctx;
-    const r = Math.random();
+    const facs = G.factionsDyn || [];
     if (G.worldState.seaBlockadeUntilDay > 0 && G.totalDays >= G.worldState.seaBlockadeUntilDay) {
       G.worldState.seaBlockadeUntilDay = 0;
       G.worldState.priceMul = 1.0;
     }
-    if (r < 0.22 || G.seaHostility >= 40) {
+
+    // 1. 天地灵气潮汐轮转（每 3~5 年自动切换！）
+    if (G.worldTide && G.totalDays >= (G.worldTide.nextChangeDay || 0)) {
+      const nextTide = pick(WORLD_TIDES.filter(t => t.id !== G.worldTide.id)) || WORLD_TIDES[0];
+      G.worldTide = { id: nextTide.id, name: nextTide.name, nextChangeDay: G.totalDays + randInt(1080, 1800) };
+      G.worldState.priceMul = nextTide.priceMul;
+      pushNews(G, '天象', `【灵潮更迭】沧溟界步入「${nextTide.name}」纪年：${nextTide.desc}`);
+    }
+
+    // 2. 动态宗门外交竞合、互黑流言与资源争端（全部使用本纪元随机生成的宗门名！）
+    const r = Math.random();
+    const fA = facs.length ? pick(facs) : { id: 'juntian', name: '太白剑宗', leaderName: '玄明', policyName: '强硬扩土' };
+    const fB = facs.length > 1 ? pick(facs.filter(x => x.id !== fA.id)) : fA;
+    const hehuan = facs.find(f => f.archetype === 'hehuan') || fA;
+    const alc = facs.find(f => f.archetype === 'alchemy') || fB;
+
+    if (r < 0.18 || G.seaHostility >= 40) {
       G.seaHostility = Math.max(0, G.seaHostility - 25);
       G.worldState.seaBlockadeUntilDay = G.totalDays + 90;
       G.worldState.priceMul = 1.45;
       G.worldState.warDesc = '【沧溟兽潮】海族龙庭掀起兽潮围困近海，跨洋巨舰停航三月，丹药海珍涨价 45%！';
       pushNews(G, '兽潮', G.worldState.warDesc);
-    } else if (r < 0.46) {
-      G.worldState.priceMul = 1.25;
-      G.worldState.warRegion = 'south';
-      G.worldState.warDesc = '【南荒烽火】祝融古巫殿与大乾仙朝镇南军因赤炎火脉归属爆发激战！';
+    } else if (r < 0.42 && fA.id !== fB.id) {
+      shiftDiplomacy(G, fA.id, fB.id, -randInt(18, 32));
+      G.worldState.priceMul = 1.22;
+      G.worldState.warDesc = `【灵矿摩擦】${fA.name}（掌门${fA.leaderName}·${fA.policyName}）与${fB.name}因灵脉分润谈崩爆发冲突，双方互相指责对方背信弃义！`;
       pushNews(G, '争端', G.worldState.warDesc);
-    } else if (r < 0.70) {
+    } else if (r < 0.64 && fA.id !== fB.id) {
+      shiftDiplomacy(G, fA.id, fB.id, randInt(16, 30));
+      G.worldState.priceMul = 0.94;
+      G.worldState.warDesc = `【合纵暗盟】${fA.name}与${fB.name}私下达成灵材互市与联姻秘约，外人虽议论纷纷却无人敢轻动！`;
+      pushNews(G, '盟约', G.worldState.warDesc);
+    } else if (r < 0.82) {
       G.worldState.priceMul = 0.88;
-      G.worldState.warRegion = null;
-      G.worldState.warDesc = '【丹鼎开炉】隐世丹鼎神谷开谷济世，五洲灵丹市价回落一成！';
+      G.worldState.warDesc = `【丹道盛会】${alc.name}开山放丹，${hehuan.name}趁机广发红尘请帖，五洲名宿暗流涌动！`;
       pushNews(G, '盛事', G.worldState.warDesc);
     } else {
-      G.worldState.priceMul = 1.0;
-      G.worldState.warRegion = 'north';
-      G.worldState.warDesc = '【正魔对峙】九幽深渊魔气暴涨，钧天仙盟与凛冬剑冢联手布下北冥封魔线。';
-      pushNews(G, '风云', G.worldState.warDesc);
+      // 小组织起伏兴衰
+      const m = (G.minorOrgs || []).length ? pick(G.minorOrgs) : null;
+      if (m) {
+        m.power = Math.max(5, Math.min(99, (m.power || 20) + randInt(-10, 18)));
+        G.worldState.warDesc = `【江湖暗流】小组织「${m.name}」在${m.zone}暗中扩张势力（声势 ${m.power}），竟引得${fA.name}外门执事私下招安！`;
+        pushNews(G, '暗流', G.worldState.warDesc);
+      }
     }
   }
 
@@ -884,11 +1150,15 @@ window.WORLD_SIM = (function () {
 
   return {
     NINE_POWERS,
+    WORLD_TIDES,
     initWorldState,
     getCal,
     formatDate,
     pushNews,
     pushLetter,
+    getDiplomacy,
+    shiftDiplomacy,
+    getRegionBonus,
     getPlayerSpeedLi,
     calcDistanceLi,
     advanceDays,

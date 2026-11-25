@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>《沧溟界》天道因果推演引擎 v7.2（毕业版）· 前置物理 Pre-Tick × DeepSeek 真主导 × 物理裁判所</title>
+<title>《沧溟界》天道因果推演引擎 v7.3（终极打磨版）· 动态契约 × 黑天鹅异数 × 陆路咽喉 × 物理裁判所</title>
 <style>
   :root {
     --bg:#080b0f; --panel:rgba(14,18,24,0.94); --card:rgba(20,25,34,0.88);
@@ -132,7 +132,7 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道因果推演引擎 v7.2（毕业版）</h1>
+    <h1>沧溟天道因果推演引擎 v7.3（终极打磨版）</h1>
     <span>零本地假剧情脚本 · 明文因果方向契约 · DeepSeek 唯一推演大脑 · 本地物理裁判所红黄牌校验</span>
   </div>
   <div class="top-controls">
@@ -294,15 +294,15 @@ const REALM_LIFESPAN = {
   '飞升': { maxAge:9999, lockE:0 }
 };
 
-// 24 块真·零起点原始自然地理板块（无任何修仙地名！附带严格地理邻接 neighbors[]）
+// 24 块真·零起点原始自然地理板块（无任何修仙地名！含 3 处陆路战略咽喉关隘：E1↔C3 / S1↔C4 / N4↔C1；彼岸孤岛 Y1/Y2 仍隔极渊 O6）
 // [id, rawGeoName, region, climate, elem, arable, initPop, isSea, neighbors]
 const RAW_PLATES = [
-  ['E1','东陆·山地①','east','温润','wood',52,6000,false,['E2','E3']],
+  ['E1','东陆·山地①','east','温润','wood',52,6000,false,['E2','E3','C3']],
   ['E2','东陆·河谷②','east','温润','wood',86,18000,false,['E1','E3','E4']],
   ['E3','东陆·密林③','east','温润','wood',38,2000,false,['E1','E2','E4']],
   ['E4','东陆·海岸④','east','温润','wood',74,16000,false,['E2','E3','O1']],
 
-  ['S1','南陆·暖谷①','south','湿热','fire',68,8000,false,['S2','S3']],
+  ['S1','南陆·暖谷①','south','湿热','fire',68,8000,false,['S2','S3','C4']],
   ['S2','南陆·火山②','south','炽热','fire',18,1200,false,['S1','S3','S4']],
   ['S3','南陆·沃野③','south','湿热','earth',84,20000,false,['S1','S2','S4']],
   ['S4','南陆·南湾④','south','湿热','fire',66,15000,false,['S2','S3','O2']],
@@ -310,12 +310,12 @@ const RAW_PLATES = [
   ['N1','北陆·雪峰①','north','极寒','ice',16,1500,false,['N2','N3']],
   ['N2','北陆·冻原②','north','极寒','ice',24,3000,false,['N1','N3','N4']],
   ['N3','北陆·冰渊③','north','极寒','ice',12,800,false,['N1','N2','N4']],
-  ['N4','北陆·寒原④','north','苦寒','ice',46,12000,false,['N2','N3','O3']],
+  ['N4','北陆·寒原④','north','苦寒','ice',46,12000,false,['N2','N3','C1','O3']],
 
-  ['C1','中陆·大平原①','central','温润','earth',92,42000,false,['C2','C3','C4']],
+  ['C1','中陆·大平原①','central','温润','earth',92,42000,false,['C2','C3','C4','N4']],
   ['C2','中陆·河网②','central','温润','earth',88,36000,false,['C1','C3','C4']],
-  ['C3','中陆·高岭③','central','温润','earth',52,9000,false,['C1','C2','C4']],
-  ['C4','中陆·矿丘④','central','干冷','earth',42,11000,false,['C1','C2','C3','O1']],
+  ['C3','中陆·高岭③','central','温润','earth',52,9000,false,['C1','C2','C4','E1']],
+  ['C4','中陆·矿丘④','central','干冷','earth',42,11000,false,['C1','C2','C3','S1','O1']],
 
   ['O1','沧溟·东浅海①','ocean','海风','ocean',48,8000,true,['E4','C4','O2','O4']],
   ['O2','沧溟·南暖海②','ocean','暖海','ocean',42,6000,true,['S4','O1','O5']],
@@ -328,37 +328,47 @@ const RAW_PLATES = [
   ['Y2','彼岸·孤岛峰②','yingzhou','雷暴','earth',14,0,false,['Y1']]
 ];
 
-// 明文因果方向契约（同时渲染给用户看 + 原文注入给 DeepSeek！）
-const CAUSAL_LAWS = [
-  {
-    id:'L1', title:'能量绝对守恒律（总灵能恒定 20,000）',
-    rule:'世界总灵能恒定为 20,000 = 地核沉睡池 + 地表灵脉池 + 生物锁存灵能 + 怨煞池。地核破封年份前，地核池不得提前释放，地表灵脉/灵矿/灵药/煞气均为 0；破封后，灵脉增长只能来自地核释放或煞气净化还灵，绝不可凭空暴涨。'
-  },
-  {
-    id:'L2', title:'气候水土 → 人口与物产方向',
-    rule:'温润沃野承载高、凡人繁衍快，但灵脉易被争夺；极寒/火山/深海凡人稀少，但破封后更易孕育单属性高纯度灵矿（火/冰/水）与强悍妖兽。严寒/天灾/战乱会直接导致凡人锐减。'
-  },
-  {
-    id:'L3', title:'灵脉涌现 → 物种开智与修士漏斗',
-    rule:'灵气破封后，草木生灵、山海野兽最先感灵开智化妖（尤以海洋与荒野为甚）；凡人仅按极低漏斗率诞生灵根者，从散修→修真世家→开宗立派需经历漫长积累。允许妖族/海族/魔道先于人族称霸，绝不强行偏袒人族。'
-  },
-  {
-    id:'L4', title:'资源消耗 → 枯竭崩解与扩张冲动',
-    rule:'宗门与高阶修士聚集会持续消耗所在板块的灵矿与灵药。若某板块矿/药趋近枯竭（<10），势力必陷入衰落、内斗分裂、向邻接板块发起抢矿战争，或彻底崩解化作【古宗遗址】。'
-  },
-  {
-    id:'L5', title:'物理邻接隔离 & 大航海科技锁',
-    rule:'在诞生元婴级御空大能或跨洋灵舟正式解锁【大航海】前，五洲七海严格物理隔绝！任何势力扩张、征伐、通商、迁徙只能发生在 neighbors[] 邻接板块之间，严禁跨洲隔空打仗（违者会被物理裁判所直接驳回）。'
-  },
-  {
-    id:'L6', title:'杀戮积煞 → 生态魔化与人格演化',
-    rule:'战争、屠城、妖兽食人会将纯净灵气转化为怨煞（sha↑）；当板块煞气 ≥ 55 时，凡人锐减、灵草异变为毒瘴魔花、野兽化凶妖、催生鬼魔邪修。关键人物的 8 维人格、智商/情商/悟性与既往记忆将真实左右其历史抉择。'
-  },
-  {
-    id:'L7', title:'自然负反馈恢复 & 破而后立（打破热寂死局）',
-    rule:'任何板块一旦无人无妖且停战荒废，煞气会按净煞还灵率缓慢还原为纯净灵脉，百年地质变动与野生草木会逐步再生灵矿与野药；同时，古宗遗址发掘、末法绝境催生新流派/新势力、以及百年积淀冲击元婴解锁大航海，皆是推动历史滚滚向前的合法因果。'
+// 动态明文因果方向契约（严禁死文案架空玩家滑块！L3 随 妖海先发 & 入道漏斗 实时动态变化）
+function getCausalLaws(p) {
+  let l3Rule;
+  if (p.yaoLv <= 4 && p.entryBp >= 15) {
+    l3Rule = `当前玩家设定【妖海先发极低(${p.yaoLv}/10) + 凡人入道漏斗极高(${p.entryBp}‱)】：灵气破封后，人族凡人灵根井喷！人族修真世家与正统修仙宗门（如剑宗、丹谷、道庭）将率先在四大沃野大兴称霸；山海妖兽开智迟缓、处于弱势蛰伏或沦为灵宠/猎物。`;
+  } else if (p.yaoLv >= 7) {
+    l3Rule = `当前玩家设定【妖海先发极强(${p.yaoLv}/10)】：灵气破封后，草木生灵与山海野兽最先感灵开智化妖，妖庭海国率先占据山林海洋称霸；人族按 ${p.entryBp}‱ 漏斗艰难起步，需从散修→世家→开宗逐步抗争。`;
+  } else {
+    l3Rule = `当前玩家设定【人妖并起(${p.yaoLv}/10 · 入道${p.entryBp}‱)】：灵气破封后，人族在沃野平原加速孕育修真世家与修仙宗门，妖族/海族在深林火山与沧溟大洋同步崛起，人、妖、海、魔多极竞逐。`;
   }
-];
+  return [
+    {
+      id:'L1', title:'严格 5 池能量守恒律（总灵能恒定 20,000）',
+      rule:'世界总灵能恒定 20,000 = 地核封存(只泄不增) + 天地游离 + 地表灵脉 + 生物锁存 + 怨煞。破封年份前不得提前释放地核或增长灵脉。'
+    },
+    {
+      id:'L2', title:'气候水土与陆路咽喉关隘',
+      rule:'温润沃野人口繁衍快；极寒/火山/深海凡人稀少但盛产高纯单属性灵矿。东中(E1↔C3)、南中(S1↔C4)、北中(N4↔C1)为三大陆路战略咽喉关隘，兵家必争；跨海及彼岸孤岛(Y1/Y2)在大航海解锁前严格隔绝。'
+    },
+    {
+      id:'L3', title:'物种兴衰与宗门/妖庭崛起方向（随滑块动态生效）',
+      rule:l3Rule
+    },
+    {
+      id:'L4', title:'资源消耗 → 枯竭崩解与扩张冲动',
+      rule:'宗门与高阶修士聚集会消耗灵矿与灵药。若某板块矿/药趋近枯竭（<10），势力必陷入衰落、内斗分裂、争夺邻接咽喉矿脉，或彻底崩解化作【古宗遗址】。'
+    },
+    {
+      id:'L5', title:'凡人—修士政治经济供应链（暴政负反馈）',
+      rule:'凡人是灵根苗子、灵矿开采与灵稻供奉的根本来源。善待凡人的宗门/世家人才与财税源源不断；血祭屠城或重税压榨虽可短期速成邪功，但必自断灵根供应链、引发凡人外逃邻邦与散修叛离。'
+    },
+    {
+      id:'L6', title:'杀戮积煞 → 生态魔化与自然负反馈恢复',
+      rule:'战乱与屠杀产生怨煞（sha↑），煞气 ≥ 55 时凡人锐减、灵草化魔花、催生鬼魔邪修；但荒废停战板块会由前置物理引擎自动净煞还灵并缓慢再生野药与地质新矿，绝不陷入死水热寂。'
+    },
+    {
+      id:'L7', title:'修仙境界突破时间锚点（打破千年全筑基）',
+      rule:'在灵脉 ≥ 45 的丰沛大洲：破封 100~300 年以炼气/筑基为主、偶现首位金丹；300~600 年大宗门/大妖庭必诞生多位【金丹老祖】坐镇，偶现【元婴大能】；600~1200 年必现【元婴/化神尊者】主导跨洲争霸、开宗立教或破界飞升！'
+    }
+  ];
+}
 
 let SIM = null;
 let selectedNodeId = 'C1';
@@ -422,21 +432,45 @@ function initSim() {
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
   SIM = {
-    version:'7.2',
+    version:'7.3',
     year:1, maxYears:p.maxYears,
     awakened:false, seaTechUnlocked:false,
     eraName:'第一纪·混元凡尘',
     totalEnergy:20000, coreEnergy:20000,
     nodes, nodeMap,
     factions:[], people:[], createdArts:[],
-    chronicles:[{ year:1, tag:'创世', text:'混元第1年：20,000 单位太古灵能全数封存于星核地底；地表 24 块自然地理板块无灵、无煞、无宗门、无仙侠地名，五洲七海物理隔绝。等待 DeepSeek 依据《因果方向契约》启动真实推演。' }],
+    chronicles:[{ year:1, tag:'创世', text:'混元第1年：20,000 单位太古灵能全数封存于星核地底；地表 24 块自然地理板块（含东中/南中/北中三大陆路咽喉关隘）无灵、无煞、无宗门、无仙侠地名。等待 DeepSeek 依据《动态因果契约》启动真实推演。' }],
     refereeLogs:[],
     redCards:0, yellowCards:0,
     wireLogs:[],
+    blackSwans:[],
+    eraSnapshots:[],
     historyMetrics:[]
   };
   recordMetric();
   renderAll();
+}
+
+// ===== 天道异数骰子（打破大模型均值回归，约 35% 概率注入黑天鹅事件） =====
+function rollBlackSwan(startY, endY, p) {
+  if (!SIM.awakened) return null;
+  const prob = 0.25 + (p.chaosLv / 10) * 0.25; // 30% ~ 50%
+  if (Math.random() > prob) return null;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const landNodes = SIM.nodes.filter(n => !n.isSea);
+  const nd = pick(landNodes);
+  const borderNd = pick(SIM.nodes.filter(n => ['E1','C3','C4','S1','N4','C1','E4','O1'].includes(n.id)));
+  const ruins = SIM.nodes.filter(n => n.stage === 'sect_ruin' || n.stage === 'ghost_domain');
+  const pool = [
+    { kind:'天外陨星', text:`天外星辰坠落于【${nd.id}:${nd.name}】！剧烈冲击导致当地凡人死伤与煞气暴涨，却在陨坑深处砸出一条稀世高纯灵矿（mineral_delta:+35），引来邻接势力疯狂觊觎！` },
+    { kind:'跨种族混血奇胎', text:`【0.5% 天道彩蛋触发】在海陆/人妖交界板块【${borderNd.id}:${borderNd.name}】，诞生一例罕见的「半妖异胎」（人族与妖族/海族血脉结合），悟性与体质皆属万年难遇，其身世必在两族间掀起轩然大波！` },
+    { kind:'灵瘟与地脉大震', text:`【${nd.id}:${nd.name}】突发罕见地脉大震与异变灵瘟，数万凡人折损或被迫大举逃难至邻接板块，原有势力根基动摇！` },
+    { kind:'古宗秘宝现世', text:`${ruins.length ? `古遗址【${pick(ruins).id}:${pick(ruins).name}】` : `【${nd.id}:${nd.name}】`}深处禁制松动，一件上古造化残宝/残缺仙经重现天日，引得各方势力与散修蜂拥争夺！` },
+    { kind:'绝世奇才顿悟破境', text:`在【${nd.id}:${nd.name}】诞生一位出身微末却悟性通天的绝世奇才，本轮连破大境（直冲金丹/元婴），亲手改写所在大洲的势力格局！` }
+  ];
+  const ev = pick(pool);
+  SIM.blackSwans.unshift({ span:`第${startY}~${endY}年`, ...ev });
+  return ev;
 }
 
 // ===== 前置确定性物理引擎 Pre-Tick（在呼叫 DeepSeek 之前执行，确保双方看到同一份物理真相！） =====
@@ -529,10 +563,17 @@ function recordMetric() {
     avgSha:+(n.reduce((s,x)=>s+x.sha, 0) / n.length).toFixed(1),
     en
   });
+  // 保存多纪元切入快照（供主游戏未来支持 CK3 式多时间点开局！）
+  if (SIM.year === 1 || SIM.year % 200 === 1 || SIM.year >= SIM.maxYears) {
+    SIM.eraSnapshots.push({
+      year:SIM.year, eraName:SIM.eraName, seaTechUnlocked:SIM.seaTechUnlocked,
+      pop:totalPop, aliveFac:aliveF.map(f=>f.name), avgSha:+(n.reduce((s,x)=>s+x.sha,0)/n.length).toFixed(1)
+    });
+  }
 }
 
-// ===== 构建发给 DeepSeek 的完整《因果契约 + 前置物理基准 + 全量 24 板块账本》Prompt =====
-function buildEpochPrompt(startY, endY, p, preTickSummary = '') {
+// ===== 构建发给 DeepSeek 的完整《动态因果契约 + 前置物理基准 + 天道异数 + 全量 24 板块账本》Prompt =====
+function buildEpochPrompt(startY, endY, p, preTickSummary = '', blackSwan = null) {
   const en = calcConservation();
   const plateLines = SIM.nodes.map(n =>
     `${n.id}|${n.name}(${n.region}/${n.climate}/${n.elem})|形态:${n.stage}|归属:${n.owner||'无主'}|凡人:${n.pop}/${getNodeCap(n)}|脉:${n.leyline} 矿:${n.mineral} 药:${n.herb} 煞:${n.sha}|生态:${n.flora}/${n.fauna}|邻接:[${n.neighbors.join(',')}]`
@@ -543,15 +584,17 @@ function buildEpochPrompt(startY, endY, p, preTickSummary = '') {
     return `- ${f.name} [${f.kind}] 掌舵:${f.leader} 国策:${f.policy} 控地:[${owned}] (建于第${f.born}年)`;
   }).join('\n') || '（当前尚无任何修真世家、宗门、妖庭或魔道势力）';
 
+  const deadFacList = SIM.factions.filter(f=>!f.alive).map(f => `${f.name}(第${f.fallen}年灭)`).join('、') || '无';
+
   const peopleLines = SIM.people.filter(c=>c.alive).slice(0, 18).map(c =>
     `- ${c.name} [${c.species}·${c.realm}] 龄:${c.age}/${c.maxAge} 居:${c.plateId} 属:${c.faction} IQ:${c.iq}/EQ:${c.eq}/悟:${c.daoWit} 性格:${c.persLabel} 记忆:${(c.memories||[]).slice(-2).join('；')}`
   ).join('\n') || '（当前尚无载入史册的在世关键人物）';
 
-  const deadList = SIM.people.filter(c=>!c.alive).slice(-32).map(c => `${c.name}(${c.realm}·已故)`).join('、') || '无';
+  const deadList = SIM.people.filter(c=>!c.alive).slice(-36).map(c => `${c.name}(${c.realm}·已故)`).join('、') || '无';
   const vacantFacs = SIM.factions.filter(f=>f.alive && f.leader.includes('空缺')).map(f=>f.name).join('、');
 
   const recentHist = SIM.chronicles.slice(0, 8).map(c => `[第${c.year}年·${c.tag}] ${c.text}`).join('\n');
-  const lawsText = CAUSAL_LAWS.map(l => `${l.id}. ${l.title}：${l.rule}`).join('\n');
+  const lawsText = getCausalLaws(p).map(l => `${l.id}. ${l.title}：${l.rule}`).join('\n');
 
   const hasHighCult = SIM.people.some(c => c.alive && ['金丹','元婴','化神','合道'].includes(c.realm));
   const seaWindowOpen = SIM.awakened && !SIM.seaTechUnlocked && (hasHighCult || endY >= p.awakeYear + 280);
@@ -560,10 +603,16 @@ function buildEpochPrompt(startY, endY, p, preTickSummary = '') {
     ? `【本轮核心节点】：本时段（第 ${startY}~${endY} 年）跨过了设定的地核破封年份（第 ${p.awakeYear} 年）！请将 core_release 设为约 ${Math.round(20000 * p.surgePct / 100)}，并在 plate_updates 中为各地块合理分配破封后的灵脉、灵矿、灵药及万物开智变化！`
     : (!SIM.awakened
       ? `【本轮红线】：尚未到达地核破封年份（第 ${p.awakeYear} 年）！core_release 必须为 0，所有板块的 leyline/mineral/herb/sha 必须保持 0，只允许凡人自然繁衍、迁徙、聚落成镇、严寒饥荒等纯凡俗演化！`
-      : `【本轮状态】：灵气已破封，地核封存池剩余 ${en.core}、天地游离沉降灵能 ${en.ambient}。下方 24 板块已包含本轮前置物理结算（自然人口增长/宗门基础矿耗/荒废净煞回暖/人物老化），请在此基准上专注推演战争、开宗、灭门、突破、奇遇等历史变局！`);
+      : `【本轮状态】：灵气已破封，地核封存池剩余 ${en.core}、天地游离沉降灵能 ${en.ambient}。下方 24 板块已包含本轮前置物理结算（全界自然人口增长/宗门基础矿耗/荒废净煞回暖/人物老化），请在此基准上专注推演历史大变局！`);
+
+  const seaBanner = SIM.seaTechUnlocked
+    ? `【大航海已全面连通！】：五洲七海与彼岸孤岛均已打破海路隔绝！严禁再写“大航海未启/五洲隔绝”，请真实推演跨海商贸、远洋争霸或对彼岸孤岛(Y1/Y2)的探索！`
+    : (seaWindowOpen
+      ? `【大航海解锁评估窗口已开启】：灵气破封已逾数百年（或已现高阶修士），若本轮诞生元婴大能御空渡海、或临海巨城/海族造出跨洋灵舟，可将 sea_tech_unlocked 设为 true！`
+      : `【海路隔绝状态】：大航海尚未解锁，严禁跨海占领；陆地势力禁占海域，海族禁占内陆（但陆地四大洲可通过东中E1↔C3、南中S1↔C4、北中N4↔C1三大陆路咽喉关隘交互征伐！）。`);
 
   return `你是《沧溟界》唯一的天道推演引擎。本地物理层已先完成确定性基础物理演算，并将在你输出后充当“物理裁判所”校验红线。
-请严格根据下方【创世基础参数】、【明文因果方向契约】与【前置物理结算后的全量 24 板块账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的历史大变局！
+请严格根据下方【创世基础参数】、【动态因果契约】与【前置物理结算后的全量 24 板块账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的历史大变局！
 
 【一、创世基础参数（1~10 刻度中 1=极低/缓慢，5=均衡，10=极高/剧烈）】
 - 地核灵气破封年份：第 ${p.awakeYear} 年 | 首波喷涌烈度：${p.surgePct}% (占总灵能 20,000 的百分比)
@@ -572,36 +621,40 @@ function buildEpochPrompt(startY, endY, p, preTickSummary = '') {
 - 妖族/海族开智先发优势：${p.yaoLv}/10 | 天道杀劫与争斗烈度：${p.chaosLv}/10
 ${p.customLaw ? `- 玩家附加天道倾向：${p.customLaw}` : ''}
 
-【二、明文因果方向契约（什么影响什么，必须遵守）】
+【二、动态明文因果契约（必须严格遵守，尤其是 L3 与 L7！）】
 ${lawsText}
 
 【三、本轮前置物理基准态（第 ${startY} → ${endY} 年）】
-- 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海连通：${SIM.seaTechUnlocked ? '已连通（允许跨洲渡海）' : '未解锁（严禁跨洲；且陆地势力禁占海域、海族禁占内陆！）'}
+- 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'}
+- ${seaBanner}
 - 严格 5 池守恒（总计 20,000）：地核封存 ${en.core} + 天地游离 ${en.ambient} + 地表灵脉 ${en.surf} + 生物锁存 ${en.locked} + 怨煞 ${en.shaE}
 - 前置物理结算摘要：${preTickSummary || '无'}
 - ${awakeHint}
-${seaWindowOpen ? `- 【大航海解锁评估窗口已开启】：灵气破封已逾数百年（或已现高阶修士），若本轮诞生元婴大能御空渡海、或临海巨城/海族造出跨洋灵舟，可将 sea_tech_unlocked 设为 true 并打破五洲隔离！` : ''}
-${vacantFacs ? `- 【掌舵空缺提醒】：以下在世势力掌舵者已故，请本轮为它们推举全新在世继任者（先在 people_ops 中 birth，再在 faction_ops 中 update），或让其内乱分裂/覆灭：${vacantFacs}` : ''}
+${blackSwan ? `- 【⚡ 本轮天道异数（不可抗黑天鹅，必须纳入本轮推演并引发连锁反应！）】：[${blackSwan.kind}] ${blackSwan.text}` : ''}
+${vacantFacs ? `- 【掌舵空缺提醒】：以下在世势力掌舵者已故，请本轮为它们推举**全新原创名字**的在世继任者（先在 people_ops 中 birth，再在 faction_ops 中 update），或让其内乱分裂/覆灭：${vacantFacs}` : ''}
 
-【四、全量 24 处地理板块账本（已含本轮基础增长/矿耗/净煞，你的 delta 将叠加于此）】
+【四、全量 24 处地理板块账本（和平自然人口增长已算完，你的 pop_delta 仅填战乱/屠杀/逃难等非自然变动，和平板块请填 0！）】
 ${plateLines}
 
 【五、当前在世势力】
 ${facLines}
 
-【六、当前在世关键人物】
+【六、已灭势力禁复活名单（严禁用原名复活！若在遗址重建，必须另起全新宗门名！）】
+${deadFacList}
+
+【七、当前在世关键人物】
 ${peopleLines}
 
-【七、已故禁写黑名单（绝对禁止复活、掌舵、创法或继续出现在事件中！）】
+【八、已故禁写黑名单（绝对禁止复活、掌舵、创法，且严禁新人物复用旧名或只加“子”字敷衍！）】
 ${deadList}
 
-【八、近期编年史（仅供参考背景，严禁逐字复读！）】
+【九、近期编年史（仅供参考背景，严禁逐字复读！）】
 ${recentHist}
 
 【输出铁律】
-1. 允许演化出极端世界（如妖海称霸、魔道煞土、末法孤岛、宗门垄断），完全尊重因果，不要强行写成套路化“正邪平衡”。
-2. **严禁复读机**：严禁照搬上轮的编年史或碑文原话！每轮必须推进至少 1~2 项**实质性历史转折**（新势力/新流派诞生、遗址复兴、旧妖庭分裂、回暖荒土重聚人烟、高阶突破元婴、尝试渡海解锁大航海、跨种族混血等）。
-3. **严禁写活死人**：严禁让【已故禁写黑名单】里的任何名字继续掌舵、创法或参战！人物侧重记录可跨轮存续的**筑基/金丹/元婴及以上长生修士**（凡人奇才若载入史册，可在本轮内完成一生并标 op:"die" 留下传承）。
+1. 严格遵循玩家滑块与 L3（若妖海先发低+入道漏斗高，必须让人族修真世家与正统修仙宗门大兴；反之才让妖海先兴），并遵循 L7 境界时间锚点（破封 300 年后必现多位金丹老祖，600 年后必现元婴/化神大能！）。
+2. **严禁重复加人口**：和平板块的自然增长已由前置物理引擎算完，`pop_delta` 填 `0` 即可，只有发生战争死伤、血祭屠杀、瘟疫或跨板块大迁徙时才填非零 `pop_delta`！
+3. **严禁复读机 & 严禁写活死人**：每轮必须推进至少 1~2 项实质性历史转折；严禁复用【已故禁写黑名单】与【已灭势力名单】里的原名！
 4. **功法不重名**：不要反复创建《某诀·续篇》之类的重复功法。
 5. 仅输出**严格合法的纯 JSON 对象**（不要 markdown 代码块，不要额外解释），字段结构如下：
 {
@@ -950,11 +1003,14 @@ function applyAndValidatePatch(patch, startY, endY, p) {
   }
 
   const deadNamesForScan = SIM.people.filter(c => !c.alive && c.name.length >= 2).map(c => c.name);
-  const memorialRe = /(遗志|遗法|遗诀|后人|之子|之孙|故居|曾|昔年|陨落|坐化|寿终|寿尽|老死|战死|追念|先祖|传承|旧部|墓)/;
+  const memorialRe = /(遗志|遗法|遗诀|后人|之子|之孙|故居|曾|昔年|陨落|坐化|寿终|寿尽|老死|战死|追念|先祖|传承|旧部|墓|暴毙|已故)/;
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const scanDeadText = txt => {
     let flagged = txt;
     for (const dn of deadNamesForScan) {
-      if (flagged.includes(dn) && !memorialRe.test(flagged)) {
+      // 排除子串误报（如 血鳞 误伤 血鳞子/血鳞部，澜沧 误伤 澜沧子！）
+      const re = new RegExp(escRe(dn) + '(?![子部庭宗门谷城山海岛族盟会阁殿宫])');
+      if (re.test(flagged) && !memorialRe.test(flagged)) {
         addRef('黄牌', `【史书死人预警】编年史文本疑似将已故人物【${dn}】写成在世行动，已自动加注警示标签。`);
         flagged = `[疑误:已故者${dn}] ` + flagged;
         break;
@@ -1013,13 +1069,14 @@ async function runOneDeepSeekEpoch() {
     coreEnergy: SIM.coreEnergy, year: SIM.year
   });
   const preTickSummary = runPhysicsPreTick(startY, endY, p);
-  const prompt = buildEpochPrompt(startY, endY, p, preTickSummary);
+  const blackSwan = rollBlackSwan(startY, endY, p);
+  const prompt = buildEpochPrompt(startY, endY, p, preTickSummary, blackSwan);
 
   isBusy = true;
   updateAutoBtns();
   const hb = document.getElementById('health-box');
   hb.className = 'health-box busy';
-  hb.innerHTML = `<b>🤖 DeepSeek 正在亲自推演第 ${startY} → ${endY} 年……</b> 已先完成确定性物理 Pre-Tick（${preTickSummary}），正将全量 24 板块基准与 7 条因果契约发给 DeepSeek…`;
+  hb.innerHTML = `<b>🤖 DeepSeek 正在亲自推演第 ${startY} → ${endY} 年……</b> ${blackSwan ? `<span style="color:#ffd299;">⚡ 触发天道异数【${blackSwan.kind}】！</span>` : ''}已先完成前置物理 Pre-Tick，正将动态因果契约与全量 24 板块基准发给 DeepSeek…`;
   st.style.color = '#f2daa0';
   st.textContent = `DeepSeek 推演中：第 ${startY} → ${endY} 年…`;
 
@@ -1158,8 +1215,9 @@ function renderRightTab() {
       `<div class="log-item"><span class="tag t-${c.tag}">${c.tag}</span><div><b style="color:var(--gold-hi);">第${c.year}年</b> · ${c.text}</div></div>`
     ).join('');
   } else if (activeTab === 'contract') {
-    rb.innerHTML = `<div class="rule-card" style="border-color:rgba(112,184,240,0.45);"><b>v7.2 毕业版核心机制（前置物理 Pre-Tick × DeepSeek 真主导 × 裁判所）</b><br/>每轮推进前，本地物理层先确定性结算人口增长、占领区基础矿耗、荒废区净煞还灵与人物自然老化（双方看到同一份真相）；再将 7 条明文因果契约 + 全量 24 板块基准发给 DeepSeek 推演历史大变局；最后由物理裁判所校验陆海隔离、5 池能量守恒、死人黑名单与功法去重！</div>`
-      + CAUSAL_LAWS.map(l => `<div class="rule-card"><b>${l.id}. ${l.title}</b><br/>${l.rule}</div>`).join('');
+    const dynLaws = getCausalLaws(getParams());
+    rb.innerHTML = `<div class="rule-card" style="border-color:rgba(112,184,240,0.45);"><b>v7.3 终极打磨版（动态契约 × 黑天鹅异数 × 陆路咽喉 × 物理裁判所）</b><br/>左侧滑块会<strong>实时改写下方 L3 因果契约</strong>，彻底杜绝死文案架空玩家参数！每轮先执行前置物理 Pre-Tick，并有概率掷出「天道异数（天外陨星/混血奇胎/灵瘟/秘宝）」打破平滑均值回归，再交给 DeepSeek 推演历史大变局！</div>`
+      + dynLaws.map(l => `<div class="rule-card"><b>${l.id}. ${l.title}</b><br/>${l.rule}</div>`).join('');
   } else if (activeTab === 'referee') {
     rb.innerHTML = SIM.refereeLogs.length
       ? SIM.refereeLogs.slice(0, 80).map(r => `<div class="log-item"><span class="tag t-${r.level}">${r.level}</span><div><b style="color:var(--gold-hi);">第${r.year}年</b> · ${r.text}</div></div>`).join('')
@@ -1194,7 +1252,7 @@ function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
   const p = getParams();
   const lines = [
-    `# 《沧溟天道因果推演 v7.2》全量世界报告（第 1 → ${SIM.year} 年）`,
+    `# 《沧溟天道因果推演 v7.3》全量世界报告（第 1 → ${SIM.year} 年）`,
     ``,
     `## 一、核心指标与创世参数`,
     `- 时代：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海：${SIM.seaTechUnlocked ? '已连通' : '物理隔绝'}`,

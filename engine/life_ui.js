@@ -95,14 +95,67 @@
     const st = document.createElement('style');
     st.id = 'life-ui-style';
     st.textContent = `
-      #btn-open-life-sim {
-        position:fixed; right:16px; bottom:18px; z-index:9500;
-        background:linear-gradient(180deg, rgba(168,52,46,0.96), rgba(118,28,24,0.98));
-        border:1.5px solid #f2daa0; color:#fff5e0; padding:9px 15px; border-radius:5px;
-        font-family:"Songti SC","Noto Serif SC",serif; font-size:13px; font-weight:700;
-        letter-spacing:1.2px; cursor:pointer; box-shadow:0 6px 24px rgba(0,0,0,0.75);
+      #ow-hud {
+        position:absolute; inset:0; z-index:32; pointer-events:none;
+        font-family:"Songti SC","Noto Serif SC",serif; color:#e6dfd3;
       }
-      #btn-open-life-sim:hover { background:rgba(196,64,56,0.98); color:#fff; transform:translateY(-1px); }
+      .ow-top-bar {
+        position:absolute; top:12px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:flex; align-items:center; gap:8px; padding:6px 14px;
+        background:rgba(8,13,20,0.84); border:1px solid rgba(212,184,122,0.45);
+        border-radius:20px; backdrop-filter:blur(6px); box-shadow:0 4px 18px rgba(0,0,0,0.55);
+        font-size:11.5px; white-space:nowrap;
+      }
+      .ow-nearby-wrap {
+        position:absolute; bottom:84px; left:50%; transform:translateX(-50%); pointer-events:auto;
+        display:none;
+      }
+      .ow-nearby-wrap.show { display:block; }
+      #ow-nearby-btn {
+        background:linear-gradient(180deg, rgba(28,74,58,0.96), rgba(14,42,33,0.98));
+        border:1.5px solid #6fd3a8; color:#eafff5; padding:8px 18px; border-radius:22px;
+        font-size:13px; font-weight:700; letter-spacing:1px; cursor:pointer; font-family:inherit;
+        box-shadow:0 6px 24px rgba(0,0,0,0.68), 0 0 16px rgba(111,211,168,0.35);
+      }
+      #ow-nearby-btn:hover { background:rgba(36,96,74,0.98); transform:translateY(-1px); }
+      .ow-ctrl-bl {
+        position:absolute; left:16px; bottom:16px; pointer-events:auto;
+        display:flex; align-items:flex-end; gap:10px;
+      }
+      .ow-dpad {
+        display:grid; grid-template-columns:repeat(3,32px); grid-template-rows:repeat(3,32px); gap:3px;
+        background:rgba(8,12,18,0.65); padding:5px; border-radius:10px; border:1px solid rgba(212,184,122,0.3);
+      }
+      .ow-dpad button {
+        background:rgba(212,184,122,0.14); border:1px solid rgba(212,184,122,0.35); color:#f2daa0;
+        border-radius:5px; cursor:pointer; font-size:13px; font-weight:700; user-select:none;
+      }
+      .ow-dpad button:active { background:rgba(111,211,168,0.4); }
+      .ow-hint-box {
+        background:rgba(8,12,18,0.78); border:1px solid rgba(212,184,122,0.28); border-radius:6px;
+        padding:6px 10px; font-size:10.5px; color:#cfc6b4; line-height:1.55;
+      }
+      .ow-menu-br {
+        position:absolute; right:16px; bottom:16px; pointer-events:auto;
+        display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; max-width:460px;
+      }
+      .ow-menu-btn {
+        background:rgba(12,18,28,0.9); border:1px solid rgba(212,184,122,0.48); color:#f2daa0;
+        padding:7px 11px; border-radius:5px; font-size:11.5px; font-weight:700; cursor:pointer;
+        font-family:inherit; box-shadow:0 4px 14px rgba(0,0,0,0.55);
+      }
+      .ow-menu-btn:hover { background:rgba(212,184,122,0.24); color:#fff; }
+      .ow-menu-btn.accent {
+        background:linear-gradient(180deg, rgba(168,52,46,0.95), rgba(118,28,24,0.98));
+        border-color:#f2daa0; color:#fff5e0;
+      }
+      #ow-toast {
+        position:fixed; top:66px; left:50%; transform:translateX(-50%); z-index:9900;
+        background:rgba(10,18,28,0.94); border:1px solid #6fd3a8; color:#eafff5;
+        padding:7px 16px; border-radius:18px; font-size:12px; pointer-events:none;
+        opacity:0; transition:opacity 0.25s; box-shadow:0 6px 22px rgba(0,0,0,0.65);
+      }
+      #ow-toast.show { opacity:1; }
       #life-sim-modal {
         position:fixed; inset:0; z-index:9800; background:rgba(5,8,12,0.88);
         backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:10px;
@@ -325,6 +378,21 @@
         </div>
       `;
     }
+    if (activeScene.type === 'beast_hunt') {
+      const b = d.beast || { name: '幽林妖狼', plate: { name: '野外' } };
+      return `
+        <div class="ls-scene-banner">
+          <div style="color:#ffaaa3;font-size:13px;font-weight:700;margin-bottom:4px;">🐾 野外遇妖 · 【${b.name}】（出没于 ${b.plate ? b.plate.name : '荒野'}）</div>
+          <div style="font-size:11.5px;margin-bottom:8px;">你在山林间与一头凶气逼人的【${b.name}】正面遭遇！它低伏身躯发出低吼，周身妖气翻涌。</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="ls-btn red" data-sc="beast_kill">⚔️ 祭剑搏杀（胜则获妖丹+灵石，有概率负伤）</button>
+            <button class="ls-btn blue" data-sc="beast_trap">🕸️ 布阵智取（比拼 IQ:${HERO.iq} 稳妥斩妖）</button>
+            <button class="ls-btn jade" data-sc="beast_tame">✨ 灵契驯服（收为伴生灵宠）</button>
+            <button class="ls-btn" data-sc="close">💨 施展身法退避</button>
+          </div>
+        </div>
+      `;
+    }
     return '';
   }
 
@@ -371,6 +439,29 @@
             pushLog(`你将【${r.name}】绘成真假参半的残图高价售出，净赚 120 灵石，坐看三家仇敌入阵互残！`);
           }
           activeScene = null; saveState(); renderModal(); return;
+        }
+
+        if (activeScene.type === 'beast_hunt') {
+          const b = d.beast || { name: '幽林妖狼' };
+          if (sc === 'beast_kill') {
+            HERO.stones += 45;
+            HERO.bag.push({ id: 'it_' + Date.now(), name: `${b.name}妖丹`, kind: '妖材', qty: 1, desc: '可炼丹或售卖换取灵石' });
+            if (Math.random() < 0.35) HERO.life.injuries.push({ name: '妖爪裂伤', penalty: '气血上限-5%' });
+            pushLog(`你与【${b.name}】激战数十回合终将其斩杀，剖得妖丹一枚与 45 灵石！`);
+          } else if (sc === 'beast_trap') {
+            if (HERO.iq >= 75) {
+              HERO.stones += 38;
+              HERO.bag.push({ id: 'it_' + Date.now(), name: `${b.name}灵皮`, kind: '妖材', qty: 1, desc: '炼器制符上佳灵材' });
+              pushLog(`你借地形布下困灵小阵智取【${b.name}】，毫发无损收获灵皮与 38 灵石！`);
+            } else {
+              pushLog(`困阵被【${b.name}】蛮力撞破，你只得抽身退走。`);
+            }
+          } else if (sc === 'beast_tame') {
+            if (!HERO.pets.includes(b.name)) HERO.pets.push(b.name);
+            HERO.life.loneliness = Math.max(0, HERO.life.loneliness - 18);
+            pushLog(`你以灵识温和安抚并缔结血契，成功收服【${b.name}】为伴生灵宠！`);
+          }
+          activeScene = null; saveState(); syncTopHud(); renderModal(); return;
         }
 
         if (activeScene.type === 'found_sect' && sc === 'do_found_sect') {
@@ -472,11 +563,11 @@
 
   function renderModal() {
     ensureInit();
-    if (window.Map3D && activeTab !== 'map') window.Map3D.dispose();
+    syncTopHud();
     const body = document.getElementById('ls-body');
     const title = document.getElementById('ls-title');
     const curPlate = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
-    title.textContent = `沧溟修仙模拟人生 v8.8 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
+    title.textContent = `沧溟修仙模拟人生 v9.0 · 第 ${WORLD.year} 年 ${WORLD.month} 月 · 身在【${curPlate.name}】 · 灵石 ${HERO.stones}`;
 
     document.querySelectorAll('.ls-tab').forEach(el => {
       el.classList.toggle('active', el.dataset.tab === activeTab);
@@ -493,21 +584,14 @@
         const f = WORLD.factions.find(x => x.id === h.factionId);
         return f ? `${f.name}(${h.share}%)` : '';
       }).filter(Boolean).join(' · ') || '无主之地';
-      const use3D = mapMode === '3d' && !!window.THREE && !!window.Map3D;
 
       body.innerHTML = `
         ${sceneHtml}
         <div class="ls-map-layout">
-          <div class="ls-svg-wrap" style="min-height:460px;">
-            <div style="position:absolute;right:8px;top:8px;z-index:10;display:flex;gap:5px;">
-              <button class="ls-btn ${use3D?'jade':''}" id="btn-mode-3d">🏔️ 2.5D 立体山海</button>
-              <button class="ls-btn ${!use3D?'jade':''}" id="btn-mode-2d">🗺️ 2D 战术图</button>
-            </div>
-            ${use3D
-              ? `<div id="ls-map3d-host" style="width:100%;height:460px;cursor:grab;"></div>`
-              : buildWorldMapSvg()}
+          <div class="ls-svg-wrap" style="min-height:430px;">
+            ${buildWorldMapSvg()}
             <div style="position:absolute;left:8px;bottom:6px;z-index:10;font-size:9.5px;color:#d8d0c0;background:rgba(5,8,12,0.82);padding:3px 8px;border-radius:3px;">
-              ${use3D ? '左键拖拽平移 · 右键/Shift拖拽旋转 · 滚轮缩放 · 点击 3D 牌匾交互' : '📍你在此处 · 🗝️遗迹 · ⚖️制度 · 橙虚线=咽喉关隘 · 点击板块交互'}
+              五洲七海战略舆图 · 点击板块查看势力/物价/遗迹，点击右侧按钮可令 3D 主角自动寻路前往
             </div>
           </div>
           <div class="ls-card" style="display:flex;flex-direction:column;gap:6px;">
@@ -525,7 +609,8 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">
               ${HERO.locId !== sp.id
-                ? `<button class="ls-btn jade" id="btn-travel-plate" ${canTravel?'':'disabled'}>${canTravel ? `🧭 赶路前往【${sp.name}】（途经黑暗森林风险）` : '🔒 隔洲未邻接（需沿关隘或等大航海解锁）'}</button>`
+                ? `<button class="ls-btn jade" id="btn-walk-plate">🧭 令主角自动寻路前往【${sp.name}】（关闭地图在 3D 世界中行走）</button>
+                   <button class="ls-btn" id="btn-travel-plate" ${canTravel?'':'disabled'}>${canTravel ? `⚡ 快速跋涉直达【${sp.name}】（耗时2月）` : '🔒 隔洲未邻接（需沿关隘或等大航海解锁）'}</button>`
                 : `
                   <button class="ls-btn" id="btn-teahouse">🍵 逛茶馆听评书（听本世界真实史话）</button>
                   ${localInsts.length ? `<button class="ls-btn blue" id="btn-open-auction">⚖️ 进入【${localInsts[0].name}】（竞价/鉴宝/抬价坑人）</button>` : ''}
@@ -537,20 +622,12 @@
         </div>
       `;
       body.querySelectorAll('[data-pid]').forEach(el => { el.onclick = () => { selectedPlateId = el.dataset.pid; activeScene = null; renderModal(); }; });
-      const b3d = document.getElementById('btn-mode-3d');
-      const b2d = document.getElementById('btn-mode-2d');
-      if (b3d) b3d.onclick = () => { mapMode = '3d'; renderModal(); };
-      if (b2d) b2d.onclick = () => { mapMode = '2d'; if (window.Map3D) window.Map3D.dispose(); renderModal(); };
-      if (use3D) {
-        const host = document.getElementById('ls-map3d-host');
-        if (host) {
-          requestAnimationFrame(() => {
-            window.Map3D.mount(host, WORLD, HERO, selectedPlateId, pid => {
-              selectedPlateId = pid; activeScene = null; renderModal();
-            });
-          });
-        }
-      }
+      const wp = document.getElementById('btn-walk-plate');
+      if (wp) wp.onclick = () => {
+        document.getElementById('life-sim-modal').classList.remove('open');
+        if (window.Map3D) window.Map3D.moveToPlate(sp.id);
+        showOwToast(`🧭 主角正动身前往【${sp.name}】……`);
+      };
       const tv = document.getElementById('btn-travel-plate');
       if (tv) tv.onclick = () => {
         window.LifeSim.advanceLifeMonths(HERO, WORLD, 2, 'mortal_life');
@@ -558,9 +635,10 @@
           activeScene = { type: 'travel_event', data: { plateId: sp.id, plateName: sp.name, dfIdx: sp.darkForestIdx } };
         } else {
           HERO.locId = sp.id;
+          if (window.Map3D) window.Map3D.teleportToPlate(sp.id);
           pushLog(`你历经两月风霜平安抵达【${sp.name}】。`);
         }
-        saveState(); renderModal();
+        saveState(); syncTopHud(); renderModal();
       };
       const th = document.getElementById('btn-teahouse');
       if (th) th.onclick = () => {
@@ -812,27 +890,214 @@
     bindSceneActions(body);
   }
 
+  let toastTimer = null;
+  function showOwToast(msg) {
+    let el = document.getElementById('ow-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'ow-toast';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  function syncTopHud() {
+    if (!WORLD || !HERO) return;
+    const nd = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+    const rEl = document.getElementById('hud-realm-txt');
+    const dEl = document.getElementById('hud-date');
+    const sEl = document.getElementById('hud-stone');
+    const aEl = document.getElementById('hud-age');
+    const tEl = document.getElementById('hud-timeline');
+    if (rEl) rEl.textContent = HERO.realm;
+    if (dEl) dEl.textContent = `第${WORLD.year}年·${WORLD.month}月`;
+    if (sEl) sEl.textContent = HERO.stones;
+    if (aEl) aEl.textContent = `${HERO.age}/120岁`;
+    if (tEl) tEl.textContent = `身在【${nd.name}】· 灵脉${nd.leyline} · 暗森${nd.darkForestIdx || 0}`;
+
+    const regEl = document.getElementById('ow-region-info');
+    if (regEl) {
+      const holds = (nd.holdings || []).map(h => {
+        const f = WORLD.factions.find(x => x.id === h.factionId);
+        return f ? f.name : '';
+      }).filter(Boolean).slice(0, 2).join('/') || '无主荒野';
+      regEl.innerHTML = `<b style="color:#f2daa0;">📍 ${nd.name}</b> (${nd.id}) · 脉<b style="color:#6fd3a8;">${nd.leyline}</b> · 暗森<b style="color:${(nd.darkForestIdx||0)>=55?'#ff9d95':'#70b8f0'};">${nd.darkForestIdx||0}</b> · ${holds}`;
+    }
+  }
+
+  function openModalTab(tab) {
+    activeTab = tab;
+    activeScene = null;
+    document.getElementById('life-sim-modal').classList.add('open');
+    renderModal();
+  }
+
+  function handleWorldInteract(target) {
+    if (!target) return;
+    if (target.type === 'gather') {
+      const nd = target.data;
+      const gain = 12 + Math.floor((nd.leyline || 30) * 0.25);
+      HERO.stones += gain;
+      const hasHerb = HERO.bag.find(i => i.name === '野生聚灵草');
+      if (hasHerb) hasHerb.qty += 1;
+      else HERO.bag.push({ id: 'it_herb', name: '野生聚灵草', kind: '灵材', qty: 1, desc: '采自野外灵脉，可售卖或炼丹' });
+      pushLog(`你在【${nd.name}】灵脉处采得野生聚灵草×1，并掘出灵石 +${gain}！`);
+      saveState(); syncTopHud();
+      showOwToast(`🌿 采集成功！获得 野生聚灵草×1、灵石 +${gain}`);
+      return;
+    }
+    if (target.type === 'npc') {
+      selectedNpcId = target.data.id;
+      activeTab = 'social';
+      activeScene = null;
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
+    if (target.type === 'ruin') {
+      activeTab = 'map';
+      activeScene = { type: 'ruin', data: { ruin: target.data } };
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
+    if (target.type === 'beast') {
+      activeTab = 'map';
+      activeScene = { type: 'beast_hunt', data: { beast: target.data } };
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
+    if (target.type === 'plate') {
+      selectedPlateId = target.data.id;
+      HERO.locId = target.data.id;
+      activeTab = 'map';
+      activeScene = null;
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+    }
+  }
+
   function mountMainBg3D() {
     ensureInit();
     if (!window.Map3D || !window.THREE) return;
     const app = document.getElementById('app');
     if (!app) return;
+
+    // 隐藏旧 2D 图层与冲突的底栏按钮，让 2.5D 可操控世界成为唯一主画面
+    ['world-layer', 'hud-bl', 'hud-br', 'hud-tc'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
     let host = document.getElementById('main-map3d-host');
     if (!host) {
       host = document.createElement('div');
       host.id = 'main-map3d-host';
-      host.style.cssText = 'position:absolute;inset:0;z-index:10;cursor:grab;';
+      host.style.cssText = 'position:absolute;inset:0;z-index:10;cursor:crosshair;';
       app.appendChild(host);
     }
-    const wl = document.getElementById('world-layer');
-    if (wl) { wl.style.display = 'none'; }
+
+    let zoomMode = 'close';
+    if (!document.getElementById('ow-hud')) {
+      const hud = document.createElement('div');
+      hud.id = 'ow-hud';
+      hud.innerHTML = `
+        <div class="ow-top-bar">
+          <span id="ow-region-info">📍 加载沧溟山河……</span>
+          <button class="ls-btn jade" id="ow-btn-m1" style="padding:3px 7px;">⏱ +1月</button>
+          <button class="ls-btn blue" id="ow-btn-y1" style="padding:3px 7px;">🧘 闭关1年</button>
+          <button class="ls-btn" id="ow-btn-zoom" style="padding:3px 7px;">🔭 俯瞰全景</button>
+        </div>
+        <div class="ow-nearby-wrap" id="ow-nearby-wrap">
+          <button id="ow-nearby-btn">[E] 交互</button>
+        </div>
+        <div class="ow-ctrl-bl">
+          <div class="ow-dpad">
+            <span></span><button data-dir="0,-1">▲</button><span></span>
+            <button data-dir="-1,0">◀</button><button id="ow-btn-fly" title="切换御剑飞行(Space)">🚶</button><button data-dir="1,0">▶</button>
+            <span></span><button data-dir="0,1">▼</button><span></span>
+          </div>
+          <div class="ow-hint-box">
+            <div><b style="color:#6fd3a8;">WASD / 方向键 / 点击地面</b> 控制主角行走</div>
+            <div><b style="color:#f2daa0;">Space</b> 御剑飞行 · <b style="color:#f2daa0;">E</b> 靠近交互 · <b>右键</b>转视角 · <b>滚轮</b>缩放</div>
+          </div>
+        </div>
+        <div class="ow-menu-br">
+          <button class="ow-menu-btn accent" data-ow-tab="map">🗺️ 战略图</button>
+          <button class="ow-menu-btn" data-ow-tab="life">🧬 人物</button>
+          <button class="ow-menu-btn" data-ow-tab="social">🤝 江湖</button>
+          <button class="ow-menu-btn" data-ow-tab="bag">🎒 行囊</button>
+          <button class="ow-menu-btn" data-ow-tab="beasts">🐾 妖兽</button>
+          <button class="ow-menu-btn" data-ow-tab="world">🏛️ 世界</button>
+        </div>
+      `;
+      app.appendChild(hud);
+
+      hud.querySelectorAll('[data-ow-tab]').forEach(b => {
+        b.onclick = () => openModalTab(b.dataset.owTab);
+      });
+      hud.querySelectorAll('[data-dir]').forEach(b => {
+        const [vx, vz] = b.dataset.dir.split(',').map(Number);
+        const start = () => window.Map3D && window.Map3D.setJoystick(vx, vz);
+        const stop = () => window.Map3D && window.Map3D.setJoystick(0, 0);
+        b.addEventListener('pointerdown', start);
+        b.addEventListener('pointerup', stop);
+        b.addEventListener('pointerleave', stop);
+      });
+      document.getElementById('ow-btn-fly').onclick = () => {
+        if (window.Map3D) window.Map3D.toggleFly();
+      };
+      document.getElementById('ow-nearby-btn').onclick = () => {
+        if (window.Map3D) window.Map3D.triggerInteract();
+      };
+      document.getElementById('ow-btn-zoom').onclick = () => {
+        zoomMode = zoomMode === 'close' ? 'world' : 'close';
+        if (window.Map3D) window.Map3D.setZoomPreset(zoomMode);
+        document.getElementById('ow-btn-zoom').textContent = zoomMode === 'close' ? '🔭 俯瞰全景' : '🎯 拉近主角';
+      };
+      document.getElementById('ow-btn-m1').onclick = () => {
+        const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
+        saveState(); syncTopHud();
+        showOwToast(logs[0] || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
+      };
+      document.getElementById('ow-btn-y1').onclick = () => {
+        const logs = window.LifeSim.advanceLifeMonths(HERO, WORLD, 12, 'seclusion');
+        saveState(); syncTopHud();
+        showOwToast(logs[0] || `闭关一年出关！当前第 ${WORLD.year} 年，寿 ${HERO.age} 岁`);
+      };
+    }
+
+    syncTopHud();
     requestAnimationFrame(() => {
-      window.Map3D.mount(host, WORLD, HERO, selectedPlateId, pid => {
-        selectedPlateId = pid;
-        activeTab = 'map';
-        activeScene = null;
-        document.getElementById('life-sim-modal').classList.add('open');
-        renderModal();
+      window.Map3D.mount(host, WORLD, HERO, {
+        onRegionChange: pid => {
+          selectedPlateId = pid;
+          syncTopHud();
+          const nd = WORLD.nodeMap[pid];
+          if (nd) showOwToast(`🗺️ 踏入【${nd.name}】地界（灵脉 ${nd.leyline} · 暗森 ${nd.darkForestIdx || 0}）`);
+        },
+        onNearbyChange: target => {
+          const wrap = document.getElementById('ow-nearby-wrap');
+          const btn = document.getElementById('ow-nearby-btn');
+          if (!wrap || !btn) return;
+          if (target) {
+            btn.textContent = `[E] ${target.label}（${target.sub}）`;
+            wrap.classList.add('show');
+          } else {
+            wrap.classList.remove('show');
+          }
+        },
+        onInteract: target => handleWorldInteract(target),
+        onFlyToggle: flying => {
+          const fb = document.getElementById('ow-btn-fly');
+          if (fb) fb.textContent = flying ? '🗡️' : '🚶';
+          showOwToast(flying ? '🗡️ 已祭出飞剑！进入【御剑飞行】状态（速度×2.3，可越海穿山）' : '🚶 已收剑落地，恢复【徒步漫游】');
+        },
+        onToast: msg => showOwToast(msg)
       });
     });
   }
@@ -840,25 +1105,17 @@
   function mount() {
     if (!window.WorldCore || !window.LifeSim) return;
     injectStyles();
-    const btn = document.createElement('button');
-    btn.id = 'btn-open-life-sim';
-    btn.textContent = '🏔️ 沧溟 2.5D 地图 · 人生 v8.9';
-    btn.onclick = () => {
-      document.getElementById('life-sim-modal').classList.add('open');
-      renderModal();
-    };
-    document.body.appendChild(btn);
 
     const modal = document.createElement('div');
     modal.id = 'life-sim-modal';
     modal.innerHTML = `
       <div class="ls-box">
         <div class="ls-head">
-          <h2 id="ls-title">沧溟修仙模拟人生 v8.9</h2>
-          <button class="ls-btn red" id="ls-close">✕ 关闭</button>
+          <h2 id="ls-title">沧溟修仙模拟人生 v9.0</h2>
+          <button class="ls-btn red" id="ls-close">✕ 返回大世界</button>
         </div>
         <div class="ls-tabs">
-          <div class="ls-tab active" data-tab="map">🏔️ 五洲七海 2.5D 地图</div>
+          <div class="ls-tab active" data-tab="map">🗺️ 五洲七海战略图</div>
           <div class="ls-tab" data-tab="life">🧬 人物与人生</div>
           <div class="ls-tab" data-tab="social">🤝 众生与江湖博弈</div>
           <div class="ls-tab" data-tab="beasts">🐾 妖兽与生态图鉴</div>
@@ -870,16 +1127,17 @@
     `;
     document.body.appendChild(modal);
     document.getElementById('ls-close').onclick = () => {
-      if (window.Map3D) window.Map3D.dispose();
       modal.classList.remove('open');
-      mountMainBg3D();
+      syncTopHud();
     };
     modal.querySelectorAll('.ls-tab').forEach(t => {
       t.onclick = () => { activeTab = t.dataset.tab; activeScene = null; renderModal(); };
     });
 
-    // 启动即把真 2.5D Three.js 立体山海大地图挂载到主游戏全屏 #world-viewport！
+    // 启动即进入真 2.5D HD-2D 可操控主角开放大世界！
     mountMainBg3D();
+    // 若旧版标题遮罩在点击进入后重新渲染了旧 HUD，定时保证我们的实时数值同步
+    setInterval(syncTopHud, 2000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);

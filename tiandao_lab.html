@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>《沧溟界》天道因果推演引擎 v7.1 · 因果律契约 × DeepSeek 真主导 × 物理裁判所</title>
+<title>《沧溟界》天道因果推演引擎 v7.2（毕业版）· 前置物理 Pre-Tick × DeepSeek 真主导 × 物理裁判所</title>
 <style>
   :root {
     --bg:#080b0f; --panel:rgba(14,18,24,0.94); --card:rgba(20,25,34,0.88);
@@ -132,7 +132,7 @@
 <body>
 <header>
   <div class="brand">
-    <h1>沧溟天道因果推演引擎 v7.1</h1>
+    <h1>沧溟天道因果推演引擎 v7.2（毕业版）</h1>
     <span>零本地假剧情脚本 · 明文因果方向契约 · DeepSeek 唯一推演大脑 · 本地物理裁判所红黄牌校验</span>
   </div>
   <div class="top-controls">
@@ -235,7 +235,7 @@
       </div>
       <div class="energy-bar">
         <div><span>总灵能守恒(恒定 20,000)</span><b id="en-total">20,000</b></div>
-        <div><span>地核沉睡池</span><b id="en-core">20,000</b></div>
+        <div><span>地核封存 / 游离沉降</span><b id="en-core">20,000 / 0</b></div>
         <div><span>地表灵脉 + 生物锁存</span><b id="en-surf">0 + 0</b></div>
         <div><span>怨煞池 · 裁判红/黄牌</span><b id="en-sha">0 · 0红/0黄</b></div>
       </div>
@@ -394,13 +394,16 @@ function getNodeCap(nd) {
   return Math.max(5000, Math.round((nd.arable / 100) * 190000 * mul));
 }
 
+const LEY_ENERGY_UNIT = 8.2; // 24板块 × 100满脉 × 8.2 = 19,680，完美容纳 90%(18,000) 首波喷涌！
+
 function calcConservation() {
   const locked = SIM.people.filter(c => c.alive).reduce((s, c) => s + ((REALM_LIFESPAN[c.realm]?.lockE) || 0), 0);
   const shaE = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 3.5);
-  const rawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
-  // 零幽灵灵能：地核池严格承接沉降回流的全部剩余灵能，确保 core + rawSurf + locked + shaE === 20,000！
-  const core = Math.max(0, SIM.totalEnergy - rawSurf - locked - shaE);
-  return { total: SIM.totalEnergy, core, surf: rawSurf, rawSurf, locked, shaE };
+  const rawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * LEY_ENERGY_UNIT);
+  // 严格 5 池守恒：地核封存池(只泄不增) + 天地游离沉降池 + 地表灵脉 + 生物锁存 + 怨煞 === 20,000！
+  const core = Math.max(0, Math.min(SIM.totalEnergy, SIM.coreEnergy));
+  const ambient = Math.max(0, SIM.totalEnergy - core - rawSurf - locked - shaE);
+  return { total: SIM.totalEnergy, core, ambient, surf: rawSurf, rawSurf, locked, shaE };
 }
 
 function initSim() {
@@ -419,7 +422,7 @@ function initSim() {
   const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
   SIM = {
-    version:'7.1',
+    version:'7.2',
     year:1, maxYears:p.maxYears,
     awakened:false, seaTechUnlocked:false,
     eraName:'第一纪·混元凡尘',
@@ -434,6 +437,78 @@ function initSim() {
   };
   recordMetric();
   renderAll();
+}
+
+// ===== 前置确定性物理引擎 Pre-Tick（在呼叫 DeepSeek 之前执行，确保双方看到同一份物理真相！） =====
+function runPhysicsPreTick(startY, endY, p) {
+  const stepSpan = endY - startY;
+  const spanMul = stepSpan / 50;
+  const notes = [];
+  let popNet = 0, healedPlates = 0, agedOut = [];
+
+  SIM.nodes.forEach(nd => {
+    const cap = getNodeCap(nd);
+    // 1. 全 24 板块凡人自然 Logistic 演化（彻底解决冷门板块百年人口冻结！）
+    if (nd.pop > 0 && cap > 0) {
+      const prevPop = nd.pop;
+      if (nd.sha >= 60) {
+        nd.pop = Math.max(0, Math.round(nd.pop * Math.pow(0.84, spanMul)));
+      } else {
+        const load = nd.pop / cap;
+        const climFactor = (nd.climate === '极寒' || nd.climate === '炽热') ? 0.55 : 1.0;
+        const rate = 0.28 * climFactor * (1 - load) * spanMul;
+        nd.pop = Math.max(0, Math.min(cap, Math.round(nd.pop * (1 + rate))));
+      }
+      popNet += (nd.pop - prevPop);
+    }
+
+    if (!SIM.awakened) return;
+
+    // 2. 占领板块基础开采硬消耗（防止宗门白嫖零矿耗！）
+    if (nd.owner) {
+      const mineDrain = Math.max(1, Math.round(p.consumeLv * 0.85 * spanMul));
+      const herbDrain = Math.max(1, Math.round(p.consumeLv * 0.65 * spanMul));
+      nd.mineral = Math.max(0, nd.mineral - mineDrain);
+      nd.herb = Math.max(0, nd.herb - herbDrain);
+    }
+
+    // 3. 自然生态负反馈恢复（无人荒废板块净煞还灵 + 野药/地质矿缓慢再生，打破热寂死局！）
+    const isQuietWaste = !nd.owner && nd.pop === 0;
+    if (nd.sha > 0) {
+      const healRate = p.healLv * 0.018 * (isQuietWaste ? 1.5 : 0.8) * spanMul;
+      const purified = Math.max(1, Math.round(nd.sha * healRate));
+      nd.sha = Math.max(0, nd.sha - purified);
+      nd.leyline = Math.min(98, nd.leyline + Math.max(1, Math.round(purified * 0.32)));
+      if (isQuietWaste && purified >= 2) healedPlates++;
+    }
+    if (nd.sha < 65) {
+      const herbRegen = Math.max(1, Math.round(p.healLv * 0.7 * spanMul));
+      nd.herb = Math.min(95, nd.herb + herbRegen);
+    }
+    if (!nd.owner || nd.mineral < 15) {
+      const minRegen = Math.max(1, Math.round((11 - p.consumeLv) * 0.5 * spanMul));
+      nd.mineral = Math.min(95, nd.mineral + minRegen);
+    }
+  });
+
+  // 4. 在世人物自然老化与寿终前置结算（让 DeepSeek 开轮前就明确知道谁已寿终、哪家掌舵空缺！）
+  SIM.people.forEach(c => {
+    if (!c.alive) return;
+    c.age += stepSpan;
+    if (c.age > c.maxAge) {
+      c.alive = false;
+      agedOut.push(`${c.name}(${c.realm})`);
+      c.memories.push(`第${endY}年：寿元耗尽(${c.age}/${c.maxAge}岁)，自然坐化。`);
+      SIM.factions.forEach(f => {
+        if (f.alive && f.leader === c.name) f.leader = '【空缺·待推举新主】';
+      });
+    }
+  });
+
+  notes.push(`全界凡人自然净变动 ${popNet >= 0 ? '+' : ''}${popNet.toLocaleString()}`);
+  if (SIM.awakened) notes.push(`生态净煞还灵与地质补矿已前置结算（${healedPlates} 处荒废板块显著回暖）`);
+  if (agedOut.length) notes.push(`本轮自然寿终坐化：${agedOut.join('、')}（已自动加入已故禁写名单并清空其原掌舵席位）`);
+  return notes.join('；');
 }
 
 function recordMetric() {
@@ -456,8 +531,8 @@ function recordMetric() {
   });
 }
 
-// ===== 构建发给 DeepSeek 的完整《因果契约 + 全量 24 板块账本》Prompt =====
-function buildEpochPrompt(startY, endY, p) {
+// ===== 构建发给 DeepSeek 的完整《因果契约 + 前置物理基准 + 全量 24 板块账本》Prompt =====
+function buildEpochPrompt(startY, endY, p, preTickSummary = '') {
   const en = calcConservation();
   const plateLines = SIM.nodes.map(n =>
     `${n.id}|${n.name}(${n.region}/${n.climate}/${n.elem})|形态:${n.stage}|归属:${n.owner||'无主'}|凡人:${n.pop}/${getNodeCap(n)}|脉:${n.leyline} 矿:${n.mineral} 药:${n.herb} 煞:${n.sha}|生态:${n.flora}/${n.fauna}|邻接:[${n.neighbors.join(',')}]`
@@ -472,38 +547,43 @@ function buildEpochPrompt(startY, endY, p) {
     `- ${c.name} [${c.species}·${c.realm}] 龄:${c.age}/${c.maxAge} 居:${c.plateId} 属:${c.faction} IQ:${c.iq}/EQ:${c.eq}/悟:${c.daoWit} 性格:${c.persLabel} 记忆:${(c.memories||[]).slice(-2).join('；')}`
   ).join('\n') || '（当前尚无载入史册的在世关键人物）';
 
-  const deadList = SIM.people.filter(c=>!c.alive).slice(-28).map(c => `${c.name}(${c.realm}·已故)`).join('、') || '无';
+  const deadList = SIM.people.filter(c=>!c.alive).slice(-32).map(c => `${c.name}(${c.realm}·已故)`).join('、') || '无';
   const vacantFacs = SIM.factions.filter(f=>f.alive && f.leader.includes('空缺')).map(f=>f.name).join('、');
 
   const recentHist = SIM.chronicles.slice(0, 8).map(c => `[第${c.year}年·${c.tag}] ${c.text}`).join('\n');
   const lawsText = CAUSAL_LAWS.map(l => `${l.id}. ${l.title}：${l.rule}`).join('\n');
 
+  const hasHighCult = SIM.people.some(c => c.alive && ['金丹','元婴','化神','合道'].includes(c.realm));
+  const seaWindowOpen = SIM.awakened && !SIM.seaTechUnlocked && (hasHighCult || endY >= p.awakeYear + 280);
+
   const awakeHint = (!SIM.awakened && endY >= p.awakeYear)
     ? `【本轮核心节点】：本时段（第 ${startY}~${endY} 年）跨过了设定的地核破封年份（第 ${p.awakeYear} 年）！请将 core_release 设为约 ${Math.round(20000 * p.surgePct / 100)}，并在 plate_updates 中为各地块合理分配破封后的灵脉、灵矿、灵药及万物开智变化！`
     : (!SIM.awakened
       ? `【本轮红线】：尚未到达地核破封年份（第 ${p.awakeYear} 年）！core_release 必须为 0，所有板块的 leyline/mineral/herb/sha 必须保持 0，只允许凡人自然繁衍、迁徙、聚落成镇、严寒饥荒等纯凡俗演化！`
-      : `【本轮状态】：灵气已破封，当前地核沉睡池 ${en.core}（地表灵脉衰退时能量会回流地核，必要时可再次微泄或引发小灵潮）。请严格依据因果推演新变局！`);
+      : `【本轮状态】：灵气已破封，地核封存池剩余 ${en.core}、天地游离沉降灵能 ${en.ambient}。下方 24 板块已包含本轮前置物理结算（自然人口增长/宗门基础矿耗/荒废净煞回暖/人物老化），请在此基准上专注推演战争、开宗、灭门、突破、奇遇等历史变局！`);
 
-  return `你是《沧溟界》唯一的天道推演引擎。本地代码不会编造任何剧情，只充当“物理裁判所”校验你的输出是否违背因果与红线。
-请严格根据下方【创世基础参数】、【明文因果方向契约】与【当前全量 24 板块客观账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的真实世界演化！
+  return `你是《沧溟界》唯一的天道推演引擎。本地物理层已先完成确定性基础物理演算，并将在你输出后充当“物理裁判所”校验红线。
+请严格根据下方【创世基础参数】、【明文因果方向契约】与【前置物理结算后的全量 24 板块账本】，推演 第 ${startY} 年 → 第 ${endY} 年（共 ${endY - startY} 年）的历史大变局！
 
 【一、创世基础参数（1~10 刻度中 1=极低/缓慢，5=均衡，10=极高/剧烈）】
 - 地核灵气破封年份：第 ${p.awakeYear} 年 | 首波喷涌烈度：${p.surgePct}% (占总灵能 20,000 的百分比)
-- 凡人入道漏斗率：${p.entryBp}‱ (${(p.entryBp/100).toFixed(2)}%，凡人新生儿成功踏入仙途的比例)
-- 灵矿消耗烈度：${p.consumeLv}/10 | 草木净煞还灵速度：${p.healLv}/10（荒废/低战乱板块会自动净煞还灵并缓慢再生野药与地质新矿）
+- 凡人入道漏斗率：${p.entryBp}‱ (${(p.entryBp/100).toFixed(2)}%)
+- 灵矿消耗烈度：${p.consumeLv}/10 | 草木净煞还灵速度：${p.healLv}/10
 - 妖族/海族开智先发优势：${p.yaoLv}/10 | 天道杀劫与争斗烈度：${p.chaosLv}/10
 ${p.customLaw ? `- 玩家附加天道倾向：${p.customLaw}` : ''}
 
 【二、明文因果方向契约（什么影响什么，必须遵守）】
 ${lawsText}
 
-【三、当前世界客观状态（第 ${startY} 年）】
-- 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海连通：${SIM.seaTechUnlocked ? '已连通（允许跨洲）' : '未解锁（严格仅限 neighbors 邻接交互！）'}
-- 严格能量账本（零幽灵灵能）：总灵能 ${en.total} = 地核回流池 ${en.core} + 地表实际灵脉 ${en.surf} + 生物锁存 ${en.locked} + 怨煞池 ${en.shaE}
+【三、本轮前置物理基准态（第 ${startY} → ${endY} 年）】
+- 当前纪元：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海连通：${SIM.seaTechUnlocked ? '已连通（允许跨洲渡海）' : '未解锁（严禁跨洲；且陆地势力禁占海域、海族禁占内陆！）'}
+- 严格 5 池守恒（总计 20,000）：地核封存 ${en.core} + 天地游离 ${en.ambient} + 地表灵脉 ${en.surf} + 生物锁存 ${en.locked} + 怨煞 ${en.shaE}
+- 前置物理结算摘要：${preTickSummary || '无'}
 - ${awakeHint}
+${seaWindowOpen ? `- 【大航海解锁评估窗口已开启】：灵气破封已逾数百年（或已现高阶修士），若本轮诞生元婴大能御空渡海、或临海巨城/海族造出跨洋灵舟，可将 sea_tech_unlocked 设为 true 并打破五洲隔离！` : ''}
 ${vacantFacs ? `- 【掌舵空缺提醒】：以下在世势力掌舵者已故，请本轮为它们推举全新在世继任者（先在 people_ops 中 birth，再在 faction_ops 中 update），或让其内乱分裂/覆灭：${vacantFacs}` : ''}
 
-【四、全量 24 处地理板块账本（深海无土板块凡人承载为 0）】
+【四、全量 24 处地理板块账本（已含本轮基础增长/矿耗/净煞，你的 delta 将叠加于此）】
 ${plateLines}
 
 【五、当前在世势力】
@@ -520,9 +600,9 @@ ${recentHist}
 
 【输出铁律】
 1. 允许演化出极端世界（如妖海称霸、魔道煞土、末法孤岛、宗门垄断），完全尊重因果，不要强行写成套路化“正邪平衡”。
-2. **严禁复读机**：严禁照搬上轮的编年史或碑文原话！每轮必须推进至少 1~2 项**实质性历史转折**（例如：新势力/新流派诞生、古宗遗址被发掘复兴、旧妖庭内裂、荒废煞土自然净煞回暖、高阶修士冲击金丹/元婴、尝试渡海解锁大航海、跨种族混血或凡人奇才破局等）。
-3. **严禁写活死人**：严禁让【已故禁写黑名单】里的任何名字继续掌舵、创法或参战！请持续诞生新一代有血有肉的人物。
-4. **功法不重名**：不要反复创建《某诀·续篇》之类的重复功法，除非诞生真正全新的流派。
+2. **严禁复读机**：严禁照搬上轮的编年史或碑文原话！每轮必须推进至少 1~2 项**实质性历史转折**（新势力/新流派诞生、遗址复兴、旧妖庭分裂、回暖荒土重聚人烟、高阶突破元婴、尝试渡海解锁大航海、跨种族混血等）。
+3. **严禁写活死人**：严禁让【已故禁写黑名单】里的任何名字继续掌舵、创法或参战！人物侧重记录可跨轮存续的**筑基/金丹/元婴及以上长生修士**（凡人奇才若载入史册，可在本轮内完成一生并标 op:"die" 留下传承）。
+4. **功法不重名**：不要反复创建《某诀·续篇》之类的重复功法。
 5. 仅输出**严格合法的纯 JSON 对象**（不要 markdown 代码块，不要额外解释），字段结构如下：
 {
   "era_name": "当前纪元名称（如第二纪·灵潮初涌妖海崛起）",
@@ -595,7 +675,7 @@ function applyAndValidatePatch(patch, startY, endY, p) {
   SIM.year = endY;
   if (patch.era_name) SIM.eraName = String(patch.era_name).slice(0, 24);
 
-  // 0. 辅助：已故人员名集合 & 死亡同步清空势力掌舵人
+  // 0. 辅助：已故人员名集合 & 死亡同步清空势力掌舵人（前置物理 Pre-Tick 已在呼叫 DeepSeek 前完成基础增长/矿耗/净煞/老化）
   const isDeadName = nm => SIM.people.some(c => c.name === nm && !c.alive);
   const vacateLeaderIfDead = (deadName, cause) => {
     SIM.factions.forEach(f => {
@@ -605,28 +685,6 @@ function applyAndValidatePatch(patch, startY, endY, p) {
       }
     });
   };
-
-  // 0.5 自然生态负反馈物理结算（仅破封后生效：打破单向热寂死局！无人荒废板块自动净煞还灵+野药/地质矿再生）
-  if (SIM.awakened) {
-    const spanMul = stepSpan / 50;
-    SIM.nodes.forEach(nd => {
-      const isQuietWaste = !nd.owner && nd.pop === 0;
-      if (nd.sha > 0) {
-        const healRate = p.healLv * 0.018 * (isQuietWaste ? 1.45 : 0.85) * spanMul;
-        const purified = Math.max(1, Math.round(nd.sha * healRate));
-        nd.sha = Math.max(0, nd.sha - purified);
-        nd.leyline = Math.min(98, nd.leyline + Math.max(1, Math.round(purified * 0.35)));
-      }
-      if (nd.sha < 65) {
-        const herbRegen = Math.max(1, Math.round(p.healLv * 0.65 * spanMul));
-        nd.herb = Math.min(95, nd.herb + herbRegen);
-      }
-      if (!nd.owner || nd.mineral < 15) {
-        const minRegen = Math.max(1, Math.round((11 - p.consumeLv) * 0.45 * spanMul));
-        nd.mineral = Math.min(95, nd.mineral + minRegen);
-      }
-    });
-  }
 
   // 1. 校验地核破封红线
   let reqRelease = Math.max(0, Math.round(Number(patch.core_release) || 0));
@@ -778,7 +836,14 @@ function applyAndValidatePatch(patch, startY, endY, p) {
         } else {
           const facNodes = SIM.nodes.filter(x => x.owner === newOwn);
           const isAdjacent = facNodes.length === 0 || facNodes.some(x => x.neighbors.includes(nd.id));
-          if (!SIM.seaTechUnlocked && !isAdjacent) {
+          const homeNd = SIM.nodeMap[fac.homePlate];
+          const isSeaFac = homeNd ? homeNd.isSea : false;
+          const isCoastal = !nd.isSea && nd.neighbors.some(nb => SIM.nodeMap[nb]?.isSea);
+          if (!SIM.seaTechUnlocked && !isSeaFac && nd.isSea) {
+            addRef('红牌', `【陆海隔离红线】大航海未解锁前，驳回陆地势力【${newOwn}】占领海域【${nd.id}:${nd.name}】（防借海跨洲偷渡）！`);
+          } else if (!SIM.seaTechUnlocked && isSeaFac && !nd.isSea && !isCoastal) {
+            addRef('红牌', `【海陆隔离红线】大航海未解锁前，驳回海族势力【${newOwn}】深入内陆【${nd.id}:${nd.name}】！`);
+          } else if (!SIM.seaTechUnlocked && !isAdjacent) {
             addRef('红牌', `【地理隔离红线】大航海未解锁前，驳回【${newOwn}】跨洲/跨海非邻接占领【${nd.id}:${nd.name}】！`);
           } else {
             nd.owner = newOwn;
@@ -795,12 +860,7 @@ function applyAndValidatePatch(patch, startY, endY, p) {
     }
   });
 
-  // 5. 处理人物自然老化 + DeepSeek 人物操作（严格寿元红线）
-  SIM.people.forEach(c => {
-    if (!c.alive) return;
-    c.age += stepSpan;
-  });
-
+  // 5. 处理 DeepSeek 人物操作（老化已在 Pre-Tick 前置执行，此处只做新增/突破/死亡与寿限复核）
   const pOps = Array.isArray(patch.people_ops) ? patch.people_ops : [];
   pOps.forEach(op => {
     if (!op || !op.name) return;
@@ -858,21 +918,18 @@ function applyAndValidatePatch(patch, startY, endY, p) {
     }
   });
 
-  // 6. 总灵能绝对守恒闭环校验（彻底消灭“幽灵灵能”！）
+  // 6. 严格 5 池守恒校验（地核只泄不增 + 游离沉降池承接余量，彻底杜绝“破封18,000弹回地核”穿帮！）
   const lockedNow = SIM.people.filter(c => c.alive).reduce((s, c) => s + ((REALM_LIFESPAN[c.realm]?.lockE) || 0), 0);
   const shaENow = Math.round(SIM.nodes.reduce((s, n) => s + n.sha, 0) * 3.5);
-  const maxSurfAllowed = Math.max(0, SIM.totalEnergy - lockedNow - shaENow);
-  const rawSurfNow = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
+  const maxSurfAllowed = Math.max(0, SIM.totalEnergy - SIM.coreEnergy - lockedNow - shaENow);
+  const rawSurfNow = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * LEY_ENERGY_UNIT);
   if (rawSurfNow > maxSurfAllowed && rawSurfNow > 0) {
     const ratio = maxSurfAllowed / rawSurfNow;
     SIM.nodes.forEach(n => { n.leyline = Math.floor(n.leyline * ratio); });
-    addRef('黄牌', `【能量守恒纠偏】地表总灵能(${rawSurfNow})超出总守恒上限(${maxSurfAllowed})，已按 ${(ratio*100).toFixed(1)}% 归一化！`);
+    addRef('黄牌', `【能量守恒纠偏】地表总灵能(${rawSurfNow})超出已释放配额(${maxSurfAllowed})，已按 ${(ratio*100).toFixed(1)}% 归一化！`);
   }
-  // 将地表衰退或未释放的剩余能量严格回流地核池，保证 core + rawSurf + locked + shaE === 20,000！
-  const finalRawSurf = Math.round(SIM.nodes.reduce((s, n) => s + n.leyline, 0) * 6.5);
-  SIM.coreEnergy = Math.max(0, SIM.totalEnergy - finalRawSurf - lockedNow - shaENow);
 
-  // 7. 录入功法（拦截已故者创法 + 功法重名/续篇刷屏去重）与编年史
+  // 7. 录入功法（拦截已故者创法 + 功法重名/续篇刷屏去重）与编年史（含已故黑名单文本扫描！）
   const normArt = s => String(s || '').replace(/[《》\s]/g, '').replace(/[·・\-—]?(续篇|残篇|续|二|三|新篇)$/g, '');
   if (Array.isArray(patch.new_arts)) {
     patch.new_arts.forEach(a => {
@@ -891,15 +948,30 @@ function applyAndValidatePatch(patch, startY, endY, p) {
       SIM.createdArts.push({ year:endY, name:a.name, creator, origin:a.origin || '' });
     });
   }
+
+  const deadNamesForScan = SIM.people.filter(c => !c.alive && c.name.length >= 2).map(c => c.name);
+  const memorialRe = /(遗志|遗法|遗诀|后人|之子|之孙|故居|曾|昔年|陨落|坐化|寿终|寿尽|老死|战死|追念|先祖|传承|旧部|墓)/;
+  const scanDeadText = txt => {
+    let flagged = txt;
+    for (const dn of deadNamesForScan) {
+      if (flagged.includes(dn) && !memorialRe.test(flagged)) {
+        addRef('黄牌', `【史书死人预警】编年史文本疑似将已故人物【${dn}】写成在世行动，已自动加注警示标签。`);
+        flagged = `[疑误:已故者${dn}] ` + flagged;
+        break;
+      }
+    }
+    return flagged;
+  };
+
   if (Array.isArray(patch.chronicle_events)) {
     patch.chronicle_events.forEach(ev => {
       if (!ev || !ev.text) return;
       const evYear = Math.max(startY + 1, Math.min(endY, startY + (Number(ev.year_offset) || Math.round(stepSpan / 2))));
-      SIM.chronicles.unshift({ year:evYear, tag:ev.tag || 'AI推演', text:ev.text });
+      SIM.chronicles.unshift({ year:evYear, tag:ev.tag || 'AI推演', text:scanDeadText(ev.text) });
     });
   }
   if (patch.epic_summary) {
-    SIM.chronicles.unshift({ year:endY, tag:'AI推演', text:`【第${startY}~${endY}年·天道综述】${patch.epic_summary}` });
+    SIM.chronicles.unshift({ year:endY, tag:'AI推演', text:`【第${startY}~${endY}年·天道综述】${scanDeadText(patch.epic_summary)}` });
   }
   SIM.chronicles.sort((a,b) => b.year - a.year);
 
@@ -934,13 +1006,20 @@ async function runOneDeepSeekEpoch() {
 
   const startY = SIM.year;
   const endY = Math.min(p.maxYears, startY + p.stepYears);
-  const prompt = buildEpochPrompt(startY, endY, p);
+
+  // 保存回滚快照（若 API 请求失败则无损回滚前置物理 Pre-Tick）
+  const rollbackStr = JSON.stringify({
+    nodes: SIM.nodes, factions: SIM.factions, people: SIM.people,
+    coreEnergy: SIM.coreEnergy, year: SIM.year
+  });
+  const preTickSummary = runPhysicsPreTick(startY, endY, p);
+  const prompt = buildEpochPrompt(startY, endY, p, preTickSummary);
 
   isBusy = true;
   updateAutoBtns();
   const hb = document.getElementById('health-box');
   hb.className = 'health-box busy';
-  hb.innerHTML = `<b>🤖 DeepSeek 正在亲自推演第 ${startY} → ${endY} 年……</b> 已发送全量 24 板块账本 + 6 条明文因果契约，等待返回结构化 State Patch JSON 并送交物理裁判所校验…`;
+  hb.innerHTML = `<b>🤖 DeepSeek 正在亲自推演第 ${startY} → ${endY} 年……</b> 已先完成确定性物理 Pre-Tick（${preTickSummary}），正将全量 24 板块基准与 7 条因果契约发给 DeepSeek…`;
   st.style.color = '#f2daa0';
   st.textContent = `DeepSeek 推演中：第 ${startY} → ${endY} 年…`;
 
@@ -979,8 +1058,14 @@ async function runOneDeepSeekEpoch() {
     updateAutoBtns();
     return true;
   } catch (err) {
+    // 失败时无损回滚前置物理 Pre-Tick！
+    const rb = JSON.parse(rollbackStr);
+    SIM.nodes = rb.nodes; SIM.nodeMap = Object.fromEntries(SIM.nodes.map(n => [n.id, n]));
+    SIM.factions = rb.factions; SIM.people = rb.people;
+    SIM.coreEnergy = rb.coreEnergy; SIM.year = rb.year;
+
     st.style.color = '#ff9d95';
-    st.textContent = `推演失败（第${startY}~${endY}年）：${err.message}`;
+    st.textContent = `推演失败（已回滚至第${startY}年）：${err.message}`;
     SIM.wireLogs.unshift({ span:`第${startY}~${endY}年[失败]`, prompt, rawJson:`ERROR: ${err.message}` });
     isBusy = false;
     autoRunning = false;
@@ -1033,7 +1118,7 @@ function renderAll() {
   document.getElementById('kpi-res').textContent = `${m.avgLey}/${m.avgMin}/${m.avgHerb}/${m.avgSha}`;
 
   document.getElementById('en-total').textContent = m.en.total.toLocaleString();
-  document.getElementById('en-core').textContent = m.en.core.toLocaleString();
+  document.getElementById('en-core').textContent = `${m.en.core.toLocaleString()} / ${m.en.ambient.toLocaleString()}`;
   document.getElementById('en-surf').textContent = `${m.en.surf.toLocaleString()} + ${m.en.locked}`;
   document.getElementById('en-sha').textContent = `${m.en.shaE} · ${SIM.redCards}红/${SIM.yellowCards}黄`;
 
@@ -1073,7 +1158,7 @@ function renderRightTab() {
       `<div class="log-item"><span class="tag t-${c.tag}">${c.tag}</span><div><b style="color:var(--gold-hi);">第${c.year}年</b> · ${c.text}</div></div>`
     ).join('');
   } else if (activeTab === 'contract') {
-    rb.innerHTML = `<div class="rule-card" style="border-color:rgba(112,184,240,0.45);"><b>v7.0 核心机制声明（零本地假推演）</b><br/>本地代码不再编写任何战争/建宗/突破概率脚本！每推演一个纪元，下方 6 条因果契约 + 左侧 7 项基础参数 + 全量 24 板块账本将原封不动发给 DeepSeek，由 DeepSeek 亲自推演 State Patch JSON，再由本地物理裁判所做红线校验。</div>`
+    rb.innerHTML = `<div class="rule-card" style="border-color:rgba(112,184,240,0.45);"><b>v7.2 毕业版核心机制（前置物理 Pre-Tick × DeepSeek 真主导 × 裁判所）</b><br/>每轮推进前，本地物理层先确定性结算人口增长、占领区基础矿耗、荒废区净煞还灵与人物自然老化（双方看到同一份真相）；再将 7 条明文因果契约 + 全量 24 板块基准发给 DeepSeek 推演历史大变局；最后由物理裁判所校验陆海隔离、5 池能量守恒、死人黑名单与功法去重！</div>`
       + CAUSAL_LAWS.map(l => `<div class="rule-card"><b>${l.id}. ${l.title}</b><br/>${l.rule}</div>`).join('');
   } else if (activeTab === 'referee') {
     rb.innerHTML = SIM.refereeLogs.length
@@ -1109,20 +1194,20 @@ function buildSnapshot() {
   const m = SIM.historyMetrics[SIM.historyMetrics.length - 1];
   const p = getParams();
   const lines = [
-    `# 《沧溟天道因果推演 v7.1》全量世界报告（第 1 → ${SIM.year} 年）`,
+    `# 《沧溟天道因果推演 v7.2》全量世界报告（第 1 → ${SIM.year} 年）`,
     ``,
     `## 一、核心指标与创世参数`,
     `- 时代：${SIM.eraName} | 灵气破封：${SIM.awakened ? '已破封' : '未破封'} | 大航海：${SIM.seaTechUnlocked ? '已连通' : '物理隔绝'}`,
     `- 创世参数：破封第${p.awakeYear}年 / 首波喷涌${p.surgePct}% / 入道漏斗${p.entryBp}‱ / 采矿消耗${p.consumeLv}/10 / 净煞还灵${p.healLv}/10 / 妖海先发${p.yaoLv}/10 / 杀劫${p.chaosLv}/10${p.customLaw ? ` / 附加倾向：${p.customLaw}` : ''}`,
-    `- 能量守恒：总 ${m.en.total} = 地核 ${m.en.core} + 地表配额 ${m.en.surf} + 生物锁存 ${m.en.locked} + 怨煞 ${m.en.shaE}`,
+    `- 严格 5 池守恒：总 ${m.en.total} = 地核封存 ${m.en.core} + 天地游离 ${m.en.ambient} + 地表灵脉 ${m.en.surf} + 生物锁存 ${m.en.locked} + 怨煞 ${m.en.shaE}`,
     `- 凡人人口：${m.pop.toLocaleString()} / 承载 ${m.cap.toLocaleString()} (${m.popLoadPct}%) | 在世关键人物：${m.cultCount} | 在世势力：${m.aliveFac} (已灭 ${m.deadFac})`,
     `- 全界均值：灵脉 ${m.avgLey} / 灵矿 ${m.avgMin} / 灵药 ${m.avgHerb} / 怨煞 ${m.avgSha}`,
     `- 物理裁判所统计：红牌 ${SIM.redCards} 次 / 黄牌 ${SIM.yellowCards} 次`,
     ``,
     `## 二、历轮演化趋势数据`,
-    `| 年份 | 凡人人口(负载%) | 在世势力(灭) | 关键人物 | 均脉 | 均矿 | 均药 | 均煞 | 地核/地表/锁存/煞能 |`,
+    `| 年份 | 凡人人口(负载%) | 在世势力(灭) | 关键人物 | 均脉 | 均矿 | 均药 | 均煞 | 地核/游离/地表/锁存/煞能 |`,
     `|---:|---:|---:|---:|---:|---:|---:|---:|---:|`,
-    ...SIM.historyMetrics.map(h => `| 第${h.year}年 | ${h.pop.toLocaleString()}(${h.popLoadPct}%) | ${h.aliveFac}(${h.deadFac}) | ${h.cultCount} | ${h.avgLey} | ${h.avgMin} | ${h.avgHerb} | ${h.avgSha} | ${h.en.core}/${h.en.surf}/${h.en.locked}/${h.en.shaE} |`),
+    ...SIM.historyMetrics.map(h => `| 第${h.year}年 | ${h.pop.toLocaleString()}(${h.popLoadPct}%) | ${h.aliveFac}(${h.deadFac}) | ${h.cultCount} | ${h.avgLey} | ${h.avgMin} | ${h.avgHerb} | ${h.avgSha} | ${h.en.core}/${h.en.ambient}/${h.en.surf}/${h.en.locked}/${h.en.shaE} |`),
     ``,
     `## 三、全量 24 处地理板块现状`,
     ...SIM.nodes.map(n => `- **${n.id} ${n.name}**（原:${n.rawName} · ${n.climate}/${n.elem} · ${STAGE_CN[n.stage]||n.stage} · 归属:${n.owner||'无主'} · 邻接:[${n.neighbors.join(',')}]）｜ 凡人 ${n.pop.toLocaleString()}/${getNodeCap(n).toLocaleString()} · 脉${n.leyline} 矿${n.mineral} 药${n.herb} 煞${n.sha} · 生态:${n.flora}/${n.fauna}\n  - 碑文：${n.history.join('；')}`),

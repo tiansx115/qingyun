@@ -504,6 +504,50 @@
         </div>
       `;
     }
+    if (activeScene.type === 'bounty_board' && window.WorldDirector) {
+      window.WorldDirector.ensureDirectorState(HERO, WORLD);
+      const sp = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+      const goods = window.WorldDirector.TRADE_GOODS;
+      return `
+        <div class="ls-scene-banner">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <b style="color:#f7d070;font-size:13.5px;">📜 【${sp.name}】仙城悬赏榜 & 跨洲商行货栈（灵石：${HERO.stones}）</b>
+            <button class="ls-btn" data-sc="close">离开告示牌</button>
+          </div>
+          <div class="ls-grid-2">
+            <div class="ls-card">
+              <h3><span>本地实时悬赏（完成自动计数）</span><button class="ls-btn" data-sc="refresh_bounty" style="padding:2px 6px;">刷新榜文</button></h3>
+              ${HERO.bounties.map(b => `
+                <div style="padding:5px 0;border-bottom:1px dashed rgba(212,184,122,0.16);display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                  <div>
+                    <b style="color:#f2daa0;">${b.title}</b> <span class="ls-pill ${b.progress>=b.target?'jade':''}">${b.progress}/${b.target}</span>
+                    <div style="font-size:10px;color:#938c7e;">${b.desc} · 赏 ${b.rewardStones}石</div>
+                  </div>
+                  ${b.claimed ? '<span class="ls-pill">已领赏</span>' : (b.progress >= b.target ? `<button class="ls-btn jade" data-claim="${b.id}">领赏</button>` : '<span style="font-size:10px;color:#938c7e;">进行中</span>')}
+                </div>
+              `).join('')}
+            </div>
+            <div class="ls-card">
+              <h3><span>跨洲商行货栈（按本地真实物价波动）</span></h3>
+              <div style="font-size:10px;color:#938c7e;margin-bottom:6px;">本地物价指数：丹×${sp.priceIndex.pill} · 矿×${sp.priceIndex.mineral} · 粮×${sp.priceIndex.grain}（低买跨洲高卖！）</div>
+              ${goods.map(g => {
+                const pr = window.WorldDirector.getLocalTradePrice(sp, g);
+                const own = (HERO.bag || []).filter(i => i.name === g.name).reduce((s, i) => s + (i.qty || 1), 0);
+                return `
+                  <div style="padding:5px 0;border-bottom:1px dashed rgba(212,184,122,0.16);display:flex;justify-content:space-between;align-items:center;">
+                    <div><b style="color:#f2daa0;">${g.name}</b> <span class="ls-pill">持 ${own}</span><div style="font-size:10px;color:#9ff2cf;">本地市价：${pr} 灵石</div></div>
+                    <div style="display:flex;gap:4px;">
+                      <button class="ls-btn blue" data-trade="buy|${g.id}">购入</button>
+                      <button class="ls-btn jade" data-trade="sell|${g.id}" ${own>0?'':'disabled'}>售出</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
     if (activeScene.type === 'mortality') {
       const lin = window.Lineage ? window.Lineage.ensureLineage(HERO) : { heirs: [] };
       return `
@@ -582,6 +626,10 @@
           activeScene = null; saveState(); renderModal(); return;
         }
 
+        if (activeScene.type === 'bounty_board' && sc === 'refresh_bounty' && window.WorldDirector) {
+          window.WorldDirector.refreshBounties(HERO, WORLD);
+          saveState(); renderModal(); return;
+        }
         if (activeScene.type === 'mortality') {
           if (sc === 'extend_life' && HERO.stones >= 200) {
             HERO.stones -= 200;
@@ -647,6 +695,26 @@
           pushLog(`你耗费 150 灵石在【${nd.name}】正式开宗立派【${nm}】（占本地 35% 影响力），正式加入五洲七海势力博弈！`);
           activeScene = null; saveState(); renderModal(); return;
         }
+      };
+    });
+
+    // 悬赏领赏 & 跨洲商行买卖
+    body.querySelectorAll('[data-claim]').forEach(btn => {
+      btn.onclick = () => {
+        const res = window.WorldDirector.claimBounty(HERO, WORLD, btn.dataset.claim);
+        if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+        else showOwToast(res.msg);
+      };
+    });
+    body.querySelectorAll('[data-trade]').forEach(btn => {
+      btn.onclick = () => {
+        const [op, gid] = btn.dataset.trade.split('|');
+        const sp = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
+        const res = op === 'buy'
+          ? window.WorldDirector.buyTradeGood(HERO, sp, gid)
+          : window.WorldDirector.sellTradeGood(HERO, sp, gid);
+        if (res.ok) { pushLog(res.msg); showOwToast(res.msg); saveState(); syncTopHud(); renderModal(); }
+        else showOwToast(res.msg);
       };
     });
 
@@ -1426,6 +1494,26 @@
 
   function handleWorldInteract(target) {
     if (!target) return;
+    if (target.type === 'bounty_board') {
+      activeTab = 'map';
+      activeScene = { type: 'bounty_board', data: {} };
+      document.getElementById('life-sim-modal').classList.add('open');
+      renderModal();
+      return;
+    }
+    if (target.type === 'refugee') {
+      if (HERO.stones >= 20) {
+        HERO.stones -= 20;
+        HERO.life.reputation.mortal += 12;
+        HERO.life.heartDemon = Math.max(0, HERO.life.heartDemon - 10);
+        pushLog('你在桥畔施舍 20 灵石救助落魄流民，凡人功德 +12，心魔 -10！');
+        saveState(); syncTopHud();
+        showOwToast('施舍 20 灵石救助流民：凡人名声 +12、心魔 -10！');
+      } else {
+        showOwToast('你囊中羞涩（需 20 灵石），只能宽慰流民几句');
+      }
+      return;
+    }
     if (target.type === 'exit_interior') {
       switchViewLayer('local', HERO.locId);
       showOwToast('已推门走出，重返城镇大街');
@@ -1461,6 +1549,10 @@
       HERO.life.pillToxin = Math.max(0, HERO.life.pillToxin - 4);
       window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'seclusion');
       pushLog(`你在【${nd.name}】聚灵蒲团盘膝吐纳一月，修为 +${gain}（${HERO.exp}/${HERO.maxExp}），丹毒略散！`);
+      if (window.WorldDirector) {
+        const done = window.WorldDirector.recordProgress(HERO, 'meditate', 1);
+        if (done) showOwToast(`悬赏达成【${done.title}】！请前往广场悬赏榜领赏`);
+      }
       saveState(); syncTopHud();
       showOwToast(HERO.exp >= HERO.maxExp
         ? `修为圆满（${HERO.exp}/${HERO.maxExp}）！可点击顶部【破境渡劫】`
@@ -1532,6 +1624,10 @@
       if (hasHerb) hasHerb.qty += 1;
       else HERO.bag.push({ id: 'it_herb', name: '野生聚灵草', kind: '灵材', qty: 1, desc: '采自野外灵脉，可售卖或炼丹' });
       pushLog(`你在【${nd.name}】灵脉处采得野生聚灵草×1，并掘出灵石 +${gain}！`);
+      if (window.WorldDirector) {
+        const done = window.WorldDirector.recordProgress(HERO, 'gather', 1);
+        if (done) showOwToast(`悬赏达成【${done.title}】！请前往广场悬赏榜领赏`);
+      }
       saveState(); syncTopHud();
       showOwToast(`🌿 采集成功！获得 野生聚灵草×1、灵石 +${gain}`);
       return;
@@ -1615,6 +1711,10 @@
           const ex = HERO.bag.find(i => i.name === en.drop);
           if (ex) ex.qty += 1;
           else HERO.bag.push({ id: 'it_' + Date.now(), name: en.drop, kind: '妖材', qty: 1, desc: `即时斩杀【${en.name}】掉落` });
+        }
+        if (window.WorldDirector) {
+          const done = window.WorldDirector.recordProgress(HERO, 'kill', 1);
+          if (done) showOwToast(`悬赏达成【${done.title}】！请前往广场悬赏榜领赏`);
         }
         pushLog(`⚔️ 你在实景激战中斩杀【${en.name}】，收获灵石 +${en.rewardStones}、修为 +${en.rewardExp}、${en.drop}×1！`);
         saveState(); syncTopHud();

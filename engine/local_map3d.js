@@ -630,6 +630,21 @@
     buildingsForMini.push({ x: 0, z: 18.8, label: '城门', type: 'exit' });
     interactables.push({ type: 'exit_world', id: 'exit_gate', label: '走出山门 · 前往五洲七海大洲图', sub: '跨洲御剑远行', x: 0, z: 17.5, obj: exSp, data: plate });
 
+    // 中央广场西侧：仙城悬赏榜 & 跨洲商行货栈告示牌
+    const bBoard = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.2, 0.25), new THREE.MeshStandardMaterial({ color: 0x5c3c24, roughness: 0.85 }));
+    bBoard.position.set(-5.6, 1.1, 2.2); scene.add(bBoard);
+    const bbSp = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeSlimLabel('悬赏榜·商行', '接悬赏 / 跨洲跑商套利', '#f7d070'), transparent: true, depthTest: false }));
+    bbSp.scale.set(2.7, 0.68, 1); bbSp.position.set(-5.6, 2.8, 2.2); bbSp.userData = { interactIdx: interactables.length };
+    scene.add(bbSp); clickMeshes.push(bbSp);
+    buildingsForMini.push({ x: -5.6, z: 2.2, label: '悬赏', type: 'bounty' });
+    interactables.push({ type: 'bounty_board', id: 'bounty_board', label: '查看【悬赏榜 · 跨洲商行】', sub: '接赏金 / 倒卖差价商货', x: -5.6, z: 3.3, obj: bbSp, data: plate });
+
+    // 城南桥畔：落魄流民（可施舍积德或招入宗门）
+    const refSp = makeHumanSprite('assets/chars/hero.webp', '落魄流民', '饥寒交迫', 0x9d9586, 1.2, 1.7, false);
+    refSp.group.position.set(-4.6, 0, 14.2); refSp.body.userData = { interactIdx: interactables.length };
+    scene.add(refSp.group); clickMeshes.push(refSp.body);
+    interactables.push({ type: 'refugee', id: 'refugee_1', label: '救助【落魄流民】', sub: '施舍积德 / 招入宗门', x: -4.6, z: 14.2, obj: refSp.group, data: plate });
+
     // 三层叠叶古松 & 灵花树
     [[-21,-17],[-19,-8],[-21,2],[-20,15],[-9,-17],[9,-17],[21,-16],[20,-6],[21,4],[19,16],[-8,6],[8,6],[-10,16],[8,16],[16,1],[-17,1]].forEach(([tx, tz], idx) => {
       const tree = buildLayeredTree(plate.biome, idx % 4 === 0 && (plate.biome === 'wood' || plate.biome === 'earth'));
@@ -681,10 +696,13 @@
     const rScale = 1 + ((hero && hero.realmIdx) || 0) * 0.55;
     const bName = plate.biome === 'ice' ? '寒渊冰蛟' : (plate.biome === 'volcano' ? '赤炎妖猿' : '幽林妖狼');
     const enemySpawns = [
-      { x: 14.8, z: 15.6, name: bName, avatar: 'assets/chars/wolf_boss.webp', hp: Math.round(95 * rScale), atk: Math.round(14 * rScale), rewardStones: 36, rewardExp: 32, drop: `${bName}妖丹` },
-      { x: -13.5, z: 15.8, name: bName + '头领', avatar: 'assets/chars/wolf_boss.webp', hp: Math.round(135 * rScale), atk: Math.round(18 * rScale), rewardStones: 55, rewardExp: 48, drop: `${bName}妖丹` },
-      { x: -16.5, z: -8.5, name: '暗森劫修', avatar: 'assets/chars/elder.webp', hp: Math.round(115 * rScale), atk: Math.round(16 * rScale), rewardStones: 62, rewardExp: 42, drop: '劫修储物袋' }
+      { x: 14.8, z: 15.6, name: bName, avatar: 'assets/chars/wolf_boss.webp', hp: Math.round(95 * rScale), atk: Math.round(14 * rScale), rewardStones: 36, rewardExp: 32, drop: `${bName}妖丹`, isEnforcer: false },
+      { x: -13.5, z: 15.8, name: bName + '头领', avatar: 'assets/chars/wolf_boss.webp', hp: Math.round(135 * rScale), atk: Math.round(18 * rScale), rewardStones: 55, rewardExp: 48, drop: `${bName}妖丹`, isEnforcer: false },
+      { x: -16.5, z: -8.5, name: '暗森劫修', avatar: 'assets/chars/elder.webp', hp: Math.round(115 * rScale), atk: Math.round(16 * rScale), rewardStones: 62, rewardExp: 42, drop: '劫修储物袋', isEnforcer: false }
     ];
+    if (hero && ((hero.wanted || 0) > 0 || (hero.life && hero.life.reputation && hero.life.reputation.demonic >= 15))) {
+      enemySpawns.push({ x: 5.5, z: -9.5, name: '宗门执法执事', avatar: 'assets/chars/elder.webp', hp: Math.round(155 * rScale), atk: Math.round(20 * rScale), rewardStones: 80, rewardExp: 55, drop: '执法令牌', isEnforcer: true });
+    }
 
     enemySpawns.forEach((spDef, idx) => {
       const sp = makeHumanSprite(spDef.avatar, spDef.name, '', 0xe05248, 1.5, 1.75, true);
@@ -701,7 +719,7 @@
         id: 'en_' + idx, sp, warnRing, name: spDef.name, homeX: spDef.x, homeZ: spDef.z,
         x: spDef.x, z: spDef.z, tx: spDef.x, tz: spDef.z,
         hp: spDef.hp, maxHp: spDef.hp, atk: spDef.atk,
-        rewardStones: spDef.rewardStones, rewardExp: spDef.rewardExp, drop: spDef.drop,
+        rewardStones: spDef.rewardStones, rewardExp: spDef.rewardExp, drop: spDef.drop, isEnforcer: !!spDef.isEnforcer,
         alive: true, respawnTimer: 0, aiState: 'patrol', aiTimer: 1.0, hitFlash: 0, speed: 2.85
       };
       sp.body.userData = { hostileRef: en };
@@ -1128,7 +1146,8 @@
 
         if (en.aiState === 'patrol') {
           en.warnRing.material.opacity = 0;
-          if (dHero < 6.4 && !heroPos.flying) { en.aiState = 'chase'; spawnFloatText(en.x, 2.5, en.z, '发现猎物', '#ff7b72'); }
+          const disguisedFromEnforcer = en.isEnforcer && hero && hero.masked;
+          if (dHero < 6.4 && !heroPos.flying && !disguisedFromEnforcer) { en.aiState = 'chase'; spawnFloatText(en.x, 2.5, en.z, en.isEnforcer ? '站住! 通缉犯!' : '发现猎物', '#ff7b72'); }
           else {
             en.aiTimer -= dt;
             if (en.aiTimer <= 0) { en.aiTimer = 2.0 + Math.random() * 2.5; en.tx = en.homeX + (Math.random() - 0.5) * 6; en.tz = en.homeZ + (Math.random() - 0.5) * 5; }

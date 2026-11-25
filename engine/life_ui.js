@@ -540,6 +540,18 @@
         </div>
       `;
     }
+    if (activeScene.type === 'living_event' && d.ev) {
+      const ev = d.ev;
+      return `
+        <div class="ls-scene-banner" style="border-color:#f2daa0;">
+          <div style="color:#f5e2b5;font-size:14px;font-weight:700;margin-bottom:6px;">${ev.title}</div>
+          <div style="font-size:12px;line-height:1.65;margin-bottom:10px;color:#e6dfd3;">${ev.desc}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${ev.choices.map((c, idx) => `<button class="ls-btn jade" style="text-align:left;padding:7px 11px;" data-lev="${idx}">${idx + 1}. ${c.label}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    }
     if (activeScene.type === 'bounty_board' && window.WorldDirector) {
       window.WorldDirector.ensureDirectorState(HERO, WORLD);
       const sp = WORLD.nodeMap[HERO.locId] || WORLD.nodes[0];
@@ -731,6 +743,20 @@
           pushLog(`你耗费 150 灵石在【${nd.name}】正式开宗立派【${nm}】（占本地 35% 影响力），正式加入五洲七海势力博弈！`);
           activeScene = null; saveState(); renderModal(); return;
         }
+      };
+    });
+
+    // 真实社会演化动态事件抉择
+    body.querySelectorAll('[data-lev]').forEach(btn => {
+      btn.onclick = () => {
+        const ev = activeScene.data && activeScene.data.ev;
+        if (!ev) return;
+        const ch = ev.choices[Number(btn.dataset.lev)];
+        if (ch && ch.run) {
+          const msg = ch.run(HERO, WORLD);
+          pushLog(msg); showOwToast(msg);
+        }
+        activeScene = null; saveState(); syncTopHud(); renderModal();
       };
     });
 
@@ -1117,6 +1143,9 @@
                   <div style="font-size:11px;color:#bfb7a8;">8维人格：<b>${curNpc.persLabel}</b> ｜ IQ:${curNpc.iq} EQ:${curNpc.eq} 悟:${curNpc.daoWit}</div>
                   <div><span class="ls-pill">信任 ${rel.trust}</span><span class="ls-pill">敬畏 ${rel.dread}</span><span class="ls-pill jade">人情把柄 ${rel.hook}</span><span class="ls-pill">道念共鸣 ${rel.daoResonance}</span></div>
                 </div>
+              </div>
+              <div style="background:rgba(8,12,18,0.86);border-left:2.5px solid #d4b87a;padding:8px 12px;margin-bottom:8px;font-size:12px;line-height:1.6;color:#f5ebd6;font-style:italic;">
+                ${window.LivingEvents ? window.LivingEvents.generateNpcGreeting(curNpc, HERO, WORLD, rel) : '“道友有礼。”'}
               </div>
               <div style="display:flex;gap:6px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed rgba(212,184,122,0.2);">
                 <button class="ls-btn jade" id="btn-duel-spar">实景切磋论道（直接在大街即时开打）</button>
@@ -1676,6 +1705,16 @@
         return;
       }
       const sp = target.data.plate || WORLD.nodeMap[HERO.locId];
+      if (window.LivingEvents && Math.random() < 0.65) {
+        const ev = window.LivingEvents.rollLivingSocialEvent(HERO, WORLD);
+        if (ev) {
+          activeTab = 'life';
+          activeScene = { type: 'living_event', data: { ev } };
+          document.getElementById('life-sim-modal').classList.add('open');
+          renderModal();
+          return;
+        }
+      }
       const hist = WORLD.chronicles[Math.floor(Math.random() * Math.min(20, WORLD.chronicles.length))];
       HERO.life.loneliness = Math.max(0, HERO.life.loneliness - 15);
       pushLog(`你在【${sp.name}】仙缘茶馆听评书：“${hist ? hist.text : '太古灵潮初开之时……'}”`);
@@ -2067,6 +2106,14 @@
       document.getElementById('ow-btn-m1').onclick = () => {
         const res = window.LifeSim.advanceLifeMonths(HERO, WORLD, 1, 'mortal_life');
         saveState(); syncTopHud();
+        if (window.LivingEvents && Math.random() < 0.42) {
+          const ev = window.LivingEvents.rollLivingSocialEvent(HERO, WORLD);
+          if (ev) {
+            activeTab = 'life'; activeScene = { type: 'living_event', data: { ev } };
+            document.getElementById('life-sim-modal').classList.add('open');
+            renderModal(); checkMortality(); return;
+          }
+        }
         const msg = (res && res.proactiveEvent) ? `${res.proactiveEvent.title}：${res.proactiveEvent.desc}` : ((res && res.changes && res.changes[0]) || `岁月流转：第 ${WORLD.year} 年 ${WORLD.month} 月`);
         showOwToast(msg);
         checkMortality();
